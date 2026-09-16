@@ -27,3 +27,7 @@ Giữ domain `bingenz.com` và `www.bingenz.com`. Kiến trúc commerce dùng Wo
 2. Chạy local server và kiểm tra desktop/mobile.
 3. Kiểm tra các link, popup, theme và ảnh local.
 4. Commit và push sau khi đã duyệt preview.
+
+## Commerce local development (implementation branch)
+
+Install pinned dependencies with `npm ci`. Copy `.dev.vars.example` to ignored `.dev.vars` and configure local credentials. Run `npx wrangler d1 migrations apply DB --local --config wrangler.local.toml`, then `npx wrangler dev --config wrangler.local.toml`. Never deploy this local configuration. `npm test` runs unit and real workerd/D1 integration tests with isolated in-memory fixtures and mocked provider responses; it makes no bank transfers. The production configuration remains unchanged until the release gates pass.

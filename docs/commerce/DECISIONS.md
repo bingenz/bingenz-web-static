@@ -39,3 +39,10 @@
 - Consequences: migration tests cover constraints in SQLite; workerd/D1 integration remains required.
 - Affected files: migrations/0001_commerce.sql, tests/schema.test.mjs.
 
+
+## 2026-09-17 — resumed infrastructure and local-only foundation
+- Decision: preserve newer live deployment ac96a0ba and leave production wrangler.toml untouched while implementing against wrangler.local.toml.
+- Reason: live deployment changed outside recorded task work; Git association is unknown. Authenticated Chrome/SePay surface is currently unavailable.
+- Consequence: provider configuration requires restored session later; local development/tests continue safely. No remote changes made.
+- Foundation: checkout ownership uses a separate opaque HttpOnly cookie; Gmail aliases never authorize a claim. Rate limiting precedes external Turnstile validation; hostname and action are checked.
+- Tooling: pinned Miniflare 5 alpha matches installed Wrangler dependency; use its exported convertV4MiniflareOptions compatibility adapter. Real local D1 tests pass. No production test bypass.

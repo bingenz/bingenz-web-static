@@ -1,0 +1,9 @@
+# Copy to ignored .dev.vars for local use only. Never use production banking data in tests.
+SESSION_SECRET="replace-with-random-32-byte-or-longer-secret"
+ABUSE_HASH_KEY="replace-with-a-different-random-secret"
+SEPAY_WEBHOOK_SECRET="replace-with-local-test-signing-secret"
+TURNSTILE_SECRET_KEY="replace-with-widget-secret"
+BANK_ACCOUNT_NUMBER="replace-with-configured-destination"
+TURNSTILE_SITE_KEY="replace-with-public-widget-site-key"
+ACCESS_TEAM_DOMAIN="replace.cloudflareaccess.com"
+ACCESS_AUD="replace-with-access-application-audience"

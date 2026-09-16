@@ -59,3 +59,7 @@ Required columns: filename, product/slug, imported, thumbnail, desktop, mobile, 
 | fingerprint-sim-tiktok-pro.html | fingerprint-sim-tiktok-pro | No | No | Pending | Pending | Pending | Pending | Pending | Syntax and baseline load/initial run pass; protected full-cycle test pending |
 | object-detection-tiktok-pro-v2.html | object-detection-tiktok-pro-v2 | No | No | Pending | Pending | Pending | Pending | Pending | Syntax and baseline load/initial run pass; protected full-cycle test pending |
 
+
+## Foundation checkpoint — 2026-09-17
+
+13 automated tests pass (npm test): SQLite constraints; Gmail/code/session/HMAC/body validation; real workerd/D1 router, server prices, inactive/duplicate cart rejection, pending reuse and ownership, Turnstile wrong host/action and replay, concurrent duplicate payment with two independent entitlements. Provider Siteverify is mocked only in the test harness outbound binding. Live Turnstile/SePay tests remain pending. Admin currently fails closed pending implementation/configuration.
