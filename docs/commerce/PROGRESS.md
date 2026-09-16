@@ -79,3 +79,4 @@ Resume update: R2 activation resolved. No current owner action required. Existin
 
 Audit completed: see AUDIT.md. Baseline 35/35 desktop+mobile load/initial interactions passed; full-cycle protected wrapper testing remains pending. Website 1440/390/360 baseline completed with existing contact FAB bug recorded. Architecture designed in ARCHITECTURE.md. Next: migrations and Worker foundation. Toolchain installed locally and npm audit reports zero vulnerabilities. No remote resources changed. Safe checkpoint is current audit commit.
 
+Migration milestone: migrations/0001_commerce.sql created. Two SQLite tests pass for atomic fulfillment, deduplication, immutable snapshots, tampered prices and duplicate carts. No remote migration applied. Next: Worker/API and native binding tests.

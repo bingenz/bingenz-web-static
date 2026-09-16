@@ -32,3 +32,10 @@
 - Reason: ensure no simulation is silently skipped, preserve privacy, and distinguish syntax validity from behavior.
 - Consequences: all 35 require complete source/behavior review, thumbnail generation and wrapper smoke tests. API-name regex signals can include false positives (e.g. fetch in explanatory text).
 - Affected files: scripts/audit-simulations.mjs, SIMULATION_INVENTORY.json, TEST_MATRIX.md.
+
+## 2026-09-16 — SQL atomicity
+- Decision: D1 triggers validate and snapshot carts atomically and fulfill a paid transition once; unique transaction and order-item constraints enforce idempotency.
+- Reason: avoid multi-request race windows across Worker isolates.
+- Consequences: migration tests cover constraints in SQLite; workerd/D1 integration remains required.
+- Affected files: migrations/0001_commerce.sql, tests/schema.test.mjs.
+
