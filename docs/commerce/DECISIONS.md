@@ -19,3 +19,16 @@
 - Alternatives: older ZIP rejected; no archive used.
 - Consequence: importer must accept an explicit source path; preserve originals outside public/ and Git.
 - Affected resources: local simulation audit/import source.
+
+## 2026-09-16 — R2 activation needs owner action
+- Decision: stop before Add R2 subscription to my account; preserve browser tab for owner.
+- Reason: R2 overview redirects to a subscription page with automatically renewing usage billing and explicit legal acceptance. Browser confirmation policy requires action-time confirmation for accepting terms.
+- Alternatives: unauthorized subscription acceptance rejected; public simulation hosting rejected by specification. No alternative architecture substituted.
+- Consequences: private R2 provisioning and mandatory infrastructure audit cannot finish until owner activates R2. No deployment or provider configuration changed.
+- Affected resource: existing Cloudflare account R2 subscription; PROGRESS.md stores resume protocol.
+
+## 2026-09-16 — inventory is evidence, not a completed simulation audit
+- Decision: record per-file SHA-256, titles, inline script syntax checks and compatibility signals without checking paid source into Git.
+- Reason: ensure no simulation is silently skipped, preserve privacy, and distinguish syntax validity from behavior.
+- Consequences: all 35 require complete source/behavior review, thumbnail generation and wrapper smoke tests. API-name regex signals can include false positives (e.g. fetch in explanatory text).
+- Affected files: scripts/audit-simulations.mjs, SIMULATION_INVENTORY.json, TEST_MATRIX.md.
