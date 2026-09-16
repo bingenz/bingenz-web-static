@@ -1,7 +1,13 @@
 /*.css
-  Cache-Control: public, max-age=31536000, immutable
+  Cache-Control: public, max-age=0, must-revalidate
 
 /*.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.mjs
+  Cache-Control: public, max-age=0, must-revalidate
+
+/product-thumbnails/*
   Cache-Control: public, max-age=31536000, immutable
 
 /img/*
@@ -9,4 +15,3 @@
 
 /index.html
   Cache-Control: public, max-age=0, must-revalidate
-

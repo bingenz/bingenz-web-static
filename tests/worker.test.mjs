@@ -4,14 +4,19 @@ import { readFile } from 'node:fs/promises';
 import { createHmac } from 'node:crypto';
 import { build } from 'esbuild';
 import { Miniflare,convertV4MiniflareOptions } from 'miniflare';
+import { unstable_splitSqlQuery } from 'wrangler';
+import { chromium } from 'playwright';
 let mf,db;
 const origin='https://shop.test',secret='test-only-webhook-signing-secret-for-local-fixtures';
 const consumed=new Set();
 before(async()=>{
  const bundle=await build({entryPoints:['src/worker.mjs'],bundle:true,format:'esm',platform:'browser',write:false});
  mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0].text,compatibilityDate:'2026-09-16',d1Databases:['DB'],r2Buckets:['SIMULATIONS'],
-  bindings:{TURNSTILE_SECRET_KEY:'fixture',TURNSTILE_HOSTNAMES:'shop.test',ABUSE_HASH_KEY:secret,SEPAY_WEBHOOK_SECRET:secret,BANK_ACCOUNT_NUMBER:'test-destination',BANK_CODE:'TPBank'},
-  serviceBindings:{ASSETS:()=>new Response('static asset')},
+  bindings:{TURNSTILE_SECRET_KEY:'fixture',TURNSTILE_HOSTNAMES:'shop.test',ABUSE_HASH_KEY:secret,SESSION_SECRET:secret,SEPAY_WEBHOOK_SECRET:secret,BANK_ACCOUNT_NUMBER:'test-destination',BANK_CODE:'TPBank'},
+  serviceBindings:{ASSETS:async request=>{
+   const file=new URL(request.url).pathname.slice(1),types={'commerce.html':'text/html','commerce.mjs':'text/javascript','commerce.css':'text/css','styles.css':'text/css'};
+   return types[file]?new Response(await readFile('public/'+file),{headers:{'Content-Type':types[file]}}):new Response('static asset');
+  }},
   outboundService:async req=>{
    assert.equal(new URL(req.url).hostname,'challenges.cloudflare.com');
    const b=await req.json(),success=b.response.startsWith('valid-')&&!consumed.has(b.response);consumed.add(b.response);
@@ -21,13 +26,7 @@ before(async()=>{
  db=await mf.getD1Database('DB');
  // D1 exec is line-oriented; prepare accepts each complete trigger statement.
  const sql=await readFile('migrations/0001_commerce.sql','utf8');
- const statements=[];let current='';let trigger=false;
- for(const line of sql.split(/\r?\n/)){
-  if(!line.trim()||line.trim().startsWith('--'))continue;
-  if(line.startsWith('CREATE TRIGGER'))trigger=true;
-  current+=line+'\n';
-  if(line.trim().endsWith(';')&&(!trigger||line.trim()==='END;')){statements.push(current);current='';trigger=false;}
- }
+ const statements=unstable_splitSqlQuery(sql);
  for(const q of statements)await db.prepare(q).run();
  for(const id of ['p','q','inactive']){
   await db.prepare('INSERT INTO products(id,slug,title,created_at,updated_at) VALUES (?,?,?,?,?)').bind(id,id,id,new Date().toISOString(),new Date().toISOString()).run();
@@ -88,3 +87,65 @@ test('signed payment is atomic, immutable and idempotent in real D1',async()=>{
  assert.equal((await db.prepare('SELECT count(*) n FROM entitlements WHERE order_id=?').bind(o.body.id).first()).n,2);
  assert.equal((await db.prepare("SELECT count(*) n FROM payments WHERE external_id='7001'").first()).n,1);
 });
+function sessionCookies(response){return response.headers.getSetCookie().map(s=>s.split(';')[0]).join('; ');}
+test('claim, token exchange, device binding, atomic independent starts and private R2',async()=>{
+ const o=await checkout('access@gmail.com',['p','q']);
+ await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();
+ await sendPayment(o.body,{},7002);
+ const c=await post('/api/orders/'+o.body.id+'/claim',{},o.cookie);assert.equal(c.status,200);
+ const issued=await c.json(),jar=sessionCookies(c);assert.ok(issued.access_url);
+ const stored=await db.prepare('SELECT access_hash FROM orders WHERE id=?').bind(o.body.id).first();assert.ok(!issued.access_url.includes(stored.access_hash));
+ assert.equal((await mf.dispatchFetch(issued.access_url,{redirect:'manual'})).status,403);
+ const exchanged=await mf.dispatchFetch(issued.access_url,{headers:{Cookie:jar},redirect:'manual'});assert.equal(exchanged.status,303);assert.equal(exchanged.headers.get('Location'),'/access');
+ const retry=await post('/api/orders/'+o.body.id+'/claim',{},o.cookie);assert.equal((await retry.json()).already_issued,true);
+ const list=await (await mf.dispatchFetch(origin+'/api/access',{headers:{Cookie:jar}})).json();assert.equal(list.items.length,2);
+ const id=list.items[0].id,secondId=list.items[1].id;
+ const starts=await Promise.all([post('/api/entitlements/'+id+'/start',{},jar),post('/api/entitlements/'+id+'/start',{},jar)]);
+ const firstStart=await starts[0].json(),secondStart=await starts[1].json();assert.equal(firstStart.expires_at,secondStart.expires_at);
+ assert.equal(Date.parse(firstStart.expires_at)-Date.parse(firstStart.started_at),900000);
+ assert.equal((await db.prepare('SELECT started_at FROM entitlements WHERE id=?').bind(secondId).first()).started_at,null);
+ const bucket=await mf.getR2Bucket('SIMULATIONS');await bucket.put('delivery/p','<html><body>paid source</body></html>');await bucket.put('delivery/q','<html><body>paid source</body></html>');
+ const permit=await (await post('/api/entitlements/'+id+'/play',{},jar)).json();
+ assert.equal((await mf.dispatchFetch(origin+permit.url)).status,401);
+ const delivered=await mf.dispatchFetch(origin+permit.url,{headers:{Cookie:jar}});assert.equal(delivered.status,200);
+ assert.match(delivered.headers.get('Content-Security-Policy'),/sandbox allow-scripts/);assert.match(delivered.headers.get('Cache-Control'),/no-store/);
+ const html=await delivered.text();assert.ok(html.includes('BGZ-'));assert.ok(!html.includes('gmail'));
+ await db.prepare("UPDATE entitlements SET status='revoked' WHERE id=?").bind(id).run();
+ assert.equal((await mf.dispatchFetch(origin+permit.url,{headers:{Cookie:jar}})).status,410);
+ await db.prepare('UPDATE orders SET generation=generation+1,access_hash=NULL,device_hash=NULL WHERE id=?').bind(o.body.id).run();
+ assert.equal((await mf.dispatchFetch(origin+'/api/access',{headers:{Cookie:jar}})).status,401);
+ assert.equal((await mf.dispatchFetch(issued.access_url,{headers:{Cookie:jar},redirect:'manual'})).status,404);
+});
+test('payment mismatch cases remain unfulfilled and invalid HMAC does not persist',async()=>{
+ const cases=[['underpaid',{transferAmount:9999}],['overpaid',{transferAmount:10001}],['wrong_bank',{accountNumber:'other'}],['outgoing',{transferType:'out'}],['unknown_code',{code:'BGZ222222222222'}],['late',{transactionDate:'2020-01-01 00:00:00'}]];
+ for(let i=0;i<cases.length;i++){
+  const [status,override]=cases[i],o=await checkout('case'+i+'@gmail.com');
+  await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();
+  assert.equal((await sendPayment(o.body,override,8000+i)).status,200);
+  assert.equal((await db.prepare('SELECT status FROM payments WHERE external_id=?').bind(String(8000+i)).first()).status,status);
+  assert.equal((await db.prepare('SELECT count(*) n FROM entitlements WHERE order_id=?').bind(o.body.id).first()).n,0);
+ }
+ const before=await db.prepare('SELECT count(*) n FROM payments').first();
+ assert.equal((await mf.dispatchFetch(origin+'/api/webhooks/sepay',{method:'POST',body:'{}'})).status,401);
+ assert.equal((await db.prepare('SELECT count(*) n FROM payments').first()).n,before.n);
+});
+test('browser paid-access claim, Start confirmation and sandbox runtime work together',async()=>{
+ const o=await checkout('browser@gmail.com');
+ await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();await sendPayment(o.body,{},9001);
+ const browser=await chromium.launch();
+ try{
+  const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const local=(await mf.ready).origin;
+  const [name,value]=o.cookie.split('=');await page.context().addCookies([{name,value,domain:new URL(local).hostname,path:'/',secure:true,httpOnly:true,sameSite:'Strict'}]);
+  await page.goto(local+'/checkout/'+o.body.id);await page.locator('[data-start]').waitFor();
+  assert.equal(new URL(page.url()).pathname,'/access');assert.equal(await page.locator('#copy-access').count(),1);
+  await page.locator('[data-start]').click();await page.locator('dialog').waitFor();await page.locator('#cancel-start').click();
+  assert.equal((await db.prepare('SELECT started_at FROM entitlements WHERE order_id=?').bind(o.body.id).first()).started_at,null);
+  await page.locator('[data-start]').click();await page.locator('#confirm-start').click();await page.locator('iframe').waitFor();
+  assert.equal(await page.locator('iframe').getAttribute('sandbox'),'allow-scripts');
+  await page.frameLocator('iframe').locator('#bgz-license').waitFor();
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
+

@@ -65,3 +65,9 @@ Safe prior commit 25d5c37. Generated 35/35 minified HTML deliveries privately un
 ## Import completed locally — 2026-09-17
 
 Second import succeeded: 35 products, 35 versions, 70 private R2 objects (original + minified). Local-only; remote counts still zero. 35 WebP thumbnails generated and contact sheet visually inspected. Migrations 0001/0002 applied locally. Source/delivery hashes verified before every upload. Next: storefront and customer UI; provider configuration still requires session restoration. 17 tests currently pass including newly added access backend; access changes will receive a separate checkpoint.
+
+## Access/runtime/storefront checkpoint — 2026-09-17
+
+Customer token claim/exchange, signed HttpOnly sessions, device binding, independent atomic Start, short play permits and private R2 delivery implemented and tested. Browser test passes claim -> access page -> Start confirmation/cancel -> sandboxed iframe. 18 total tests (last run focused Worker suite 8/8 after fixture cookie correction). Mobile storefront 390/360 is exactly two columns; 1440 desktop four. Cart/reload/search/native dialog keyboard tests pass. Existing theme/modals/contact/Cube Jump presence/assets regression passes. Storefront screenshots inspected, corrected image height and transition timing.
+
+Remaining: admin API/UI and real Access JWT verification tests; complete checkout/payment browser test; all35 full-cycle protected simulation tests; remote provisioning/Access/Turnstile/SePay setup; deployment gates. Contact bug fixed; legacy modal focus management still pending. Current safe import checkpoint 553dfcd; next commit captures access/storefront. No remote changes.

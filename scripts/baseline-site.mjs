@@ -20,7 +20,7 @@ try {
     await page.locator(trigger).click();assert(await page.locator(modal).isVisible());
     await page.keyboard.press('Escape');assert(!(await page.locator(modal).isVisible()));
   }
-  await page.locator('#contactFab').click();const contactVisible=await page.locator('#contactFabPopup').isVisible();
+  await page.locator('#contactFab').click();await page.locator('#contactFabPopup').waitFor({state:'visible'});const contactVisible=await page.locator('#contactFabPopup').isVisible();
   await page.keyboard.press('Escape');
   const images=await page.locator('img').evaluateAll(imgs=>imgs.map(i=>({src:i.getAttribute('src'),loaded:i.complete&&i.naturalWidth>0})));
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
@@ -29,6 +29,6 @@ try {
   results.push({width,errors,overflow,images,theme:'pass',modals:'pass',contact:contactVisible?'pass':'FAIL: icon click closes popup',cubeJump:'present'});
   await page.close();
  }
- await writeFile('docs/commerce/BASELINE_SITE_TESTS.json',JSON.stringify(results,null,2)+'\n');
+ await writeFile(process.argv[2]?'docs/commerce/REGRESSION_SITE_TESTS.json':'docs/commerce/BASELINE_SITE_TESTS.json',JSON.stringify(results,null,2)+'\n');
  console.log(JSON.stringify(results));
 } finally {await browser.close();}

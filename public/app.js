@@ -166,6 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', (event) => {
     const popup = document.getElementById('contactFabPopup');
     const button = document.getElementById('contactFab');
-    if (popup?.classList.contains('is-open') && !popup.contains(event.target) && event.target !== button) popup.classList.remove('is-open');
+    if (popup?.classList.contains('is-open') && !popup.contains(event.target) && !button?.contains(event.target)) popup.classList.remove('is-open');
   });
 });

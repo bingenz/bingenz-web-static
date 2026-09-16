@@ -52,3 +52,9 @@
 - Reason: interruption-safe, idempotent import without public paid source. Minify only local JS identifiers because script tags share global names.
 - Consequences: unsupported external dependencies require explicit review. Prepared HTML stays under ignored .private; only WebP screenshots and hash metadata enter Git. Local R2 puts complete before D1 pointers are published. Remote import requires explicit config and bucket.
 - Wrangler migration splitter requires whitespace before CASE; fixed before remote deployment, verified by real CLI migration and test using the same splitter.
+
+## 2026-09-17 — customer access and isolated runtime
+- Decision: access/device cookies use SameSite=Lax for saved-link navigation; all customer mutations require exact Origin. First claim binds the random device cookie (checkout secret fallback permits retry after a lost claim response). Only the access hash persists; retries restore the same bound-device session without redisplaying the raw link.
+- Reason: avoid Strict cookies incorrectly rejecting a saved link opened from another site, while retaining CSRF protection and one-device binding.
+- Consequences: lost raw link still requires manual admin support; generation changes invalidate sessions and permits. Runtime permit expires within60 seconds, and every delivery rechecks D1. Sandbox allows scripts only; CSP denies network/forms/privileged origin, with no-store and markers. Browser heartbeat locks runtime on failed authorization.
+- Limitation: client-delivered code cannot be perfectly secret or remotely erased; documented source secrecy boundary remains.

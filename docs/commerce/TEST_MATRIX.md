@@ -68,3 +68,9 @@ Required columns: filename, product/slug, imported, thumbnail, desktop, mobile, 
 
 35/35 local products and versions imported twice without duplication; 35 WebP thumbnails generated. Remote import remains pending. Minified files loaded in browser during thumbnail capture; complete desktop/mobile minification compatibility and protected full-cycle tests remain pending. 17 automated tests now pass including import interruption/rollback and access/device/atomic Start/R2/mismatch payment tests.
 
+
+## Storefront and access verification — 2026-09-17
+
+STOREFRONT_TESTS.json: 1440/390/360; 35 cards; correct placement; two mobile columns; no overflow/page errors; cart add/remove/persistence; native dialog Escape/focus return; search; light/dark screenshots inspected.
+REGRESSION_SITE_TESTS.json preserves original baseline separately: theme/modals/contact pass, Cube Jump section present, existing images load. Lazy offscreen thumbnail loading is not a failed asset.
+Worker suite: paid claim/exchange, wrong-device denial, no raw token persistence, repeated Start same expiry, independent item timers, R2 sandbox/no-store/watermark, revocation and generation invalidation, six payment mismatch cases, invalid signature rejected. Browser claim/access/Start cancel+confirm/play passes. Full35 protected suite and live provider tests still pending.
