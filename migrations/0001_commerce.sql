@@ -104,7 +104,7 @@ CREATE TRIGGER match_payment AFTER INSERT ON payments WHEN NEW.status='candidate
  AND NEW.transaction_at>=created_at AND NEW.transaction_at<=expires_at AND NEW.received_at<=expires_at;
  UPDATE payments SET
  order_id=(SELECT id FROM orders WHERE payment_code=NEW.payment_code),
- status=CASE
+ status = CASE
  WHEN NEW.direction!='in' THEN 'outgoing'
  WHEN NEW.bank_valid!=1 THEN 'wrong_bank'
  WHEN NOT EXISTS(SELECT 1 FROM orders WHERE payment_code=NEW.payment_code) THEN 'unknown_code'

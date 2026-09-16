@@ -57,3 +57,11 @@ Safe local checkpoint 52be239. Current live version above is rollback evidence, 
 ## Foundation outcome — 2026-09-17
 
 Worker router plus catalog/checkout/status/QR/HMAC modules integrated. 13 tests pass including real workerd/D1. Local-only config added; production config unchanged. Access/runtime/admin APIs remain reserved and fail closed. Next required milestone: private R2 import/versioning pipeline with thumbnails. Foundation checkpoint is the commit containing this entry. Preserve current live deployment; no remote changes.
+
+## Import/thumbnail operation checkpoint — 2026-09-17
+
+Safe prior commit 25d5c37. Generated 35/35 minified HTML deliveries privately under ignored .private/products and 35/35 public WebP screenshots; contact sheet inspected. Original/delivery HTML never enters public or Git. First local import verified 35 products/35 versions; remote imports still zero. Migrations 0001 and 0002 applied to local-only D1. Found and fixed Wrangler splitter requirement for whitespace before CASE; tests now use Wrangler's splitter. 15 tests pass. A second local import is running to verify interruption-safe import-state migration/idempotence. Next: commit import milestone, build access/runtime and storefront. Provider session still unavailable.
+
+## Import completed locally — 2026-09-17
+
+Second import succeeded: 35 products, 35 versions, 70 private R2 objects (original + minified). Local-only; remote counts still zero. 35 WebP thumbnails generated and contact sheet visually inspected. Migrations 0001/0002 applied locally. Source/delivery hashes verified before every upload. Next: storefront and customer UI; provider configuration still requires session restoration. 17 tests currently pass including newly added access backend; access changes will receive a separate checkpoint.

@@ -46,3 +46,9 @@
 - Consequence: provider configuration requires restored session later; local development/tests continue safely. No remote changes made.
 - Foundation: checkout ownership uses a separate opaque HttpOnly cookie; Gmail aliases never authorize a claim. Rate limiting precedes external Turnstile validation; hostname and action are checked.
 - Tooling: pinned Miniflare 5 alpha matches installed Wrangler dependency; use its exported convertV4MiniflareOptions compatibility adapter. Real local D1 tests pass. No production test bypass.
+
+## 2026-09-17 — repeatable private import and safe transforms
+- Decision: content-address original/delivery objects separately; deterministic product IDs derive from relative source paths, versions from original hash. Preserve seller metadata. product_imports tracks last source version so reruns preserve admin rollback and recover partial writes; changed source selects a new version without deleting history.
+- Reason: interruption-safe, idempotent import without public paid source. Minify only local JS identifiers because script tags share global names.
+- Consequences: unsupported external dependencies require explicit review. Prepared HTML stays under ignored .private; only WebP screenshots and hash metadata enter Git. Local R2 puts complete before D1 pointers are published. Remote import requires explicit config and bucket.
+- Wrangler migration splitter requires whitespace before CASE; fixed before remote deployment, verified by real CLI migration and test using the same splitter.

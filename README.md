@@ -31,3 +31,11 @@ Giữ domain `bingenz.com` và `www.bingenz.com`. Kiến trúc commerce dùng Wo
 ## Commerce local development (implementation branch)
 
 Install pinned dependencies with `npm ci`. Copy `.dev.vars.example` to ignored `.dev.vars` and configure local credentials. Run `npx wrangler d1 migrations apply DB --local --config wrangler.local.toml`, then `npx wrangler dev --config wrangler.local.toml`. Never deploy this local configuration. `npm test` runs unit and real workerd/D1 integration tests with isolated in-memory fixtures and mocked provider responses; it makes no bank transfers. The production configuration remains unchanged until the release gates pass.
+
+## Product preparation and import
+
+1. `node scripts/prepare-products.mjs C:/Users/Acer/Downloads/QuickShare_2609122051` scans all current HTML, minifies conservatively, captures real simulation WebP thumbnails and writes an ignored private manifest.
+2. Apply local migrations as above, then `node scripts/import-products.mjs` for local private R2 and D1.
+3. Remote import (only after resource provisioning): `node scripts/import-products.mjs --remote --config <verified-config.toml> --bucket <private-bucket>`.
+
+Repeated imports preserve seller metadata and existing version history. New source hashes select a new version; rerunning identical source preserves an administrator's rollback. Never publish `.private/` or original HTML. Thumbnails alone belong in `public/product-thumbnails/`.
