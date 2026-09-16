@@ -1,0 +1,5 @@
+name = "bingenz-web-static"
+compatibility_date = "2026-09-16"
+
+[assets]
+directory = "./public"
