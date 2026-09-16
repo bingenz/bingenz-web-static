@@ -1,0 +1,83 @@
+[
+  {
+    "width": 1440,
+    "errors": [],
+    "overflow": false,
+    "images": [
+      {
+        "src": "img/cubejump-share-v20260518.jpg",
+        "loaded": true
+      },
+      {
+        "src": "img/fhd.jpg",
+        "loaded": true
+      },
+      {
+        "src": "img/tiktok-group-qr.jpg",
+        "loaded": true
+      },
+      {
+        "src": "img/zalogr.jpg",
+        "loaded": true
+      }
+    ],
+    "theme": "pass",
+    "modals": "pass",
+    "contact": "FAIL: icon click closes popup",
+    "cubeJump": "present"
+  },
+  {
+    "width": 390,
+    "errors": [],
+    "overflow": false,
+    "images": [
+      {
+        "src": "img/cubejump-share-v20260518.jpg",
+        "loaded": true
+      },
+      {
+        "src": "img/fhd.jpg",
+        "loaded": true
+      },
+      {
+        "src": "img/tiktok-group-qr.jpg",
+        "loaded": true
+      },
+      {
+        "src": "img/zalogr.jpg",
+        "loaded": true
+      }
+    ],
+    "theme": "pass",
+    "modals": "pass",
+    "contact": "FAIL: icon click closes popup",
+    "cubeJump": "present"
+  },
+  {
+    "width": 360,
+    "errors": [],
+    "overflow": false,
+    "images": [
+      {
+        "src": "img/cubejump-share-v20260518.jpg",
+        "loaded": true
+      },
+      {
+        "src": "img/fhd.jpg",
+        "loaded": true
+      },
+      {
+        "src": "img/tiktok-group-qr.jpg",
+        "loaded": true
+      },
+      {
+        "src": "img/zalogr.jpg",
+        "loaded": true
+      }
+    ],
+    "theme": "pass",
+    "modals": "pass",
+    "contact": "FAIL: icon click closes popup",
+    "cubeJump": "present"
+  }
+]

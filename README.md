@@ -1,6 +1,6 @@
 # BinGenZ static site
 
-Website tĩnh của `bingenz.com`, với nguồn trong `public/`. Trang giữ lại các phần giới thiệu BinGenZ, Cube Jump, dịch vụ, cộng đồng và liên hệ; không có tài khoản, sản phẩm trả phí, thanh toán, API hoặc database.
+Website của `bingenz.com`, với giao diện HTML/CSS/JS trong `public/`. Commerce đang được triển khai trên nhánh `codex/commerce-storefront`, theo [đặc tả](docs/commerce/IMPLEMENTATION_SPEC.md). Xem [tiến độ và hướng dẫn tiếp tục](docs/commerce/PROGRESS.md) trước khi chỉnh sửa.
 
 ## Xem local
 
@@ -11,15 +11,15 @@ python -m http.server 4173
 
 Mở `http://localhost:4173`.
 
-## Cloudflare Pages
+## Cloudflare Workers
 
-Kết nối repository với Cloudflare Pages bằng các thiết lập:
+Production dùng Worker hiện có `bingenz-web-static`, repository `bingenz/bingenz-web-static`:
 
 - Build command: để trống
 - Build output directory: `public`
-- Production branch: `main`
+- Production branch: `master`
 
-Giữ zone DNS `bingenz.com`, sau đó gắn `bingenz.com` và `www` vào Pages project tĩnh mới. Không cần Wrangler, Functions, D1, KV, Google OAuth hoặc SePay.
+Giữ domain `bingenz.com` và `www.bingenz.com`. Kiến trúc commerce dùng Workers, D1, R2 riêng tư, Cloudflare Access + Google, Turnstile và SePay. Không đưa HTML mô phỏng trả phí vào `public/`. Không deploy nhánh đang phát triển trước khi hoàn tất các bước xác minh trong đặc tả.
 
 ## Quy trình chỉnh sửa
 

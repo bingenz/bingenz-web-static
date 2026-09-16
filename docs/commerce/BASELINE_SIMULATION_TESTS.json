@@ -1,0 +1,1868 @@
+[
+  {
+    "filename": "01-a-star-pathfinding.html",
+    "title": "A* Pathfinding",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "đang tìm đường",
+        "controls": [
+          {
+            "id": "run",
+            "text": "Đang chạy…",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "đang tìm đường",
+        "controls": [
+          {
+            "id": "run",
+            "text": "Đang chạy…",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "02-quick-sort.html",
+    "title": "Quick Sort",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "đang sắp xếp",
+        "controls": [
+          {
+            "id": "run",
+            "text": "Đang chạy…",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "đang sắp xếp",
+        "controls": [
+          {
+            "id": "run",
+            "text": "Đang chạy…",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "03-lru-cache.html",
+    "title": "LRU Cache",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "đang mô phỏng",
+        "controls": [
+          {
+            "id": "run",
+            "text": "Đang chạy…",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "đang mô phỏng",
+        "controls": [
+          {
+            "id": "run",
+            "text": "Đang chạy…",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "04-dns-resolution.html",
+    "title": "DNS Resolution",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "DNS resolved",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "DNS resolved",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "05-load-balancer.html",
+    "title": "Load Balancer",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "traffic balanced",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "traffic balanced",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "06-rate-limiting.html",
+    "title": "Rate Limiting",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "rate limited",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "rate limited",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "07-deadlock-detection.html",
+    "title": "Deadlock Detection",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "resolved",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "resolved",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "08-jwt-authentication.html",
+    "title": "JWT Authentication",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "access granted",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "access granted",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "09-k-means-clustering.html",
+    "title": "K-Means Clustering",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "clusters converged",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "clusters converged",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "10-blockchain-mining.html",
+    "title": "Blockchain Mining",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "đang mining",
+        "controls": [
+          {
+            "id": "run",
+            "text": "Đang chạy…",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "đang mining",
+        "controls": [
+          {
+            "id": "run",
+            "text": "Đang chạy…",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "11-binary-search.html",
+    "title": "Binary Search",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "đã tìm thấy",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "đã tìm thấy",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "12-merge-sort.html",
+    "title": "Merge Sort",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "đã sắp xếp",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "đã sắp xếp",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "13-breadth-first-search.html",
+    "title": "Breadth-First Search",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "hoàn tất",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "hoàn tất",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "14-depth-first-search.html",
+    "title": "Depth-First Search",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "hoàn tất",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "hoàn tất",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "15-dijkstra-shortest-path.html",
+    "title": "Dijkstra Shortest Path",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "xong",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "xong",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "16-hash-table-collision.html",
+    "title": "Hash Table Collision",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "table built",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "table built",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "17-bloom-filter.html",
+    "title": "Bloom Filter",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "hoàn tất",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "hoàn tất",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "18-trie-autocomplete.html",
+    "title": "Trie Autocomplete",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "4 suggestions",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "4 suggestions",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "19-producer-consumer.html",
+    "title": "Producer Consumer",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "queue empty",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "queue empty",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "20-message-queue-retry.html",
+    "title": "Message Queue Retry",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "batch complete",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "batch complete",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "21-tcp-handshake.html",
+    "title": "TCP Handshake",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "TCP healthy",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "TCP healthy",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "22-cdn-cache.html",
+    "title": "CDN Cache",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "cache warm",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "cache warm",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "23-sql-transaction-locking.html",
+    "title": "SQL Transaction Locking",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "committed",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "committed",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "24-garbage-collection-mark-sweep.html",
+    "title": "Garbage Collection",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "GC complete",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "GC complete",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "25-memory-paging-lru.html",
+    "title": "Memory Paging",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "done",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "done",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "26-cpu-round-robin.html",
+    "title": "CPU Round Robin",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "all complete",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "all complete",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "27-union-find.html",
+    "title": "Union-Find",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "1 component",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "1 component",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "28-topological-sort.html",
+    "title": "Topological Sort",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "sorted",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "sorted",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "29-consistent-hashing.html",
+    "title": "Consistent Hashing",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "ring updated",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "ring updated",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "30-raft-leader-election.html",
+    "title": "Raft Leader Election",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "run",
+        "text": "▶ Chạy mô phỏng",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "leader stable",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "leader stable",
+        "controls": [
+          {
+            "id": "run",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "battery-charge-animation-tiktok-9x16-v4.html",
+    "title": "bateria = bateria + 1;",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "replayBtn",
+        "text": "↻ Chạy lại",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "\n\nkiểm tra: 3 < 100 → true\n",
+        "controls": [
+          {
+            "id": "replayBtn",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "\n\nkiểm tra: 3 < 100 → true\n",
+        "controls": [
+          {
+            "id": "replayBtn",
+            "text": "↻ Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "database-index-tiktok-pro.html",
+    "title": "Full Scan vs B-Tree",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "1K",
+        "type": null
+      },
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "100K",
+        "type": null
+      },
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "1M",
+        "type": null
+      },
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "10M",
+        "type": null
+      },
+      {
+        "tag": "BUTTON",
+        "id": "runBtn",
+        "text": "▶",
+        "type": null
+      },
+      {
+        "tag": "BUTTON",
+        "id": "randomBtn",
+        "text": "🎲",
+        "type": null
+      },
+      {
+        "tag": "INPUT",
+        "id": "speedSlider",
+        "text": "",
+        "type": "range"
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "controls": [
+          {
+            "id": "",
+            "text": "1K",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "",
+            "text": "100K",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "",
+            "text": "1M",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "",
+            "text": "10M",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "runBtn",
+            "text": "↻",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "randomBtn",
+            "text": "🎲",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "speedSlider",
+            "text": "",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "controls": [
+          {
+            "id": "",
+            "text": "1K",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "",
+            "text": "100K",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "",
+            "text": "1M",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "",
+            "text": "10M",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "runBtn",
+            "text": "↻",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "randomBtn",
+            "text": "🎲",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "speedSlider",
+            "text": "",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "ddos-simulation-tiktok-pro.html",
+    "title": "DDoS Simulation",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "Bình thường",
+        "type": null
+      },
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "Tấn công DDoS",
+        "type": null
+      },
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "Bật chống DDoS",
+        "type": null
+      },
+      {
+        "tag": "SELECT",
+        "id": "attackType",
+        "text": "SYN Flood\r\nUDP Flood\r\nHTTP Flood",
+        "type": null
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "controls": [
+          {
+            "id": "",
+            "text": "Bình thường",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "",
+            "text": "Tấn công DDoS",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "",
+            "text": "Bật chống DDoS",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "attackType",
+            "text": "SYN Flood\nUDP Flood\nHTTP Flood",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "controls": [
+          {
+            "id": "",
+            "text": "Bình thường",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "",
+            "text": "Tấn công DDoS",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "",
+            "text": "Bật chống DDoS",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "attackType",
+            "text": "SYN Flood\nUDP Flood\nHTTP Flood",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "fingerprint-sim-tiktok-pro.html",
+    "title": "Fingerprint Hash Match",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "sensorBtn",
+        "text": "",
+        "type": null
+      },
+      {
+        "tag": "INPUT",
+        "id": "impostorToggle",
+        "text": "",
+        "type": "checkbox"
+      },
+      {
+        "tag": "BUTTON",
+        "id": "scanAction",
+        "text": "Quét vân tay",
+        "type": null
+      },
+      {
+        "tag": "INPUT",
+        "id": "speedSlider",
+        "text": "",
+        "type": "range"
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "controls": [
+          {
+            "id": "scanAction",
+            "text": "Quét vân tay",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "speedSlider",
+            "text": "",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "controls": [
+          {
+            "id": "scanAction",
+            "text": "Quét vân tay",
+            "visible": true,
+            "inside": true
+          },
+          {
+            "id": "speedSlider",
+            "text": "",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  },
+  {
+    "filename": "object-detection-tiktok-pro-v2.html",
+    "title": "Object Detection — Sliding Window",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "id": "replayBtn",
+        "text": "Chạy lại",
+        "type": "button"
+      }
+    ],
+    "views": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "overflow": false,
+        "status": "\n\n32/32 ô · Hoàn tất\n",
+        "controls": [
+          {
+            "id": "replayBtn",
+            "text": "Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "overflow": false,
+        "status": "\n\n32/32 ô · Hoàn tất\n",
+        "controls": [
+          {
+            "id": "replayBtn",
+            "text": "Chạy lại",
+            "visible": true,
+            "inside": true
+          }
+        ],
+        "errors": []
+      }
+    ]
+  }
+]
