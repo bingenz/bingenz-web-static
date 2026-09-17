@@ -90,3 +90,10 @@
 - Alternatives: blanket update without per-product audit or version guard rejected. HTML mass replacement is not part of metadata bulk edit.
 - Consequences: conflicting rows may be skipped while others succeed. Tests verify audit count, duplicate selection denial and inactive draft guard. Admin HTML upload needs a separate safe transform path; installed html-minifier-terser cannot browser-platform bundle because of Node built-ins.
 - Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.
+
+## 2026-09-17 — prepared private HTML upload and current-thumbnail route
+- Decision: keep Node-only html-minifier-terser in a local preparation CLI and require an admin-upload package containing original and conservatively minified delivery bytes. Authenticated Worker verifies hashes/size, writes content-addressed private R2 objects first, then stores the version pointer and audit in a D1 batch. WebP replacements use a separate bounded binary upload; only the current D1-selected thumbnail is served publicly through the Worker.
+- Reason: the existing minifier cannot bundle for browser-platform Workers because it imports Node built-ins. This preserves the same tested transformation without putting paid HTML under public assets or silently skipping minification. Thumbnail images are intentionally public, unlike simulation source.
+- Alternatives: unminified direct HTML upload and public R2 object URLs rejected. A full runtime minifier rewrite is deferred.
+- Consequences: seller runs `npm run prepare:admin-upload -- <trusted.html>` locally before selecting the private JSON package. A failed D1 write can leave harmless content-addressed orphan R2 objects; retry is safe. Server checks integrity, not that uploaded delivery is semantically identical to original; exact admin identity is the trust boundary. Drafts remain inactive. No remote upload performed.
+- Affected: scripts/prepare-admin-upload.mjs, package.json, src/admin.mjs, src/worker.mjs, public/admin.*, README.md, tests/worker.test.mjs; private local `.private/admin-upload` artifact ignored.

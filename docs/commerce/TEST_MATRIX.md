@@ -1,6 +1,6 @@
 # Verification matrix
 
-Last updated: 2026-09-17T07:00:03Z. Implementation resumed; remote deployment unchanged.
+Last updated: 2026-09-17T11:34:18Z. Implementation resumed; remote deployment unchanged.
 Current run: npm test — 20 tests, 20 passed, zero failures/skips.
 Tests are local; mocked provider success is not live provider verification.
 
@@ -16,7 +16,7 @@ Tests are local; mocked provider success is not live provider verification.
 | Storefront mobile | PASS: 390/360px exactly 2 columns, cart/search/dialog, no overflow/errors | Live Turnstile/QR/payment completion |
 | Existing site | PASS: theme/modals/contact popup/old images, Cube Jump presence | Full navigation/social/copy assertions; legacy modal focus improvements |
 | Paid browser flow | PASS: checkout paid claim -> clean access page -> Start cancel/confirm -> sandbox iframe at 390px | Real payment screen and all 35 simulations |
-| Admin | PASS: signed-gated dashboard/order search/inactive draft creation/product edit/version history/rollback/bulk metadata, per-product atomic audits, duplicate slug/selection and cross-product rollback denied, versionless activation skipped, 390px browser render; direct admin.html denied | HTML/thumbnail uploads, reconciliation/recovery/device reset, support/refunds/export; live policy |
+| Admin | PASS: signed-gated dashboard/order search/draft/edit/version rollback/bulk, prepared HTML upload to private R2 with hash/size checks and idempotent duplicate, WebP replacement/current-image route, audited changes, 390px browser render; direct admin.html denied | Order detail, reconciliation/recovery/device reset, support/refunds/export/preview; live policy |
 | Access | PASS: signed local JWK valid/wrong email/audience/tampered denial; missing token rejects | Live Google policy and Access application |
 | Turnstile | PASS mocked-provider wrong hostname/action/replayed response denial | Production widget/secrets, fresh real token and replay |
 | SePay | Authenticated dashboard verified; #56829 enabled HMAC, incoming JSON, retry on, TPBank selected; source and signed test now use saved singular route, plural returns 404; no send-test performed | Secret matching, BGZ recognition/filter, alerts and official signed test/deployment |
@@ -66,7 +66,7 @@ Each original passed baseline desktop/mobile loading and initial interaction. Ea
 | object-detection-tiktok-pro-v2.html | object-detection-tiktok-pro-v2 | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
 
 ## Evidence and commands
-- tests/schema.test.mjs, security.test.mjs, import.test.mjs, worker.test.mjs: npm test, final 18/18 pass.
+- tests/schema.test.mjs, security.test.mjs, import.test.mjs, worker.test.mjs: npm test, current 20/20 pass. Local Wrangler dry-run passed; it did not access remote services.
 - STOREFRONT_TESTS.json: node scripts/test-storefront.mjs with local Worker on port4173.
 - REGRESSION_SITE_TESTS.json: node scripts/baseline-site.mjs http://127.0.0.1:4173. Original baseline remains separate.
 - BASELINE_SIMULATION_TESTS.json and SIMULATION_INVENTORY.json contain individual original observations.
@@ -76,4 +76,4 @@ Each original passed baseline desktop/mobile loading and initial interaction. Ea
 - No production smoke test, deployment, official SePay send-test or real payment performed.
 
 ## Next verification
-Complete/admin-test secure HTML/thumbnail upload, payment/support/recovery/refund/export operations next; then expiry/deadline boundaries, full checkout, all35 protected full cycles at desktop/mobile and live infrastructure/provider gates. Do not advance tests from pending to pass based only on page rendering.
+Complete/admin-test order detail, payment/support/recovery/refund/export/preview operations next; then expiry/deadline boundaries, full checkout, all35 protected full cycles at desktop/mobile and live infrastructure/provider gates. Do not advance tests from pending to pass based only on page rendering.

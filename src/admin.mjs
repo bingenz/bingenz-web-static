@@ -1,4 +1,4 @@
-import { HttpError, json, jsonBody, objectShape, requireValue, iso } from './security.mjs';
+import { HttpError, json, jsonBody, objectShape, requireValue, iso, hash } from './security.mjs';
 import { stmt } from './db.mjs';
 
 const editable=['slug','title','description','category','price_vnd','duration_seconds','activation_days','active','archived','display_order'];
@@ -75,6 +75,60 @@ export async function adminRoute(request,env,actor,path){
  }
  const product=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})$/);
  const versions=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})\/versions$/);
+ const upload=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})\/upload$/);
+ const thumbnail=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})\/thumbnail$/);
+ if(thumbnail&&method==='PUT'){
+  requireValue((request.headers.get('Content-Type')||'').split(';')[0]==='image/webp',415,'webp_required');
+  requireValue(Number(request.headers.get('Content-Length')||0)<=1048576,413,'image_too_large');
+  const reader=request.body?.getReader();requireValue(reader,400,'image_required');
+  const chunks=[];let size=0;
+  while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>1048576){await reader.cancel();throw new HttpError(413,'image_too_large');}chunks.push(value);}
+  const bytes=new Uint8Array(size);let pos=0;for(const chunk of chunks){bytes.set(chunk,pos);pos+=chunk.length;}
+  const chunk=String.fromCharCode(...bytes.slice(12,16));
+  const riffSize=size>=8?(bytes[4]|bytes[5]<<8|bytes[6]<<16|bytes[7]<<24)>>>0:0;
+  requireValue(size>=20&&String.fromCharCode(...bytes.slice(0,4))==='RIFF'&&String.fromCharCode(...bytes.slice(8,12))==='WEBP'&&['VP8 ','VP8L','VP8X'].includes(chunk)&&riffSize===size-8,400,'invalid_webp');
+  const before=await env.DB.prepare('SELECT id,thumbnail FROM products WHERE id=?').bind(thumbnail[1]).first();
+  if(!before)throw new HttpError(404,'not_found');
+  const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');
+  const key=`thumbnails/${before.id}/${digest}.webp`,url=`/api/thumbnails/${before.id}/${digest}.webp`;
+  if(before.thumbnail===url)return json({thumbnail:url,unchanged:true});
+  await env.SIMULATIONS.put(key,bytes,{httpMetadata:{contentType:'image/webp',cacheControl:'public, max-age=31536000, immutable'}});
+  const now=iso();await env.DB.batch([
+   stmt(env.DB,'UPDATE products SET thumbnail=?,updated_at=? WHERE id=?',url,now,before.id),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) VALUES (?,?,?,?,?,?,?)`,crypto.randomUUID(),actor,'product.thumbnail','product',before.id,now,JSON.stringify({from:before.thumbnail,to:url}))
+  ]);
+  return json({thumbnail:url});
+ }
+ if(upload&&method==='POST'){
+  const id=upload[1],input=await jsonBody(request,6000000);
+  objectShape(input,['format','original_base64','delivery_base64','sha256','delivery_sha256']);
+  requireValue(input.format==='bingenz-admin-html-v1'&&/^[a-f0-9]{64}$/.test(input.sha256||'')&&/^[a-f0-9]{64}$/.test(input.delivery_sha256||''),400,'invalid_package');
+  const decode=value=>{
+   requireValue(typeof value==='string'&&value.length>0&&value.length<=2800000&&/^[A-Za-z0-9+/]+={0,2}$/.test(value),400,'invalid_package');
+   try{const binary=atob(value),bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));requireValue(bytes.length>0&&bytes.length<=2097152,413,'html_too_large');return bytes;}
+   catch(e){if(e instanceof HttpError)throw e;throw new HttpError(400,'invalid_package');}
+  };
+  const original=decode(input.original_base64),delivery=decode(input.delivery_base64);
+  const digest=async bytes=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');
+  requireValue(await digest(original)===input.sha256&&await digest(delivery)===input.delivery_sha256,400,'hash_mismatch');
+  let text;try{text=new TextDecoder('utf-8',{fatal:true}).decode(delivery);}catch{throw new HttpError(400,'invalid_delivery');}
+  requireValue(/<html[\s>]/i.test(text)&&/<body[\s>]/i.test(text)&&!/<(?:script\s+[^>]*src|iframe|object|embed|base)\b/i.test(text)&&!/sourceMappingURL/i.test(text),400,'invalid_delivery');
+  const before=await env.DB.prepare('SELECT id,current_version_id FROM products WHERE id=?').bind(id).first();
+  if(!before)throw new HttpError(404,'not_found');
+  const existing=await env.DB.prepare('SELECT id FROM product_versions WHERE product_id=? AND sha256=?').bind(id,input.sha256).first();
+  if(existing)return json({version_id:existing.id,unchanged:true});
+  const version='ver_'+(await hash(id+input.sha256)).slice(0,32),now=iso();
+  const originalKey=`originals/${id}/${input.sha256}.html`,deliveryKey=`delivery/${id}/${input.delivery_sha256}.html`;
+  // Content-addressed private writes complete before the database can reference either object.
+  await env.SIMULATIONS.put(originalKey,original,{httpMetadata:{contentType:'text/html; charset=utf-8',cacheControl:'private, no-store'}});
+  await env.SIMULATIONS.put(deliveryKey,delivery,{httpMetadata:{contentType:'text/html; charset=utf-8',cacheControl:'private, no-store'}});
+  await env.DB.batch([
+   stmt(env.DB,'INSERT INTO product_versions(id,product_id,sha256,original_key,delivery_key,bytes,created_at) VALUES (?,?,?,?,?,?,?)',version,id,input.sha256,originalKey,deliveryKey,original.length,now),
+   stmt(env.DB,'UPDATE products SET current_version_id=?,updated_at=? WHERE id=?',version,now,id),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) VALUES (?,?,?,?,?,?,?)`,crypto.randomUUID(),actor,'product.upload','product',id,now,JSON.stringify({from:before.current_version_id,to:version,sha256:input.sha256,delivery_sha256:input.delivery_sha256}))
+  ]);
+  return json({version_id:version,sha256:input.sha256},201);
+ }
  if(versions&&method==='GET'){
   const p=await env.DB.prepare('SELECT id,current_version_id FROM products WHERE id=?').bind(versions[1]).first();
   if(!p)throw new HttpError(404,'not_found');

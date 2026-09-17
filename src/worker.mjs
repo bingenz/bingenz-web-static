@@ -17,6 +17,14 @@ async function route(request,env) {
   throw new HttpError(404,'not_found');
  }
  if(path==='/api/catalog'&&method==='GET')return json({products:await catalog(env),turnstile_site_key:env.TURNSTILE_SITE_KEY||null});
+ const thumbnail=path.match(/^\/api\/thumbnails\/([a-z0-9_-]{1,64})\/([a-f0-9]{64})\.webp$/);
+ if(thumbnail&&method==='GET'){
+  const publicPath=path,p=await env.DB.prepare('SELECT id FROM products WHERE id=? AND thumbnail=?').bind(thumbnail[1],publicPath).first();
+  if(!p)throw new HttpError(404,'not_found');
+  const object=await env.SIMULATIONS.get(`thumbnails/${p.id}/${thumbnail[2]}.webp`);
+  if(!object)throw new HttpError(404,'not_found');
+  return new Response(object.body,{headers:{'Content-Type':'image/webp','Cache-Control':'public, max-age=31536000, immutable','X-Content-Type-Options':'nosniff'}});
+ }
  if(path==='/api/orders'&&method==='POST')return createOrder(request,env);
  const claimRoute=path.match(/^\/api\/orders\/([a-f0-9-]{36})\/claim$/);
  if(claimRoute&&method==='POST')return claim(request,env,claimRoute[1]);

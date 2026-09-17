@@ -39,3 +39,7 @@ Install pinned dependencies with `npm ci`. Copy `.dev.vars.example` to ignored `
 3. Remote import (only after resource provisioning): `node scripts/import-products.mjs --remote --config <verified-config.toml> --bucket <private-bucket>`.
 
 Repeated imports preserve seller metadata and existing version history. New source hashes select a new version; rerunning identical source preserves an administrator's rollback. Never publish `.private/` or original HTML. Thumbnails alone belong in `public/product-thumbnails/`.
+
+## Admin product maintenance (local implementation)
+
+The `/admin` UI requires a valid Cloudflare Access JWT for the configured owner; a live Access application is still pending. New products start inactive. To add or replace paid HTML, run `npm run prepare:admin-upload -- <trusted-simulation.html>` locally. Review the simulation and select the resulting ignored `.private/admin-upload/*.json` package in the admin UI for the chosen product. The Worker verifies package hashes, writes original/delivery objects to private R2, then records a version and audit entry in D1. Uploading does not activate a draft; turn it on deliberately after checking its version and thumbnail. Do not send the package to a public asset directory or commit it. A WebP thumbnail (maximum 1 MiB) can be replaced separately from the admin UI.
