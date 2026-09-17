@@ -1,7 +1,7 @@
 # Verification matrix
 
 Last updated: 2026-09-18. Preview D1/R2 imported and separate Worker deployed; production deployment unchanged.
-Current run: npm test — 31 tests, 31 passed, zero failures/skips. Separate protected-simulation run: 35 products × 2 viewports, all pass.
+Current run: npm test — 32 tests, 32 passed, zero failures/skips. Separate protected-simulation run: 35 products × 2 viewports, all pass.
 Tests use local Worker/D1/R2 for runtime behavior; mocked provider success is not live provider verification.
 
 | Area | Evidence and current result | Remaining |
@@ -16,7 +16,7 @@ Tests use local Worker/D1/R2 for runtime behavior; mocked provider success is no
 | Storefront mobile | PASS: 390/360px exactly 2 columns, cart/search/dialog, no overflow/errors | Live Turnstile/QR/payment completion |
 | Existing site | PASS at 1440/390/360: theme/modals/contact popup/old images, Cube Jump presence and web navigation, social targets and contact/community copy buttons; legacy modal focus trap/restore and keyboard service trigger | Production smoke test |
 | Paid browser flow | PASS: pending QR/countdown -> signed fixture payment -> polling auto-transition -> claim/clean access page; Start cancel/confirm -> sandbox iframe at 390px; invalid token redirects to clean manual-recovery page; separate protected run starts/plays/interacts/expires all 35 at desktop/mobile | Live QR/SePay provider |
-| Admin | PASS: signed-gated dashboard/order search/detail with immutable snapshots and no credential hashes, guarded manual reconciliation with insufficient/wrong-bank denial and audited fulfillment, bounded manual refund request/completion with optional revocation, reasoned entitlement adjustment/reopen/revoke, audited default activation setting with future-order snapshot, paged CSV exports with formula protection, sandboxed private version preview, safe empty-draft deletion with archival boundary, draft/edit/version rollback/bulk, prepared HTML upload to private R2 with hash/size checks and idempotent duplicate, WebP replacement/current-image route, audited support notes and paid-link reissue/device reset, 390px browser render; direct admin.html denied | Full end-to-end admin validation; live policy |
+| Admin | PASS: signed-gated dashboard/order search/detail with immutable snapshots and no credential hashes, guarded manual reconciliation with insufficient/wrong-bank denial and audited fulfillment, bounded manual refund request/completion with optional revocation, reasoned entitlement adjustment/reopen/revoke, audited default activation setting with future-order snapshot, paged CSV exports with formula protection, sandboxed private version preview, safe empty-draft deletion with archival boundary, draft/edit/version rollback/bulk, prepared HTML upload to private R2 with hash/size checks and idempotent duplicate, WebP replacement/current-image route, audited support notes and paid-link reissue/device reset, 390px browser render; direct admin.html denied. New desktop browser test covers draft creation → private HTML upload/preview + thumbnail → activation/catalog visibility → archival, verifying audit records. | Full end-to-end admin validation; live policy |
 | Access | PASS: signed local JWK valid/wrong email/audience/tampered denial; missing token rejects. Cloudflare One read-only check found no applications and an active-plan setup gate. | Owner activates a plan; then configure and verify live Google policy and Access application |
 | Turnstile | PASS mocked-provider wrong hostname/action/replayed response denial | Production widget/secrets, fresh real token and replay |
 | SePay | Authenticated dashboard verified; #56829 enabled HMAC, incoming JSON, retry on, TPBank selected; source and signed test use saved singular route, plural returns 404. Read-only general configuration confirms only CJ/MP active patterns, no BGZ; BinGenZ webhook prefix filter has no selection. No send-test performed. | Add BGZ + 12 alphanumeric pattern after endpoint/HMAC readiness; verify secret, alerts and official signed test/deployment |
@@ -66,7 +66,7 @@ Each original passed baseline desktop/mobile loading and initial interaction. Ev
 | object-detection-tiktok-pro-v2.html | object-detection-tiktok-pro-v2 | Local yes; preview yes; production no | Yes | Protected start/play/interaction/expiry pass | Protected start/play/interaction/expiry pass | Protected runtime + expiry pass | No page errors (protected) | Initial load pass | Protected initial interaction + expiry pass |
 
 ## Evidence and commands
-- tests/schema.test.mjs, security.test.mjs, import.test.mjs, worker.test.mjs: npm test, current 25/25 pass. Preview Wrangler dry-run passed; it did not access remote services.
+- tests/schema.test.mjs, security.test.mjs, import.test.mjs, worker.test.mjs: npm test 32/32 pass. Preview Wrangler dry-run passed; it did not access remote services.
 - STOREFRONT_TESTS.json: node scripts/test-storefront.mjs with local Worker on port4173.
 - REGRESSION_SITE_TESTS.json: node scripts/baseline-site.mjs http://127.0.0.1:4173. Original baseline remains separate.
 - BASELINE_SIMULATION_TESTS.json and SIMULATION_INVENTORY.json contain individual original observations.
@@ -77,4 +77,4 @@ Each original passed baseline desktop/mobile loading and initial interaction. Ev
 - No production smoke test, deployment, official SePay send-test or real payment performed.
 
 ## Next verification
-Complete/admin-test end-to-end operations next; then expiry/deadline boundaries, full checkout, all35 protected full cycles at desktop/mobile and live infrastructure/provider gates. Do not advance tests from pending to pass based only on page rendering.
+Complete remaining admin browser operations and exact expiry/deadline races next; then scenario-specific simulation interactions and live infrastructure/provider gates. All 35 protected initial-interaction cycles already pass locally at desktop/mobile. Do not advance tests from pending to pass based only on page rendering.

@@ -183,6 +183,53 @@ test('admin dashboard and product editor render in a browser with signed Access 
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+test('admin browser creates a private product, uploads assets, activates and archives it',async()=>{
+ const browser=await chromium.launch();
+ try{
+  const token=await adminToken(),page=await browser.newPage({extraHTTPHeaders:{'Cf-Access-Jwt-Assertion':token},viewport:{width:1280,height:900}}),errors=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  page.on('dialog',dialog=>dialog.accept());
+  const local=(await mf.ready).origin,slug='browser-admin-draft';
+  await page.goto(local+'/admin');await page.locator('#product-list option').first().waitFor({state:'attached'});
+  await page.locator('#create-product [name=title]').fill('Browser admin draft');
+  await page.locator('#create-product [name=slug]').fill(slug);
+  await page.locator('#create-product button').click();
+  await page.getByText('Đã tạo bản nháp (chưa mở bán) và ghi nhật ký.').waitFor();
+  const id=await page.locator('#product-list').inputValue();
+  assert.equal((await db.prepare('SELECT active,current_version_id FROM products WHERE id=?').bind(id).first()).active,0);
+  assert.ok(!(await (await mf.dispatchFetch(origin+'/api/catalog')).text()).includes(slug));
+
+  const original=Buffer.from('<!doctype html><html><body><h1>Browser private version</h1><script>document.body.dataset.ready="yes"</script></body></html>');
+  const delivery=Buffer.from(await transform(original.toString('utf8'))),digest=b=>createHash('sha256').update(b).digest('hex');
+  const pkg={format:'bingenz-admin-html-v1',sha256:digest(original),delivery_sha256:digest(delivery),original_base64:original.toString('base64'),delivery_base64:delivery.toString('base64')};
+  await page.locator('#upload-form input[type=file]').setInputFiles({name:'prepared.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(pkg))});
+  await page.locator('#upload-form button').click();
+  await page.getByText('Đã lưu riêng tư phiên bản mới và ghi nhật ký.').waitFor();
+  assert.equal(await page.locator('#versions option').count(),1);
+  assert.equal((await db.prepare('SELECT active FROM products WHERE id=?').bind(id).first()).active,0);
+  await page.locator('#preview-version').click();
+  assert.equal(await page.frameLocator('#preview-frame').locator('h1').textContent(),'Browser private version');
+  await page.locator('#close-preview').click();
+
+  const imageManifest=JSON.parse(await readFile('docs/commerce/PREPARED_PRODUCTS.json','utf8'));
+  const imageBytes=await readFile('public'+imageManifest[0].thumbnail);
+  await page.locator('#thumbnail-form input[type=file]').setInputFiles({name:'thumbnail.webp',mimeType:'image/webp',buffer:imageBytes});
+  await page.locator('#thumbnail-form button').click();
+  await page.getByText('Đã thay ảnh và ghi nhật ký.').waitFor();
+  await page.locator('#product-form [name=active]').check();
+  await page.locator('#product-form button').click();
+  await page.getByText('Đã lưu sản phẩm và ghi nhật ký.').waitFor();
+  assert.ok((await (await mf.dispatchFetch(origin+'/api/catalog')).text()).includes(slug));
+  await page.locator('#product-form [name=archived]').check();
+  await page.locator('#product-form button').click();
+  await page.getByText('Đã lưu sản phẩm và ghi nhật ký.').waitFor();
+  assert.ok(!(await (await mf.dispatchFetch(origin+'/api/catalog')).text()).includes(slug));
+  assert.equal((await db.prepare('SELECT archived FROM products WHERE id=?').bind(id).first()).archived,1);
+  const actions=(await db.prepare('SELECT action FROM admin_audit_logs WHERE object_id=? ORDER BY created_at').bind(id).all()).results.map(row=>row.action);
+  for(const action of ['product.create','product.upload','product.thumbnail','product.update'])assert.ok(actions.includes(action),action);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
 test('checkout rejects tampering, inactive products, duplicate carts and wrong origin',async()=>{
  const b={gmail:'test@gmail.com',product_ids:['p'],turnstile_token:'valid-'+crypto.randomUUID()};
  assert.equal((await post('/api/orders',{...b,price_vnd:1})).status,400);
