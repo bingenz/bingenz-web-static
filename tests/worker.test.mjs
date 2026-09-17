@@ -69,6 +69,14 @@ test('admin requires a signed exact-identity Access JWT and audits product edits
  const dashboard=await mf.dispatchFetch(origin+'/admin/api/dashboard',{headers});assert.equal(dashboard.status,200);
  const page=await mf.dispatchFetch(origin+'/admin',{headers});assert.equal(page.status,200);assert.match(await page.text(),/Quản trị mô phỏng/);
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/products',{headers})).status,200);
+ const draft={method:'POST',headers:{...headers,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({title:'Draft',slug:'new-draft',price_vnd:10000})};
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products',{...draft,headers:{...draft.headers,Origin:'https://evil.test'}})).status,403);
+ const created=await mf.dispatchFetch(origin+'/admin/api/products',draft);assert.equal(created.status,201);
+ const draftBody=await created.json();assert.equal(draftBody.product.active,0);assert.equal(draftBody.product.current_version_id,null);
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products',draft)).status,409);
+ assert.equal((await db.prepare('SELECT count(*) n FROM admin_audit_logs WHERE action=? AND object_id=?').bind('product.create',draftBody.product.id).first()).n,1);
+ assert.equal((await mf.dispatchFetch(origin+'/api/catalog')).status,200);
+ assert.ok(!(await (await mf.dispatchFetch(origin+'/api/catalog')).text()).includes('new-draft'));
  const patch={method:'PATCH',headers:{...headers,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({price_vnd:12000,title:'Updated product'})};
  assert.equal((await mf.dispatchFetch(url,{...patch,headers:{...patch.headers,Origin:'https://evil.test'}})).status,403);
  const changed=await mf.dispatchFetch(url,patch);assert.equal(changed.status,200);

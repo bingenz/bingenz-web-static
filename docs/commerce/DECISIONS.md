@@ -76,3 +76,10 @@
 - Consequences: admin is still incomplete, outer Access policy not configured, no remote resources changed. No local admin bypass. A product edit and its audit insert execute in one D1 batch; concurrent seller-edit conflict handling remains to be designed.
 - Affected: src/worker.mjs, src/admin.mjs, public/admin.*, tests/worker.test.mjs; local code only.
 - Follow-on: version history API exposes only version metadata, not private R2 keys; rollback changes only the current version pointer and audits the previous/selected IDs in one D1 batch. Historical order_items keep their purchased version. No object is deleted. Tested with a second version and cross-product rejection.
+
+## 2026-09-17 — inactive product drafts
+- Decision: new admin-created products start inactive with no version or thumbnail, defaulting to 10,000 VND and 900 seconds. Creation and audit occur in one D1 batch; slug uniqueness is enforced by SQL.
+- Reason: an incomplete simulation must never become purchasable before a privately uploaded, tested version and deliberate activation. Product creation is separated from the riskier HTML/thumbnail ingestion path.
+- Alternatives: one-step public creation rejected because it could expose a product with no working paid asset.
+- Consequences: drafts are absent from the public catalog. Admin upload/activation remains required; no remote data was changed. A concurrent duplicate slug still resolves safely to the SQL unique constraint, but its user-facing error needs refinement.
+- Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.

@@ -4,6 +4,17 @@ import { stmt } from './db.mjs';
 const editable=['slug','title','description','category','price_vnd','duration_seconds','activation_days','active','archived','display_order'];
 const integer=(v,min,max)=>Number.isInteger(v)&&v>=min&&v<=max;
 const productFields='id,slug,title,description,category,price_vnd,duration_seconds,activation_days,active,archived,display_order,thumbnail,current_version_id,updated_at';
+function validateProduct(input){
+ for(const [key,value] of Object.entries(input)){
+  const valid=key==='slug'?typeof value==='string'&&/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)&&value.length<=120:
+   key==='title'?typeof value==='string'&&value.trim().length>0&&value.length<=200:
+   ['description','category'].includes(key)?typeof value==='string'&&value.length<=(key==='description'?4000:100):
+   key==='price_vnd'?integer(value,1,100000000):key==='duration_seconds'?integer(value,60,86400):
+   key==='activation_days'?value===null||integer(value,1,365):
+   ['active','archived'].includes(key)?value===0||value===1:integer(value,-100000,100000);
+  requireValue(valid,400,'invalid_product');
+ }
+}
 
 export async function adminRoute(request,env,actor,path){
  const method=request.method,url=new URL(request.url);
@@ -21,6 +32,19 @@ export async function adminRoute(request,env,actor,path){
  if(path==='/admin/api/products'&&method==='GET'){
   const products=await env.DB.prepare(`SELECT ${productFields} FROM products ORDER BY display_order,title LIMIT 250`).all();
   return json({products:products.results});
+ }
+ if(path==='/admin/api/products'&&method==='POST'){
+  const input=await jsonBody(request,8192);objectShape(input,['slug','title','description','category','price_vnd','duration_seconds','activation_days','display_order']);
+  requireValue(typeof input.slug==='string'&&typeof input.title==='string',400,'invalid_product');validateProduct(input);
+  const existing=await env.DB.prepare('SELECT id FROM products WHERE slug=?').bind(input.slug).first();
+  if(existing)throw new HttpError(409,'slug_exists');
+  const now=iso(),id='prod_'+crypto.randomUUID().replaceAll('-','');
+  const created={id,slug:input.slug,title:input.title.trim(),description:input.description??'',category:input.category??'',price_vnd:input.price_vnd??10000,duration_seconds:input.duration_seconds??900,activation_days:input.activation_days??null,active:0,archived:0,display_order:input.display_order??0,thumbnail:'',current_version_id:null,updated_at:now};
+  await env.DB.batch([
+   stmt(env.DB,`INSERT INTO products(id,slug,title,description,category,price_vnd,duration_seconds,activation_days,active,archived,display_order,thumbnail,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,'',?,?)`,id,created.slug,created.title,created.description,created.category,created.price_vnd,created.duration_seconds,created.activation_days,created.display_order,now,now),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) VALUES (?,?,?,?,?,?,?)`,crypto.randomUUID(),actor,'product.create','product',id,now,JSON.stringify({after:created}))
+  ]);
+  return json({product:created},201);
  }
  if(path==='/admin/api/orders'&&method==='GET'){
   const q=(url.searchParams.get('q')||'').trim();requireValue(q.length<=254);
@@ -59,15 +83,7 @@ export async function adminRoute(request,env,actor,path){
  if(product&&method==='PATCH'){
   const id=product[1],input=await jsonBody(request,8192);objectShape(input,editable);
   requireValue(Object.keys(input).length>0);
-  for(const [key,value] of Object.entries(input)){
-   const valid=key==='slug'?typeof value==='string'&&/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)&&value.length<=120:
-    key==='title'?typeof value==='string'&&value.trim().length>0&&value.length<=200:
-    ['description','category'].includes(key)?typeof value==='string'&&value.length<=(key==='description'?4000:100):
-    key==='price_vnd'?integer(value,1,100000000):key==='duration_seconds'?integer(value,60,86400):
-    key==='activation_days'?value===null||integer(value,1,365):
-    ['active','archived'].includes(key)?value===0||value===1:integer(value,-100000,100000);
-   requireValue(valid,400,'invalid_product');
-  }
+  validateProduct(input);
   const before=await env.DB.prepare(`SELECT ${productFields} FROM products WHERE id=?`).bind(id).first();
   if(!before)throw new HttpError(404,'not_found');
   const updated=iso(),fields=Object.keys(input);
