@@ -78,14 +78,14 @@ CREATE INDEX attempts_window ON checkout_attempts(abuse_key,created_at);
 
 -- Validate and snapshot from the same serialized SQL transaction as order insertion.
 CREATE TRIGGER validate_order BEFORE INSERT ON orders BEGIN
- SELECT CASE WHEN json_type(NEW.cart_json)!='array' OR json_array_length(NEW.cart_json)<1 OR json_array_length(NEW.cart_json)>200
- THEN RAISE(ABORT,'invalid_cart') END;
- SELECT CASE WHEN (SELECT count(DISTINCT value) FROM json_each(NEW.cart_json))!=json_array_length(NEW.cart_json)
- THEN RAISE(ABORT,'duplicate_product') END;
- SELECT CASE WHEN (SELECT count(*) FROM products WHERE id IN (SELECT value FROM json_each(NEW.cart_json)) AND active=1 AND archived=0 AND current_version_id IS NOT NULL)!=json_array_length(NEW.cart_json)
- THEN RAISE(ABORT,'inactive_product') END;
- SELECT CASE WHEN NEW.total_vnd!=(SELECT sum(price_vnd) FROM products WHERE id IN (SELECT value FROM json_each(NEW.cart_json))) THEN RAISE(ABORT,'invalid_total') END;
- SELECT CASE WHEN (SELECT count(*) FROM orders WHERE gmail_key=NEW.gmail_key AND status='pending' AND expires_at>NEW.created_at)>=3 THEN RAISE(ABORT,'pending_limit') END;
+ SELECT (CASE WHEN json_type(NEW.cart_json)!='array' OR json_array_length(NEW.cart_json)<1 OR json_array_length(NEW.cart_json)>200
+ THEN RAISE(ABORT,'invalid_cart') END);
+ SELECT (CASE WHEN (SELECT count(DISTINCT value) FROM json_each(NEW.cart_json))!=json_array_length(NEW.cart_json)
+ THEN RAISE(ABORT,'duplicate_product') END);
+ SELECT (CASE WHEN (SELECT count(*) FROM products WHERE id IN (SELECT value FROM json_each(NEW.cart_json)) AND active=1 AND archived=0 AND current_version_id IS NOT NULL)!=json_array_length(NEW.cart_json)
+ THEN RAISE(ABORT,'inactive_product') END);
+ SELECT (CASE WHEN NEW.total_vnd!=(SELECT sum(price_vnd) FROM products WHERE id IN (SELECT value FROM json_each(NEW.cart_json))) THEN RAISE(ABORT,'invalid_total') END);
+ SELECT (CASE WHEN (SELECT count(*) FROM orders WHERE gmail_key=NEW.gmail_key AND status='pending' AND expires_at>NEW.created_at)>=3 THEN RAISE(ABORT,'pending_limit') END);
 END;
 CREATE TRIGGER snapshot_order AFTER INSERT ON orders BEGIN
  INSERT INTO order_items(id,order_id,product_id,version_id,title,price_vnd,duration_seconds,activation_days)
@@ -104,7 +104,7 @@ CREATE TRIGGER match_payment AFTER INSERT ON payments WHEN NEW.status='candidate
  AND NEW.transaction_at>=created_at AND NEW.transaction_at<=expires_at AND NEW.received_at<=expires_at;
  UPDATE payments SET
  order_id=(SELECT id FROM orders WHERE payment_code=NEW.payment_code),
- status = CASE
+ status = (CASE
  WHEN NEW.direction!='in' THEN 'outgoing'
  WHEN NEW.bank_valid!=1 THEN 'wrong_bank'
  WHEN NOT EXISTS(SELECT 1 FROM orders WHERE payment_code=NEW.payment_code) THEN 'unknown_code'
@@ -113,5 +113,5 @@ CREATE TRIGGER match_payment AFTER INSERT ON payments WHEN NEW.status='candidate
  WHEN EXISTS(SELECT 1 FROM orders WHERE payment_code=NEW.payment_code AND status!='pending') THEN 'already_paid'
  WHEN NEW.amount_vnd<(SELECT total_vnd FROM orders WHERE payment_code=NEW.payment_code) THEN 'underpaid'
  WHEN NEW.amount_vnd>(SELECT total_vnd FROM orders WHERE payment_code=NEW.payment_code) THEN 'overpaid'
- ELSE 'review' END WHERE id=NEW.id;
+ ELSE 'review' END) WHERE id=NEW.id;
 END;

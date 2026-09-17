@@ -133,3 +133,9 @@
 - Reason: the seller must verify newly uploaded or historical HTML before activation/rollback without publishing paid assets or creating a customer entitlement.
 - Consequences: preview does not prove every simulation interaction works; full-cycle tests remain required. No public R2 URL or auth bypass is introduced.
 - Affected: src/admin.mjs, public/admin.html, public/admin.css, public/admin.mjs, tests/worker.test.mjs.
+
+## 2026-09-17 — isolated Cloudflare preview storage and D1 trigger compatibility
+- Decision: create a separate APAC D1 database and private R2 bucket named `bingenz-commerce-preview`, bind them through `wrangler.preview.toml`, and keep the existing production Worker/D1 resources unchanged. Parenthesize `CASE ... END` expressions in the initial migration triggers to satisfy D1's remote migration parser without altering SQL semantics.
+- Reason: live end-to-end verification needs real D1/R2 without risking legacy production data. The first remote migration attempt failed atomically with `incomplete input`; the new DB remained empty. A known Cloudflare D1 trigger parsing issue matched this syntax.
+- Consequences: both migrations now exist remotely with all four triggers; no products, secrets or Worker deployment yet. The preview resources can accrue Cloudflare usage. Local tests remain green.
+- Affected: wrangler.preview.toml, migrations/0001_commerce.sql, docs/commerce/PROGRESS.md.
