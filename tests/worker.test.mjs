@@ -22,6 +22,13 @@ before(async()=>{
   }},
   outboundService:async req=>{
    if(new URL(req.url).hostname==='test.cloudflareaccess.com')return Response.json({keys:[adminJwk]});
+   if(new URL(req.url).hostname==='qr.sepay.vn'){
+    const url=new URL(req.url);
+    assert.equal(url.searchParams.get('bank'),'TPBank');
+    assert.equal(url.searchParams.get('acc'),'test-destination');
+    assert.match(url.searchParams.get('des'),/^BGZ[A-Z0-9]{12}$/);
+    return new Response('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="black"/></svg>',{headers:{'Content-Type':'image/svg+xml'}});
+   }
    assert.equal(new URL(req.url).hostname,'challenges.cloudflare.com');
    const b=await req.json(),success=b.response.startsWith('valid-')&&!consumed.has(b.response);consumed.add(b.response);
    return Response.json({success,action:b.response==='valid-wrong-action'?'other':'checkout',hostname:b.response==='valid-wrong-host'?'evil.test':'shop.test'});
@@ -270,6 +277,40 @@ test('claim, token exchange, device binding, atomic independent starts and priva
  assert.equal((await mf.dispatchFetch(origin+'/api/access',{headers:{Cookie:sessionCookies(fresh)}})).status,200);
  assert.equal((await db.prepare('SELECT device_hash FROM orders WHERE id=?').bind(o.body.id).first()).device_hash!==null,true);
 });
+test('activation deadline and active runtime expire independently on the server',async()=>{
+ const o=await checkout('deadlinefixture@gmail.com',['p','q']);assert.equal(o.response.status,201);
+ await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();
+ assert.equal((await sendPayment(o.body,{},9101)).status,200);
+ const claimed=await post('/api/orders/'+o.body.id+'/claim',{},o.cookie);assert.equal(claimed.status,200);
+ const jar=sessionCookies(claimed),initial=await (await mf.dispatchFetch(origin+'/api/access',{headers:{Cookie:jar}})).json();
+ const [expiredBeforeStart,active]=initial.items;
+ await db.prepare('UPDATE entitlements SET activation_deadline=? WHERE id=?').bind(new Date(Date.now()-1000).toISOString(),expiredBeforeStart.id).run();
+ const list=await (await mf.dispatchFetch(origin+'/api/access',{headers:{Cookie:jar}})).json();
+ assert.equal(list.items.find(e=>e.id===expiredBeforeStart.id).status,'activation_expired');
+ assert.equal(list.items.find(e=>e.id===active.id).status,'not_started');
+ assert.equal((await post('/api/entitlements/'+expiredBeforeStart.id+'/start',{},jar)).status,410);
+ assert.equal((await db.prepare('SELECT started_at FROM entitlements WHERE id=?').bind(expiredBeforeStart.id).first()).started_at,null);
+ const started=await post('/api/entitlements/'+active.id+'/start',{},jar);assert.equal(started.status,200);
+ const permit=await (await post('/api/entitlements/'+active.id+'/play',{},jar)).json();
+ const bucket=await mf.getR2Bucket('SIMULATIONS');await bucket.put('delivery/q','<html><body>deadline fixture</body></html>');
+ assert.equal((await mf.dispatchFetch(origin+permit.url,{headers:{Cookie:jar}})).status,200);
+ await db.prepare('UPDATE entitlements SET started_at=?,expires_at=? WHERE id=?').bind(new Date(Date.now()-20*60000).toISOString(),new Date(Date.now()-5*60000).toISOString(),active.id).run();
+ assert.equal((await (await mf.dispatchFetch(origin+'/api/access',{headers:{Cookie:jar}})).json()).items.find(e=>e.id===active.id).status,'expired');
+ assert.equal((await post('/api/entitlements/'+active.id+'/start',{},jar)).status,410);
+ assert.equal((await post('/api/entitlements/'+active.id+'/play',{},jar)).status,410);
+ assert.equal((await mf.dispatchFetch(origin+permit.url,{headers:{Cookie:jar}})).status,410);
+});
+test('expired unpaid checkout cannot serve QR or become paid from a late transfer',async()=>{
+ const o=await checkout('expiredcheckout@gmail.com');assert.equal(o.response.status,201);
+ const before=(await mf.dispatchFetch(origin+'/api/orders/'+o.body.id,{headers:{Cookie:o.cookie}}));assert.equal((await before.json()).status,'pending');
+ await db.prepare('UPDATE orders SET created_at=?,expires_at=? WHERE id=?').bind(new Date(Date.now()-20*60000).toISOString(),new Date(Date.now()-5*60000).toISOString(),o.body.id).run();
+ const status=await mf.dispatchFetch(origin+'/api/orders/'+o.body.id,{headers:{Cookie:o.cookie}});assert.equal((await status.json()).status,'expired');
+ assert.equal((await mf.dispatchFetch(origin+'/api/orders/'+o.body.id+'/qr',{headers:{Cookie:o.cookie}})).status,410);
+ assert.equal((await sendPayment(o.body,{},9102)).status,200);
+ assert.equal((await db.prepare('SELECT status FROM payments WHERE external_id=?').bind('9102').first()).status,'late');
+ assert.equal((await db.prepare('SELECT count(*) n FROM entitlements WHERE order_id=?').bind(o.body.id).first()).n,0);
+ assert.equal((await post('/api/orders/'+o.body.id+'/claim',{},o.cookie)).status,409);
+});
 test('payment mismatch cases remain unfulfilled and invalid HMAC does not persist',async()=>{
  const cases=[['underpaid',{transferAmount:9999}],['overpaid',{transferAmount:10001}],['wrong_bank',{accountNumber:'other'}],['outgoing',{transferType:'out'}],['unknown_code',{code:'BGZ222222222222'}],['late',{transactionDate:'2020-01-01 00:00:00'}]];
  for(let i=0;i<cases.length;i++){
@@ -378,6 +419,31 @@ test('browser paid-access claim, Start confirmation and sandbox runtime work tog
   assert.equal(await page.locator('iframe').getAttribute('sandbox'),'allow-scripts');
   await page.frameLocator('iframe').locator('#bgz-license').waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
+test('browser unpaid checkout shows QR/countdown then polls into paid access',async()=>{
+ const o=await checkout('browserpending@gmail.com');assert.equal(o.response.status,201);
+ const browser=await chromium.launch();
+ try{
+  const page=await browser.newPage({viewport:{width:390,height:844}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const local=(await mf.ready).origin,[name,value]=o.cookie.split('=');
+  await page.context().addCookies([{name,value,domain:new URL(local).hostname,path:'/',secure:true,httpOnly:true,sameSite:'Strict'}]);
+  await page.goto(local+'/checkout/'+o.body.id);
+  await page.locator('#payment-state').waitFor();
+  assert.match(await page.locator('.payment-code').innerText(),/^BGZ[A-Z0-9]{12}$/);
+  assert.match(await page.locator('#pay-clock').innerText(),/^\d+:\d{2}$/);
+  assert.match(await page.locator('.payment-layout h2').innerText(),/10[.,]000/);
+  const qrResponse=await mf.dispatchFetch(origin+'/api/orders/'+o.body.id+'/qr',{headers:{Cookie:o.cookie}});
+  assert.equal(qrResponse.status,200,await qrResponse.text());
+  await page.locator('.payment-qr').evaluate(async image=>{if(!image.complete)await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;});});
+  assert.ok(await page.locator('.payment-qr').evaluate(image=>image.naturalWidth>0));
+  assert.equal((await mf.dispatchFetch(origin+'/api/orders/'+o.body.id+'/qr')).status,404);
+  await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();
+  assert.equal((await sendPayment(o.body,{},9103)).status,200);
+  await page.locator('[data-start]').waitFor({timeoutMs:10000});
+  assert.equal(new URL(page.url()).pathname,'/access');
+  assert.equal(await page.locator('#copy-access').count(),1);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });

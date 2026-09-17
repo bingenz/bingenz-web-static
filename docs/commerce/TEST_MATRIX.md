@@ -1,21 +1,21 @@
 # Verification matrix
 
 Last updated: 2026-09-17. Preview D1/R2 imported; production deployment unchanged.
-Current run: npm test — 25 tests, 25 passed, zero failures/skips. Separate protected-simulation run: 35 products × 2 viewports, all pass.
+Current run: npm test — 28 tests, 28 passed, zero failures/skips. Separate protected-simulation run: 35 products × 2 viewports, all pass.
 Tests use local Worker/D1/R2 for runtime behavior; mocked provider success is not live provider verification.
 
 | Area | Evidence and current result | Remaining |
 |---|---|---|
 | Unit / schema | PASS: Gmail aliases, random codes/tokens, session tampering/purpose/expiry, HMAC bytes/timestamp window, body limit, invalid calendar dates, immutable price snapshots/cart constraints | Broader edge cases |
-| D1 integration | PASS: real workerd/D1 pricing, duplicate/inactive carts, pending ownership/reuse, concurrent payment dedupe, independent entitlements, atomic repeated Start | Expiration/deadline/rate-limit races |
+| D1 integration | PASS: real workerd/D1 pricing, duplicate/inactive carts, pending ownership/reuse, concurrent payment dedupe, independent entitlements, atomic repeated Start; expired activation and runtime are denied | Exact simultaneous deadline/rate-limit races |
 | Payment matcher | PASS: exact, under/over, unknown code, late, wrong account, outgoing, invalid signature; duplicate grants once; same-second order/SePay timestamp accepted and previous second rejected | Production official test |
-| Customer security | PASS: claim/exchange, hashed token persistence, wrong-device denial, no auth from Gmail, audited admin reissue with generation invalidation and optional device reset, revocation, origin rejection, private R2 permit/CSP/no-store/markers | Expired content/deadline coverage; live Access policy |
+| Customer security | PASS: claim/exchange, hashed token persistence, wrong-device denial, no auth from Gmail, audited admin reissue with generation invalidation and optional device reset, revocation, origin rejection, private R2 permit/CSP/no-store/markers; expired activation Start and expired runtime permit/content denied | Exact-boundary race coverage; live Access policy |
 | Imports | PASS: local and isolated preview each have 35 products/35 versions; local duplicate import and partial-write recovery tested; preview sample delivery hash matches | Production import and full remote R2 object audit |
 | Thumbnails | PASS: 35 WebP screenshots, contact sheet reviewed; admin replacement tested locally | Live admin replacement workflow |
 | Storefront desktop | PASS: 1440px, 35 cards, correct placement, 4 columns, cart/search/persistence/dialog focus, no overflow/errors, light/dark screenshots | Full unpaid purchase flow |
 | Storefront mobile | PASS: 390/360px exactly 2 columns, cart/search/dialog, no overflow/errors | Live Turnstile/QR/payment completion |
 | Existing site | PASS: theme/modals/contact popup/old images, Cube Jump presence | Full navigation/social/copy assertions; legacy modal focus improvements |
-| Paid browser flow | PASS: checkout paid claim -> clean access page -> Start cancel/confirm -> sandbox iframe at 390px; separate protected run starts/plays/interacts/expires all 35 at desktop/mobile | Real payment screen and provider |
+| Paid browser flow | PASS: pending QR/countdown -> signed fixture payment -> polling auto-transition -> claim/clean access page; Start cancel/confirm -> sandbox iframe at 390px; separate protected run starts/plays/interacts/expires all 35 at desktop/mobile | Live QR/SePay provider |
 | Admin | PASS: signed-gated dashboard/order search/detail with immutable snapshots and no credential hashes, guarded manual reconciliation with insufficient/wrong-bank denial and audited fulfillment, bounded manual refund request/completion with optional revocation, reasoned entitlement adjustment/reopen/revoke, paged CSV exports with formula protection, sandboxed private version preview, safe empty-draft deletion with archival boundary, draft/edit/version rollback/bulk, prepared HTML upload to private R2 with hash/size checks and idempotent duplicate, WebP replacement/current-image route, audited support notes and paid-link reissue/device reset, 390px browser render; direct admin.html denied | Full end-to-end admin validation; live policy |
 | Access | PASS: signed local JWK valid/wrong email/audience/tampered denial; missing token rejects. Cloudflare One read-only check found no applications and an active-plan setup gate. | Owner activates a plan; then configure and verify live Google policy and Access application |
 | Turnstile | PASS mocked-provider wrong hostname/action/replayed response denial | Production widget/secrets, fresh real token and replay |

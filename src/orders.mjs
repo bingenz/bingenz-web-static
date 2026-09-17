@@ -54,6 +54,6 @@ export async function qr(request,env,id){
  const o=await ownedOrder(request,env,id);requireValue(o.status==='pending'&&o.expires_at>iso(),410,'order_expired');
  requireValue(env.BANK_ACCOUNT_NUMBER&&env.BANK_CODE==='TPBank',503,'payment_configuration_required');
  const url=new URL('https://qr.sepay.vn/img');url.search=new URLSearchParams({acc:env.BANK_ACCOUNT_NUMBER,bank:env.BANK_CODE,amount:String(o.total_vnd),des:o.payment_code}).toString();
- const res=await fetch(url,{redirect:'error'});requireValue(res.ok&&res.headers.get('Content-Type')?.startsWith('image/'),502,'qr_unavailable');
+ const res=await fetch(url,{redirect:'manual'});requireValue(res.ok&&res.headers.get('Content-Type')?.startsWith('image/'),502,'qr_unavailable');
  return new Response(res.body,{headers:{'Content-Type':res.headers.get('Content-Type'),'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff'}});
 }
