@@ -24,8 +24,15 @@ try {
   await page.locator('#themeToggleBtn').click();
   for(const [trigger,modal] of [['.service-dark','#devModal'],['.comm-join-btn','#communityPopup'],['a[onclick*="zaloOpenPopup"]','#zaloPopup']]) {
     await page.locator(trigger).click();assert(await page.locator(modal).isVisible());
+    assert.equal(await page.locator(modal+' .close-btn').evaluate(node=>node===document.activeElement),true);
+    await page.keyboard.press('Shift+Tab');assert.equal(await page.locator(modal).evaluate(node=>node.contains(document.activeElement)&&!document.activeElement.closest('[inert]')),true);
+    await page.keyboard.press('Tab');assert.equal(await page.locator(modal+' .close-btn').evaluate(node=>node===document.activeElement),true);
     await page.keyboard.press('Escape');assert(!(await page.locator(modal).isVisible()));
+    assert.equal(await page.locator(trigger).evaluate(node=>node===document.activeElement),true);
   }
+  await page.locator('.service-dark').focus();await page.keyboard.press('Enter');
+  assert(await page.locator('#devModal').isVisible());await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.service-dark').evaluate(node=>node===document.activeElement),true);
   await page.locator('a[onclick*="zaloOpenPopup"]').click();await page.locator('#zaloCopyBtn').click();
   await page.waitForFunction(()=>document.querySelector('#zaloCopyBtn')?.textContent?.includes('Copied'));await page.keyboard.press('Escape');
   await page.locator('.comm-join-btn').click();await page.locator('#commToggleGame').click();
@@ -38,7 +45,7 @@ try {
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);
   assert(!overflow);assert.deepEqual(errors,[]);
   await page.screenshot({path:`test-results/audit/site-${width}.png`,fullPage:true});
-  results.push({width,errors,overflow,images,theme:'pass',modals:'pass',contact:contactVisible?'pass':'FAIL: icon click closes popup',cubeJump:'present',socialLinks:'pass',gameNavigation:'pass',copyButtons:'pass'});
+  results.push({width,errors,overflow,images,theme:'pass',modals:'pass',modalFocus:'pass',contact:contactVisible?'pass':'FAIL: icon click closes popup',cubeJump:'present',socialLinks:'pass',gameNavigation:'pass',copyButtons:'pass'});
   await page.close();
  }
  await writeFile(process.argv[2]?'docs/commerce/REGRESSION_SITE_TESTS.json':'docs/commerce/BASELINE_SITE_TESTS.json',JSON.stringify(results,null,2)+'\n');
