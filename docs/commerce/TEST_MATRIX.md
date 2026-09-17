@@ -1,7 +1,7 @@
 # Verification matrix
 
 Last updated: 2026-09-17. Preview D1/R2 imported; production deployment unchanged.
-Current run: npm test — 29 tests, 29 passed, zero failures/skips. Separate protected-simulation run: 35 products × 2 viewports, all pass.
+Current run: npm test — 30 tests, 30 passed, zero failures/skips. Separate protected-simulation run: 35 products × 2 viewports, all pass.
 Tests use local Worker/D1/R2 for runtime behavior; mocked provider success is not live provider verification.
 
 | Area | Evidence and current result | Remaining |
@@ -15,7 +15,7 @@ Tests use local Worker/D1/R2 for runtime behavior; mocked provider success is no
 | Storefront desktop | PASS: 1440px, 35 cards, correct placement, 4 columns, cart/search/persistence/dialog focus, no overflow/errors, light/dark screenshots | Full unpaid purchase flow |
 | Storefront mobile | PASS: 390/360px exactly 2 columns, cart/search/dialog, no overflow/errors | Live Turnstile/QR/payment completion |
 | Existing site | PASS at 1440/390/360: theme/modals/contact popup/old images, Cube Jump presence and web navigation, social targets and contact/community copy buttons; legacy modal focus trap/restore and keyboard service trigger | Production smoke test |
-| Paid browser flow | PASS: pending QR/countdown -> signed fixture payment -> polling auto-transition -> claim/clean access page; Start cancel/confirm -> sandbox iframe at 390px; separate protected run starts/plays/interacts/expires all 35 at desktop/mobile | Live QR/SePay provider |
+| Paid browser flow | PASS: pending QR/countdown -> signed fixture payment -> polling auto-transition -> claim/clean access page; Start cancel/confirm -> sandbox iframe at 390px; invalid token redirects to clean manual-recovery page; separate protected run starts/plays/interacts/expires all 35 at desktop/mobile | Live QR/SePay provider |
 | Admin | PASS: signed-gated dashboard/order search/detail with immutable snapshots and no credential hashes, guarded manual reconciliation with insufficient/wrong-bank denial and audited fulfillment, bounded manual refund request/completion with optional revocation, reasoned entitlement adjustment/reopen/revoke, paged CSV exports with formula protection, sandboxed private version preview, safe empty-draft deletion with archival boundary, draft/edit/version rollback/bulk, prepared HTML upload to private R2 with hash/size checks and idempotent duplicate, WebP replacement/current-image route, audited support notes and paid-link reissue/device reset, 390px browser render; direct admin.html denied | Full end-to-end admin validation; live policy |
 | Access | PASS: signed local JWK valid/wrong email/audience/tampered denial; missing token rejects. Cloudflare One read-only check found no applications and an active-plan setup gate. | Owner activates a plan; then configure and verify live Google policy and Access application |
 | Turnstile | PASS mocked-provider wrong hostname/action/replayed response denial | Production widget/secrets, fresh real token and replay |

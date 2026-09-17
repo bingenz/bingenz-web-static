@@ -6,6 +6,7 @@ import { adminRoute } from './admin.mjs';
 
 async function route(request,env) {
  const url=new URL(request.url),path=url.pathname,method=request.method;
+ const recoveryRedirect=()=>new Response(null,{status:303,headers:{Location:'/access/recovery','Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}});
  if(path==='/admin'||path.startsWith('/admin/')) {
   const actor=await adminIdentity(request,env);
   if(!['GET','HEAD'].includes(method))originGuard(request);
@@ -28,8 +29,16 @@ async function route(request,env) {
  if(path==='/api/orders'&&method==='POST')return createOrder(request,env);
  const claimRoute=path.match(/^\/api\/orders\/([a-f0-9-]{36})\/claim$/);
  if(claimRoute&&method==='POST')return claim(request,env,claimRoute[1]);
+ if(path==='/access/recovery'&&method==='GET'){
+  const shell=await env.ASSETS.fetch(new Request(new URL('/commerce.html',url),request));
+  const response=new Response(shell.body,shell);response.headers.set('Cache-Control','private, no-store');response.headers.set('Referrer-Policy','no-referrer');response.headers.set('Content-Security-Policy',"frame-ancestors 'self'");return response;
+ }
  const tokenRoute=path.match(/^\/access\/([A-Za-z0-9_-]{43})$/);
- if(tokenRoute&&method==='GET')return exchange(request,env,tokenRoute[1]);
+ if(tokenRoute&&method==='GET'){
+  try{return await exchange(request,env,tokenRoute[1]);}
+  catch(error){if(error instanceof HttpError&&[403,404].includes(error.status))return recoveryRedirect();throw error;}
+ }
+ if(method==='GET'&&/^\/access\/[^/]{1,512}$/.test(path))return recoveryRedirect();
  if(path==='/api/access'&&method==='GET')return accessList(request,env);
  const entitlement=path.match(/^\/api\/entitlements\/([a-f0-9]{32})\/(start|play)$/);
  if(entitlement&&method==='POST')return entitlement[2]==='start'?start(request,env,entitlement[1]):playPermit(request,env,entitlement[1]);
@@ -39,7 +48,9 @@ async function route(request,env) {
  if(order&&method==='GET')return order[2]?qr(request,env,order[1]):orderStatus(request,env,order[1]);
  if(path==='/api/webhook/sepay'&&method==='POST')return webhook(request,env);
  if(method==='GET'&&(path==='/access'||/^\/(play\/[a-f0-9]{32}|checkout\/[a-f0-9-]{36})$/.test(path))){
-  if(path==='/access'||path.startsWith('/play/'))await customer(request,env);
+  if(path==='/access'||path.startsWith('/play/')){
+   try{await customer(request,env);}catch(error){if(path==='/access'&&error instanceof HttpError&&error.status===401)return recoveryRedirect();throw error;}
+  }
   const shell=await env.ASSETS.fetch(new Request(new URL('/commerce.html',url),request));
   const response=new Response(shell.body,shell);response.headers.set('Cache-Control','private, no-store');response.headers.set('Referrer-Policy','no-referrer');response.headers.set('Content-Security-Policy',"frame-ancestors 'self'");return response;
  }

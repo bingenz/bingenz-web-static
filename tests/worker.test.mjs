@@ -235,7 +235,7 @@ test('claim, token exchange, device binding, atomic independent starts and priva
  const c=await post('/api/orders/'+o.body.id+'/claim',{},o.cookie);assert.equal(c.status,200);
  const issued=await c.json(),jar=sessionCookies(c);assert.ok(issued.access_url);
  const stored=await db.prepare('SELECT access_hash FROM orders WHERE id=?').bind(o.body.id).first();assert.ok(!issued.access_url.includes(stored.access_hash));
- assert.equal((await mf.dispatchFetch(issued.access_url,{redirect:'manual'})).status,403);
+ const wrongDevice=await mf.dispatchFetch(issued.access_url,{redirect:'manual'});assert.equal(wrongDevice.status,303);assert.equal(wrongDevice.headers.get('Location'),'/access/recovery');
  const exchanged=await mf.dispatchFetch(issued.access_url,{headers:{Cookie:jar},redirect:'manual'});assert.equal(exchanged.status,303);assert.equal(exchanged.headers.get('Location'),'/access');
  const retry=await post('/api/orders/'+o.body.id+'/claim',{},o.cookie);assert.equal((await retry.json()).already_issued,true);
  const list=await (await mf.dispatchFetch(origin+'/api/access',{headers:{Cookie:jar}})).json();assert.equal(list.items.length,2);
@@ -265,14 +265,14 @@ test('claim, token exchange, device binding, atomic independent starts and priva
  assert.ok(details.notes.some(n=>n.note==='Verified customer outside the site'));
  assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE object_id=? AND action='access.reissue'").bind(o.body.id).first()).n,1);
  assert.equal((await mf.dispatchFetch(origin+'/api/access',{headers:{Cookie:jar}})).status,401);
- assert.equal((await mf.dispatchFetch(issued.access_url,{headers:{Cookie:jar},redirect:'manual'})).status,404);
- assert.equal((await mf.dispatchFetch(replacement,{redirect:'manual'})).status,403);
+ assert.equal((await mf.dispatchFetch(issued.access_url,{headers:{Cookie:jar},redirect:'manual'})).headers.get('Location'),'/access/recovery');
+ assert.equal((await mf.dispatchFetch(replacement,{redirect:'manual'})).headers.get('Location'),'/access/recovery');
  const recovered=await mf.dispatchFetch(replacement,{headers:{Cookie:jar},redirect:'manual'});assert.equal(recovered.status,303);
  const recoveredJar=sessionCookies(recovered);assert.equal((await mf.dispatchFetch(origin+'/api/access',{headers:{Cookie:recoveredJar}})).status,200);
  const reset=await action('/reissue',{note:'Verified on support call; device lost',reset_device:true,customer_verified:true});assert.equal(reset.status,200);
  const resetUrl=(await reset.json()).access_url;
  assert.equal((await mf.dispatchFetch(origin+'/api/access',{headers:{Cookie:recoveredJar}})).status,401);
- assert.equal((await mf.dispatchFetch(replacement,{headers:{Cookie:recoveredJar},redirect:'manual'})).status,404);
+ assert.equal((await mf.dispatchFetch(replacement,{headers:{Cookie:recoveredJar},redirect:'manual'})).headers.get('Location'),'/access/recovery');
  const fresh=await mf.dispatchFetch(resetUrl,{redirect:'manual'});assert.equal(fresh.status,303);
  assert.equal((await mf.dispatchFetch(origin+'/api/access',{headers:{Cookie:sessionCookies(fresh)}})).status,200);
  assert.equal((await db.prepare('SELECT device_hash FROM orders WHERE id=?').bind(o.body.id).first()).device_hash!==null,true);
@@ -419,6 +419,17 @@ test('browser paid-access claim, Start confirmation and sandbox runtime work tog
   assert.equal(await page.locator('iframe').getAttribute('sandbox'),'allow-scripts');
   await page.frameLocator('iframe').locator('#bgz-license').waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
+test('invalid access link clears its token and shows manual recovery guidance',async()=>{
+ const browser=await chromium.launch();
+ try{
+  const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto((await mf.ready).origin+'/access/'+'A'.repeat(43));
+  assert.equal(new URL(page.url()).pathname,'/access/recovery');
+  assert.match(await page.locator('#commerce-content').innerText(),/Liên hệ hỗ trợ/);
+  assert.equal(await page.locator('input[type=email]').count(),0);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
