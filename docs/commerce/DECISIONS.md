@@ -145,3 +145,9 @@
 - Reason: support must resolve timing/device issues without granting arbitrary access or bypassing paid-order status. Existing customer runtime checks continue to enforce revoked and expired states.
 - Consequences: extensions are bounded per operation but can be repeated by an authorized admin, with a separate audit record each time. No automatic refunds or customer emails are triggered.
 - Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.
+
+## 2026-09-17 — delete only empty unpublished drafts
+- Decision: hard deletion is allowed only for a never-imported inactive draft with no HTML versions and no order items; delete and audit execute in one D1 batch. Any uploaded, imported, active or historically purchased product is archived instead through the existing audited metadata edit.
+- Reason: paid order snapshots and private R2 version history must not be destroyed as a side effect of routine catalog cleanup.
+- Consequences: unused R2 objects are not deleted, and uploaded never-sold products remain archivable rather than hard-deletable. The admin UI describes this boundary and tests enforce it.
+- Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.

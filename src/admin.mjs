@@ -239,6 +239,18 @@ export async function adminRoute(request,env,actor,path){
  const preview=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})\/versions\/([a-z0-9_-]{1,128})\/preview$/);
  const upload=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})\/upload$/);
  const thumbnail=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})\/thumbnail$/);
+ if(product&&method==='DELETE'){
+  const before=await env.DB.prepare(`SELECT ${productFields},source_key,created_at FROM products WHERE id=?`).bind(product[1]).first();
+  if(!before)throw new HttpError(404,'not_found');
+  requireValue(before.source_key===null&&before.current_version_id===null&&before.active===0,409,'archive_instead');
+  const now=iso();
+  const result=await env.DB.batch([
+   stmt(env.DB,`DELETE FROM products WHERE id=? AND source_key IS NULL AND current_version_id IS NULL AND active=0 AND NOT EXISTS(SELECT 1 FROM product_versions WHERE product_id=?) AND NOT EXISTS(SELECT 1 FROM order_items WHERE product_id=?) RETURNING id`,before.id,before.id,before.id),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) SELECT ?,?,'product.delete','product',?,?,? WHERE changes()=1`,crypto.randomUUID(),actor,before.id,now,JSON.stringify({before}))
+  ]);
+  if(result[0].results.length!==1)throw new HttpError(409,'archive_instead');
+  return json({deleted:true,id:before.id});
+ }
  if(preview&&method==='GET'){
   const version=await env.DB.prepare('SELECT delivery_key FROM product_versions WHERE id=? AND product_id=?').bind(preview[2],preview[1]).first();
   if(!version)throw new HttpError(404,'not_found');

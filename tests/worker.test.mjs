@@ -75,6 +75,12 @@ test('admin requires a signed exact-identity Access JWT and audits product edits
  const created=await mf.dispatchFetch(origin+'/admin/api/products',draft);assert.equal(created.status,201);
  const draftBody=await created.json();assert.equal(draftBody.product.active,0);assert.equal(draftBody.product.current_version_id,null);
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/products',draft)).status,409);
+ const emptyDraft=await mf.dispatchFetch(origin+'/admin/api/products',{...draft,body:JSON.stringify({title:'Disposable draft',slug:'disposable-draft',price_vnd:10000})});assert.equal(emptyDraft.status,201);
+ const emptyId=(await emptyDraft.json()).product.id;
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/'+emptyId,{method:'DELETE',headers:{...headers,Origin:origin}})).status,200);
+ assert.equal((await db.prepare('SELECT count(*) n FROM products WHERE id=?').bind(emptyId).first()).n,0);
+ assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE object_id=? AND action='product.delete'").bind(emptyId).first()).n,1);
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/p',{method:'DELETE',headers:{...headers,Origin:origin}})).status,409);
  assert.equal((await db.prepare('SELECT count(*) n FROM admin_audit_logs WHERE action=? AND object_id=?').bind('product.create',draftBody.product.id).first()).n,1);
  assert.equal((await mf.dispatchFetch(origin+'/api/catalog')).status,200);
  assert.ok(!(await (await mf.dispatchFetch(origin+'/api/catalog')).text()).includes('new-draft'));
@@ -96,6 +102,7 @@ test('admin requires a signed exact-identity Access JWT and audits product edits
  const version=(await uploaded.json()).version_id;
  assert.equal((await mf.dispatchFetch(uploadUrl,upload)).status,200);
  assert.equal((await db.prepare('SELECT current_version_id FROM products WHERE id=?').bind(draftBody.product.id).first()).current_version_id,version);
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/'+draftBody.product.id,{method:'DELETE',headers:{...headers,Origin:origin}})).status,409);
  const stored=await db.prepare('SELECT original_key,delivery_key FROM product_versions WHERE id=?').bind(version).first();
  const privateBucket=await mf.getR2Bucket('SIMULATIONS');assert.ok(await privateBucket.head(stored.original_key));assert.ok(await privateBucket.head(stored.delivery_key));
  const previewUrl=origin+'/admin/api/products/'+draftBody.product.id+'/versions/'+version+'/preview';
