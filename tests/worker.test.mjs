@@ -292,6 +292,20 @@ test('admin refund records never transfer funds and can revoke entitlements',asy
  assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE object_id=? AND action IN ('refund.request','refund.complete')").bind(refund).first()).n,2);
  assert.equal((await db.prepare('SELECT status FROM orders WHERE id=?').bind(o.body.id).first()).status,'paid');
 });
+test('admin CSV exports stream complete pages and neutralize spreadsheet formulas',async()=>{
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/export/orders')).status,403);
+ const now=new Date().toISOString();
+ await db.prepare(`WITH RECURSIVE seq(i) AS (SELECT 0 UNION ALL SELECT i+1 FROM seq WHERE i<502) INSERT INTO products(id,slug,title,created_at,updated_at) SELECT 'csv-'||printf('%04d',i),'csv-'||i,CASE WHEN i=0 THEN '=HYPERLINK("https://bad.test")' ELSE 'Export '||i END,?,? FROM seq`).bind(now,now).run();
+ const headers={'Cf-Access-Jwt-Assertion':await adminToken()};
+ const products=await mf.dispatchFetch(origin+'/admin/api/export/products',{headers});assert.equal(products.status,200);
+ assert.match(products.headers.get('Content-Disposition'),/bingenz-products\.csv/);
+ assert.match(products.headers.get('Cache-Control'),/no-store/);
+ const bytes=new Uint8Array(await products.arrayBuffer());assert.deepEqual([...bytes.slice(0,3)],[239,187,191]);const csv=new TextDecoder().decode(bytes);
+ assert.equal(csv.trim().split('\r\n').length>=504,true);
+ assert.match(csv,/"'=HYPERLINK\(""https:\/\/bad\.test""\)"/);
+ for(const name of ['orders','payments']){const response=await mf.dispatchFetch(origin+'/admin/api/export/'+name,{headers});assert.equal(response.status,200);assert.match(await response.text(),/"id"/);}
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/export/secrets',{headers})).status,404);
+});
 test('browser paid-access claim, Start confirmation and sandbox runtime work together',async()=>{
  const o=await checkout('browser@gmail.com');
  await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();await sendPayment(o.body,{},9001);

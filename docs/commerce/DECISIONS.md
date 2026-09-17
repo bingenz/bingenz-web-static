@@ -121,3 +121,9 @@
 - Reason: support needs traceable records while the specification forbids automatic outgoing transfers. A requested refund must not be shown as completed or revoke access before the operator confirms the external transfer.
 - Consequences: the ledger records intent and confirmation, not bank settlement proof. Completion date is the system recording time; the external transfer receipt remains outside this application. No remote payment or bank API was called.
 - Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.
+
+## 2026-09-17 — streamed authenticated CSV exports
+- Decision: export orders, payments and products from signed-Access-gated admin routes as UTF-8 CSV, paginating D1 reads by ID and streaming rows. Quote all fields, escape quotes, prefix potentially executable spreadsheet text, and serve with private no-store/download headers.
+- Reason: a growing store should not silently truncate exports or buffer the entire dataset in Worker memory; customer/payment data must remain behind the exact admin identity check.
+- Consequences: concurrent writes during a long export may appear according to pagination timing rather than a single database snapshot. Tests cross the 500-row boundary and cover formula injection. No export was sent to an external service.
+- Affected: src/admin.mjs, public/admin.html, tests/worker.test.mjs.

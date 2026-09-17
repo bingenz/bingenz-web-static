@@ -16,8 +16,34 @@ function validateProduct(input){
  }
 }
 
+const exportSets={
+ orders:{columns:['id','gmail','payment_code','total_vnd','status','created_at','expires_at','paid_at','paid_payment_id'],sql:'SELECT id,gmail,payment_code,total_vnd,status,created_at,expires_at,paid_at,paid_payment_id FROM orders WHERE id>? ORDER BY id LIMIT 500'},
+ payments:{columns:['id','external_id','reference','payment_code','amount_vnd','transaction_at','received_at','direction','bank_valid','status','order_id','note','reconciled_at','reconciled_by'],sql:'SELECT id,external_id,reference,payment_code,amount_vnd,transaction_at,received_at,direction,bank_valid,status,order_id,note,reconciled_at,reconciled_by FROM payments WHERE id>? ORDER BY id LIMIT 500'},
+ products:{columns:['id','slug','title','description','category','price_vnd','duration_seconds','activation_days','active','archived','display_order','thumbnail','current_version_id','created_at','updated_at'],sql:'SELECT id,slug,title,description,category,price_vnd,duration_seconds,activation_days,active,archived,display_order,thumbnail,current_version_id,created_at,updated_at FROM products WHERE id>? ORDER BY id LIMIT 500'}
+};
+function csvCell(value){
+ if(value===null||value===undefined)return '';
+ let text=String(value);
+ if(typeof value==='string'&&/^[\s]*[=+\-@]/.test(text))text="'"+text;
+ return '"'+text.replaceAll('"','""')+'"';
+}
+function csvExport(env,name){
+ const config=exportSets[name],encoder=new TextEncoder();let cursor='',started=false;
+ const body=new ReadableStream({async pull(controller){
+  if(!started){started=true;controller.enqueue(encoder.encode('\uFEFF'+config.columns.map(csvCell).join(',')+'\r\n'));return;}
+  try{const page=await env.DB.prepare(config.sql).bind(cursor).all();
+   if(!page.results.length){controller.close();return;}
+   cursor=page.results.at(-1).id;
+   controller.enqueue(encoder.encode(page.results.map(row=>config.columns.map(key=>csvCell(row[key])).join(',')).join('\r\n')+'\r\n'));
+  }catch(error){controller.error(error);}
+ }});
+ return new Response(body,{headers:{'Content-Type':'text/csv; charset=utf-8','Content-Disposition':`attachment; filename="bingenz-${name}.csv"`,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
+}
+
 export async function adminRoute(request,env,actor,path){
  const method=request.method,url=new URL(request.url);
+ const exportRoute=path.match(/^\/admin\/api\/export\/(orders|payments|products)$/);
+ if(exportRoute&&method==='GET')return csvExport(env,exportRoute[1]);
  if(path==='/admin/api/dashboard'&&method==='GET'){
   const [revenue,orders,payments,entitlements,recent,best]=await env.DB.batch([
    stmt(env.DB,`SELECT coalesce(sum(CASE WHEN paid_at>=strftime('%Y-%m-%dT%H:%M:%fZ','now','-1 day') THEN total_vnd END),0) today_vnd,coalesce(sum(CASE WHEN paid_at>=strftime('%Y-%m-%dT%H:%M:%fZ','now','-7 days') THEN total_vnd END),0) week_vnd,coalesce(sum(CASE WHEN paid_at>=strftime('%Y-%m-%dT%H:%M:%fZ','now','-30 days') THEN total_vnd END),0) month_vnd FROM orders WHERE status='paid'`),
