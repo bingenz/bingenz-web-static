@@ -42,6 +42,25 @@ function csvExport(env,name){
 
 export async function adminRoute(request,env,actor,path){
  const method=request.method,url=new URL(request.url);
+ if(path==='/admin/api/settings'&&method==='GET'){
+  const row=await env.DB.prepare("SELECT value FROM settings WHERE key='activation_days'").first();
+  requireValue(row,503,'configuration_required');
+  return json({activation_days:Number(row.value)});
+ }
+ if(path==='/admin/api/settings'&&method==='PATCH'){
+  const input=await jsonBody(request,1024);objectShape(input,['activation_days']);
+  requireValue(integer(input.activation_days,1,365),400,'invalid_setting');
+  const before=await env.DB.prepare("SELECT value FROM settings WHERE key='activation_days'").first();
+  requireValue(before,503,'configuration_required');
+  if(Number(before.value)===input.activation_days)return json({activation_days:input.activation_days,unchanged:true});
+  const now=iso();
+  const result=await env.DB.batch([
+   stmt(env.DB,"UPDATE settings SET value=? WHERE key='activation_days' AND value=?",String(input.activation_days),before.value),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) SELECT ?,?,'settings.activation_days','setting','activation_days',?,? WHERE changes()=1`,crypto.randomUUID(),actor,now,JSON.stringify({before:Number(before.value),after:input.activation_days}))
+  ]);
+  if(result[0].meta.changes!==1)throw new HttpError(409,'setting_changed');
+  return json({activation_days:input.activation_days});
+ }
  const exportRoute=path.match(/^\/admin\/api\/export\/(orders|payments|products)$/);
  if(exportRoute&&method==='GET')return csvExport(env,exportRoute[1]);
  if(path==='/admin/api/dashboard'&&method==='GET'){

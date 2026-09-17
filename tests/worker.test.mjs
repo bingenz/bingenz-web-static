@@ -163,6 +163,14 @@ test('admin dashboard and product editor render in a browser with signed Access 
   const local=(await mf.ready).origin;
   await page.goto(local+'/admin');await page.locator('#product-list option').first().waitFor({state:'attached'});
   assert.ok(await page.locator('#metrics article').count()>=8);
+  assert.equal(await page.locator('#settings-form input[name=activation_days]').inputValue(),'7');
+  await page.locator('#settings-form input[name=activation_days]').fill('8');await page.locator('#settings-form button').click();
+  await page.getByText('Đã lưu hạn kích hoạt mặc định cho đơn mới và ghi nhật ký.').waitFor();
+  assert.equal((await db.prepare("SELECT value FROM settings WHERE key='activation_days'").first()).value,'8');
+  await page.locator('#settings-form input[name=activation_days]').fill('7');
+  const resetResponse=page.waitForResponse(response=>response.url().endsWith('/admin/api/settings')&&response.request().method()==='PATCH');
+  await page.locator('#settings-form button').click();await resetResponse;
+  assert.equal((await db.prepare("SELECT value FROM settings WHERE key='activation_days'").first()).value,'7');
   const previewProduct=await db.prepare("SELECT id FROM products WHERE slug='new-draft'").first();
   await page.locator('#product-list').selectOption(previewProduct.id);
   await page.locator('#versions option').first().waitFor({state:'attached'});
@@ -490,5 +498,18 @@ test('admin browser searches a paid order and records audited support actions',a
   assert.equal((await db.prepare("SELECT count(*) n FROM refunds WHERE order_id=? AND status='requested'").bind(o.body.id).first()).n,1);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
+});
+test('admin default activation days is validated, audited and snapshotted only for new orders',async()=>{
+ const headers={'Cf-Access-Jwt-Assertion':await adminToken(),Origin:origin,'Content-Type':'application/json'};
+ const set=value=>mf.dispatchFetch(origin+'/admin/api/settings',{method:'PATCH',headers,body:JSON.stringify({activation_days:value})});
+ const auditBefore=(await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='settings.activation_days'").first()).n;
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/settings')).status,403);
+ assert.equal((await set(0)).status,400);assert.equal((await set(366)).status,400);assert.equal((await set('9')).status,400);
+ const changed=await set(9);assert.equal(changed.status,200);assert.equal((await changed.json()).activation_days,9);
+ const o=await checkout('settingfixture@gmail.com');assert.equal(o.response.status,201);
+ assert.equal((await db.prepare('SELECT activation_days FROM order_items WHERE order_id=?').bind(o.body.id).first()).activation_days,9);
+ assert.equal((await set(7)).status,200);
+ assert.equal((await db.prepare('SELECT activation_days FROM order_items WHERE order_id=?').bind(o.body.id).first()).activation_days,9);
+ assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='settings.activation_days'").first()).n,auditBefore+2);
 });
 
