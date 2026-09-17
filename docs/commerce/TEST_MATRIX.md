@@ -8,7 +8,7 @@ Tests are local; mocked provider success is not live provider verification.
 |---|---|---|
 | Unit / schema | PASS: Gmail aliases, random codes/tokens, session tampering/purpose/expiry, HMAC bytes/timestamp window, body limit, invalid calendar dates, immutable price snapshots/cart constraints | Broader edge cases |
 | D1 integration | PASS: real workerd/D1 pricing, duplicate/inactive carts, pending ownership/reuse, concurrent payment dedupe, independent entitlements, atomic repeated Start | Expiration/deadline/rate-limit races |
-| Payment matcher | PASS: exact, under/over, unknown code, late, wrong account, outgoing, invalid signature; duplicate grants once | Same-second timestamp boundary; production official test |
+| Payment matcher | PASS: exact, under/over, unknown code, late, wrong account, outgoing, invalid signature; duplicate grants once; same-second order/SePay timestamp accepted and previous second rejected | Production official test |
 | Customer security | PASS: claim/exchange, hashed token persistence, wrong-device denial, no auth from Gmail, audited admin reissue with generation invalidation and optional device reset, revocation, origin rejection, private R2 permit/CSP/no-store/markers | Expired content/deadline coverage; live Access policy |
 | Imports | PASS: local 35 products/35 versions, two full imports without duplicates, metadata/rollback preservation, partial-write recovery test | Remote uploads and bucket privacy verification |
 | Thumbnails | PASS: 35 WebP screenshots, contact sheet reviewed | Admin replacement workflow |
@@ -20,7 +20,7 @@ Tests are local; mocked provider success is not live provider verification.
 | Access | PASS: signed local JWK valid/wrong email/audience/tampered denial; missing token rejects | Live Google policy and Access application |
 | Turnstile | PASS mocked-provider wrong hostname/action/replayed response denial | Production widget/secrets, fresh real token and replay |
 | SePay | Authenticated dashboard verified; #56829 enabled HMAC, incoming JSON, retry on, TPBank selected; source and signed test now use saved singular route, plural returns 404; no send-test performed | Secret matching, BGZ recognition/filter, alerts and official signed test/deployment |
-| Cloudflare remote | Read-only lists verified; zero R2 buckets, only unrelated D1 databases; deployment ac96a0ba unchanged | Commerce provisioning, migrations/imports, production gates |
+| Cloudflare remote | Isolated preview D1/R2 created in APAC; migrations 0001/0002/0003 applied and four triggers verified; 35 products/versions imported, sample delivery hash matched; production deployment ac96a0ba unchanged | Preview Worker/secrets/Access/Turnstile/SePay and production gates |
 | Simulation inventory | PASS: all 35 individually enumerated and syntax checked | Full protected runtime verification below |
 
 ## Individual simulations
@@ -66,7 +66,7 @@ Each original passed baseline desktop/mobile loading and initial interaction. Ea
 | object-detection-tiktok-pro-v2.html | object-detection-tiktok-pro-v2 | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
 
 ## Evidence and commands
-- tests/schema.test.mjs, security.test.mjs, import.test.mjs, worker.test.mjs: npm test, current 24/24 pass. Preview Wrangler dry-run passed; it did not access remote services.
+- tests/schema.test.mjs, security.test.mjs, import.test.mjs, worker.test.mjs: npm test, current 25/25 pass. Preview Wrangler dry-run passed; it did not access remote services.
 - STOREFRONT_TESTS.json: node scripts/test-storefront.mjs with local Worker on port4173.
 - REGRESSION_SITE_TESTS.json: node scripts/baseline-site.mjs http://127.0.0.1:4173. Original baseline remains separate.
 - BASELINE_SIMULATION_TESTS.json and SIMULATION_INVENTORY.json contain individual original observations.

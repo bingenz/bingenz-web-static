@@ -151,3 +151,9 @@
 - Reason: paid order snapshots and private R2 version history must not be destroyed as a side effect of routine catalog cleanup.
 - Consequences: unused R2 objects are not deleted, and uploaded never-sold products remain archivable rather than hard-deletable. The admin UI describes this boundary and tests enforce it.
 - Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.
+
+## 2026-09-17 — SePay second-precision matching
+- Decision: compare the timestamp second shared by SePay `transactionDate` and the millisecond-resolution order creation for the lower payment-window boundary. Keep the existing precise upper expiration and receipt-time checks. Ship as migration 0003 that replaces the matcher trigger on already-provisioned preview D1.
+- Reason: a valid transfer during the order's creation second otherwise appears earlier than `created_at` and is wrongly classified as late.
+- Consequences: a transfer reported in that same second is accepted even if its actual sub-second instant preceded order creation; SePay does not provide enough precision to distinguish it. The tolerance is under one second, not an extension of the 15-minute deadline. Local boundary test and remote trigger inspection pass; real provider validation remains pending.
+- Affected: migrations/0003_payment_second_precision.sql, tests/schema.test.mjs, tests/import.test.mjs, tests/worker.test.mjs.
