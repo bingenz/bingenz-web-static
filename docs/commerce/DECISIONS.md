@@ -109,3 +109,9 @@
 - Reason: lost-link and lost-device support must invalidate earlier credentials and preserve a traceable reason without revealing raw tokens in the admin detail view.
 - Consequences: earlier links and sessions stop working immediately. Retaining device binding requires the original device; resetting it permits a new device. Verification is an operator attestation, not an automated identity check. No email is sent and no remote state changed.
 - Affected: src/admin.mjs, public/admin.html, public/admin.mjs, public/admin.css, tests/worker.test.mjs.
+
+## 2026-09-17 — guarded manual payment reconciliation
+- Decision: list SePay payments requiring review and allow an authenticated admin to reconcile a payment to a pending order only when the stored webhook was inbound, sent to the expected account, and at least covers the order total. Require a review note and explicit acknowledgments for overpayment or a different/missing BGZ code. Fulfillment, payment status/linkage and audit are one D1 batch.
+- Reason: late and unmatched payments need a deliberate seller path, but underpayments, wrong-bank and outgoing records must not become a payment bypass. The existing paid-order trigger continues to create the entitlement snapshot.
+- Consequences: an operator can manually fulfill a late, overpaid or code-mismatched transaction after external verification. This is a high-trust admin action; it is not automatic proof from the bank statement. Underpaid payments remain for review. D1 `meta.changes` includes trigger work, so success uses the returned updated order row. No remote transactions were altered.
+- Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.

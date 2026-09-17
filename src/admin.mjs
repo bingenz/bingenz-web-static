@@ -77,6 +77,32 @@ export async function adminRoute(request,env,actor,path){
    ORDER BY o.created_at DESC LIMIT 100`).bind(q,q,term,q.toUpperCase(),q,term,term,q,term,term).all();
   return json({orders:rows.results});
  }
+ if(path==='/admin/api/payments'&&method==='GET'){
+  const q=(url.searchParams.get('q')||'').trim();requireValue(q.length<=200,400,'invalid_search');
+  const term='%'+q.replace(/[\\%_]/g,'\\$&')+'%';
+  const rows=await env.DB.prepare(`SELECT p.id,p.external_id,p.reference,p.payment_code,p.amount_vnd,p.transaction_at,p.received_at,p.direction,p.bank_valid,p.status,p.order_id,p.note,o.gmail,o.total_vnd order_total_vnd,o.status order_status FROM payments p LEFT JOIN orders o ON o.id=p.order_id WHERE p.status NOT IN ('matched','reconciled') AND (?='' OR p.external_id=? OR p.reference LIKE ? ESCAPE '\\' OR p.payment_code=? OR o.gmail LIKE ? ESCAPE '\\') ORDER BY p.received_at DESC LIMIT 100`).bind(q,q,term,q.toUpperCase(),term).all();
+  return json({payments:rows.results});
+ }
+ const reconcile=path.match(/^\/admin\/api\/payments\/([a-f0-9-]{36})\/reconcile$/);
+ if(reconcile&&method==='POST'){
+  const input=await jsonBody(request,4096);objectShape(input,['order_id','note','reviewed','accept_overpayment','accept_code_mismatch']);
+  requireValue(typeof input.order_id==='string'&&/^[a-f0-9-]{36}$/.test(input.order_id)&&typeof input.note==='string'&&input.note.trim().length>=10&&input.note.length<=2000&&input.reviewed===true&&typeof input.accept_overpayment==='boolean'&&typeof input.accept_code_mismatch==='boolean',400,'reconciliation_confirmation_required');
+  const payment=await env.DB.prepare('SELECT * FROM payments WHERE id=?').bind(reconcile[1]).first();
+  const target=await env.DB.prepare('SELECT id,payment_code,total_vnd,status FROM orders WHERE id=?').bind(input.order_id).first();
+  if(!payment||!target)throw new HttpError(404,'not_found');
+  requireValue(payment.direction==='in'&&payment.bank_valid===1&&(payment.order_id===null||payment.order_id===target.id),409,'payment_not_eligible');
+  requireValue(!['matched','reconciled','outgoing','wrong_bank'].includes(payment.status)&&target.status==='pending'&&payment.amount_vnd>=target.total_vnd,409,'payment_not_eligible');
+  requireValue(payment.amount_vnd===target.total_vnd||input.accept_overpayment,400,'overpayment_confirmation_required');
+  requireValue(payment.payment_code===target.payment_code||input.accept_code_mismatch,400,'code_mismatch_confirmation_required');
+  const now=iso(),paymentId=payment.id;
+  const result=await env.DB.batch([
+   stmt(env.DB,`UPDATE orders SET status='paid',paid_at=?,paid_payment_id=? WHERE id=? AND status='pending' AND total_vnd<=? AND EXISTS(SELECT 1 FROM payments WHERE id=? AND status=? AND direction='in' AND bank_valid=1 AND (order_id IS NULL OR order_id=?)) RETURNING id`,now,paymentId,target.id,payment.amount_vnd,paymentId,payment.status,target.id),
+   stmt(env.DB,`UPDATE payments SET status='reconciled',order_id=?,note=?,reconciled_at=?,reconciled_by=? WHERE id=? AND changes()=1`,target.id,input.note.trim(),now,actor,paymentId),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) SELECT ?,?,'payment.reconcile','payment',?,?,? WHERE changes()=1`,crypto.randomUUID(),actor,paymentId,now,JSON.stringify({order_id:target.id,amount_vnd:payment.amount_vnd,order_total_vnd:target.total_vnd,previous_status:payment.status,code_mismatch:payment.payment_code!==target.payment_code,overpayment:payment.amount_vnd>target.total_vnd,note:input.note.trim()}))
+  ]);
+  if(result[0].results.length!==1)throw new HttpError(409,'reconciliation_conflict');
+  return json({order_id:target.id,payment_id:paymentId,status:'reconciled'});
+ }
  const order=path.match(/^\/admin\/api\/orders\/([a-f0-9-]{36})$/);
  const noteRoute=path.match(/^\/admin\/api\/orders\/([a-f0-9-]{36})\/notes$/);
  if(noteRoute&&method==='POST'){

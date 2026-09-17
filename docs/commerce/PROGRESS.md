@@ -7,7 +7,7 @@ Owner resumed implementation after the previous documentation-only handoff. Work
 
 - Branch: codex/commerce-storefront. Started this resume clean at 37f6ff3.
 - Last completed implementation checkpoint: 8ae9c4f (private HTML/thumbnail uploads); prior: 0c4c15d (bulk metadata editing), 249f0fa (inactive product drafts).
-- Last committed order-detail checkpoint: ecaa46a. Support recovery is implemented locally and being checkpointed.
+- Last committed support-recovery checkpoint: e48afdc. Payment reconciliation is implemented locally and being checkpointed.
 - Production source baseline: origin/master 1a69783e5143e39fecae0bdd11089a078f2a1891.
 - Live deployment freshly rechecked: ac96a0ba-d62e-4d86-9131-f1b4e4a3e981 at 100%, created 2026-09-16T15:31:43Z. Its Git SHA is unknown. Do not assume it matches the baseline.
 - No task commits pushed/merged; no production deployment by this task.
@@ -29,6 +29,7 @@ Owner resumed implementation after the previous documentation-only handoff. Work
 - Admin prepared HTML upload: local CLI reuses the established conservative transform and saves a private JSON package; Worker verifies byte hashes and 2 MiB limits, writes original/delivery to private R2 before publishing the new D1 version pointer and audit. A duplicate original hash is idempotent. Admin WebP replacement writes private R2 and serves only the current image through a narrow public Worker route, without public bucket access. New drafts remain inactive after upload.
 - Admin order detail shows immutable item price/version snapshots, entitlements and timing, linked or code-matched payments, support notes and manual refund records. Search supports Gmail, ID, BGZ, SePay reference/ID, date and product title/slug. No checkout or access hashes are returned.
 - Admin can add audited internal support notes and reissue a paid order's access link after recording customer verification. Reissue atomically rotates the hashed token and session generation, optionally resets device binding, and displays the raw replacement URL once. Old links and sessions fail; neither access nor device hashes appear in order detail.
+- Admin can search unmatched SePay transactions and manually reconcile a valid inbound, correct-bank, sufficiently funded payment to a pending order. Explicit review note and separate overpayment/code-mismatch confirmations are required. One D1 batch pays the order, creates entitlements through the existing trigger, marks the payment reconciled and audits the action. Underpayment, wrong bank and outgoing transfers cannot be fulfilled through this action.
 
 ## Cloudflare: local versus remote
 Fresh read-only checks this resume: remote R2 list succeeds and is empty; D1 still lists only the two unrelated databases below; deployments list confirms the version above.
@@ -62,11 +63,11 @@ Non-secret: BANK_CODE, ADMIN_EMAIL, ACCESS_TEAM_DOMAIN, ACCESS_AUD, TURNSTILE_SI
 Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no production secrets set by task.
 
 ## Verification and known gaps
-- Current npm test: 20/20 PASS. Includes SQLite, real workerd/D1/R2, mocked provider validation, signed Access JWT fixtures, audited admin draft/edit/version rollback/bulk/HTML and thumbnail uploads, private delivery check and mobile admin browser, paid claim/access/Start/sandbox runtime. Local Wrangler dry-run bundles all 51 public assets and Worker bindings successfully; it proves packaging, not remote operation.
+- Current npm test: 21/21 PASS. Includes SQLite, real workerd/D1/R2, mocked provider validation, signed Access JWT fixtures, audited admin draft/edit/version rollback/bulk/HTML and thumbnail uploads, support recovery, payment reconciliation, private delivery check and mobile admin browser, paid claim/access/Start/sandbox runtime. Local Wrangler dry-run bundles all 51 public assets and Worker bindings successfully; it proves packaging, not remote operation.
 - Storefront 1440/390/360: 35 cards, placement, four desktop/two phone columns, cart persistence/removal, search, native dialog Escape/focus, no overflow/page errors. Screenshots inspected.
 - Existing-site regression: themes/modals/contact/old images/Cube Jump presence pass. Complete social-link/copy/game-navigation assertions still pending.
 - 35/35 originals passed baseline desktop/mobile load and initial interaction. Minified deliveries loaded for thumbnails. Full-cycle protected-wrapper tests remain pending for ALL 35.
-- Admin is PARTIAL: dashboard, order search/detail, inactive draft creation, basic product edit/list, version rollback, bulk metadata edit, prepared HTML upload and WebP replacement, support notes and access recovery/device reset. Missing payment reconciliation, manual refund recording, exports, admin preview and further audited operations. HTML upload requires a local preparation step; server verifies integrity but does not independently re-minify. Cloudflare Access outer policy is not configured.
+- Admin is PARTIAL: dashboard, order search/detail, payment reconciliation, inactive draft creation, basic product edit/list, version rollback, bulk metadata edit, prepared HTML upload and WebP replacement, support notes and access recovery/device reset. Missing manual refund recording, exports, admin preview and further audited operations. HTML upload requires a local preparation step; server verifies integrity but does not independently re-minify. Cloudflare Access outer policy is not configured.
 - Exact expiration/activation-deadline race coverage, complete unpaid checkout-to-payment UI and live QR/provider tests remain incomplete. Signed JWT fixture coverage exists; live Access policy verification does not.
 - Review same-second SePay timestamps versus millisecond order creation: current payment fixtures shift order creation two seconds earlier. This boundary is not yet proven.
 - Legacy modal focus management remains incomplete. Invalid access-link errors are currently JSON rather than polished recovery UI.
@@ -74,11 +75,11 @@ Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no produc
 - Client-delivered source is not perfect DRM. No requirements waived; incomplete work is not deferred scope.
 
 ## Exact next action after a future Continue
-First follow Section 41.9 and verify Git/provider/resource state. Continue the admin milestone with payment reconciliation. Add refund records, exports and admin preview. Complete remaining admin operations before marking the milestone done. Then finish customer/security/full35 simulation coverage and accessibility. Provision isolated preview resources; verify Access, Turnstile, SePay HMAC/BGZ/QR; complete Section 33 gates before master release and production smoke tests.
+First follow Section 41.9 and verify Git/provider/resource state. Continue the admin milestone with manual refund records, exports and admin preview. Complete remaining admin operations before marking the milestone done. Then finish customer/security/full35 simulation coverage and accessibility. Provision isolated preview resources; verify Access, Turnstile, SePay HMAC/BGZ/QR; complete Section 33 gates before master release and production smoke tests.
 
 ## Blockers, owner interaction, rollback
 No confirmed login/OTP/permission blocker now. Remote permissions/Google Access setup remain unverified, not assumed blocked. No current owner action required. R2 activation is resolved.
-Safe implementation rollback: ecaa46a before support recovery, then current checkpoint. Production untouched by task; no deploy until all gates pass.
+Safe implementation rollback: e48afdc before payment reconciliation, then current checkpoint. Production untouched by task; no deploy until all gates pass.
 
 ## Resume commands
     git status --short --branch

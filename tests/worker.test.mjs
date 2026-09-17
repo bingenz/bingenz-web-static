@@ -251,6 +251,27 @@ test('payment mismatch cases remain unfulfilled and invalid HMAC does not persis
  assert.equal((await mf.dispatchFetch(origin+'/api/webhooks/sepay',{method:'POST',body:'{}'})).status,404);
  assert.equal((await db.prepare('SELECT count(*) n FROM payments').first()).n,before.n);
 });
+test('admin reconciliation requires explicit review, sufficient valid funds and audit',async()=>{
+ const headers={'Cf-Access-Jwt-Assertion':await adminToken(),Origin:origin,'Content-Type':'application/json'};
+ const listed=await (await mf.dispatchFetch(origin+'/admin/api/payments',{headers})).json();
+ const over=listed.payments.find(p=>p.external_id==='8001'),under=listed.payments.find(p=>p.external_id==='8000'),wrong=listed.payments.find(p=>p.external_id==='8002'),unknown=listed.payments.find(p=>p.external_id==='8004');
+ assert.ok(over&&under&&wrong&&unknown);assert.equal(unknown.order_id,null);
+ const action=(payment,body)=>mf.dispatchFetch(origin+'/admin/api/payments/'+payment.id+'/reconcile',{method:'POST',headers,body:JSON.stringify(body)});
+ const base={order_id:over.order_id,note:'Matched to bank statement manually',reviewed:true,accept_overpayment:false,accept_code_mismatch:false};
+ assert.equal((await action(over,{...base,reviewed:false})).status,400);
+ assert.equal((await action(over,base)).status,400);
+ assert.equal((await action(under,{...base,order_id:under.order_id})).status,409);
+ assert.equal((await action(wrong,{...base,order_id:wrong.order_id})).status,409);
+ const accepted=await action(over,{...base,accept_overpayment:true});assert.equal(accepted.status,200,JSON.stringify({response:await accepted.text(),over,order:await db.prepare('SELECT id,status,total_vnd FROM orders WHERE id=?').bind(over.order_id).first()}));
+ assert.equal((await action(over,{...base,accept_overpayment:true})).status,409);
+ assert.equal((await db.prepare('SELECT count(*) n FROM entitlements WHERE order_id=?').bind(over.order_id).first()).n,1);
+ const order=await db.prepare("SELECT id FROM orders WHERE gmail='case4@gmail.com'").first();
+ const manual={...base,order_id:order.id,accept_code_mismatch:true};
+ assert.equal((await action(unknown,{...manual,accept_code_mismatch:false})).status,400);
+ assert.equal((await action(unknown,manual)).status,200);
+ assert.equal((await db.prepare('SELECT status,order_id FROM payments WHERE id=?').bind(unknown.id).first()).order_id,order.id);
+ assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='payment.reconcile' AND object_id=?").bind(unknown.id).first()).n,1);
+});
 test('browser paid-access claim, Start confirmation and sandbox runtime work together',async()=>{
  const o=await checkout('browser@gmail.com');
  await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();await sendPayment(o.body,{},9001);
