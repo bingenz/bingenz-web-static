@@ -1,4 +1,4 @@
-import { HttpError, json, jsonBody, objectShape, requireValue, iso, hash } from './security.mjs';
+import { HttpError, json, jsonBody, objectShape, requireValue, iso, hash, randomToken } from './security.mjs';
 import { stmt } from './db.mjs';
 
 const editable=['slug','title','description','category','price_vnd','duration_seconds','activation_days','active','archived','display_order'];
@@ -78,6 +78,34 @@ export async function adminRoute(request,env,actor,path){
   return json({orders:rows.results});
  }
  const order=path.match(/^\/admin\/api\/orders\/([a-f0-9-]{36})$/);
+ const noteRoute=path.match(/^\/admin\/api\/orders\/([a-f0-9-]{36})\/notes$/);
+ if(noteRoute&&method==='POST'){
+  const input=await jsonBody(request,4096);objectShape(input,['note']);
+  requireValue(typeof input.note==='string'&&input.note.trim().length>=1&&input.note.length<=2000,400,'note_required');
+  const target=await env.DB.prepare('SELECT id FROM orders WHERE id=?').bind(noteRoute[1]).first();
+  if(!target)throw new HttpError(404,'not_found');
+  const id=crypto.randomUUID(),now=iso();
+  await env.DB.batch([
+   stmt(env.DB,'INSERT INTO support_notes(id,order_id,actor,note,created_at) VALUES (?,?,?,?,?)',id,target.id,actor,input.note.trim(),now),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) VALUES (?,?,?,?,?,?,?)`,crypto.randomUUID(),actor,'support.note','order',target.id,now,JSON.stringify({note_id:id}))
+  ]);
+  return json({id,created_at:now},201);
+ }
+ const reissue=path.match(/^\/admin\/api\/orders\/([a-f0-9-]{36})\/reissue$/);
+ if(reissue&&method==='POST'){
+  const input=await jsonBody(request,4096);objectShape(input,['note','reset_device','customer_verified']);
+  requireValue(input.customer_verified===true&&typeof input.reset_device==='boolean'&&typeof input.note==='string'&&input.note.trim().length>=10&&input.note.length<=2000,400,'verification_note_required');
+  const before=await env.DB.prepare("SELECT id,generation,device_hash FROM orders WHERE id=? AND status='paid'").bind(reissue[1]).first();
+  if(!before)throw new HttpError(404,'paid_order_required');
+  const token=randomToken(),now=iso(),id=crypto.randomUUID();
+  const result=await env.DB.batch([
+   stmt(env.DB,`UPDATE orders SET access_hash=?,access_issued_at=?,generation=generation+1,device_hash=CASE WHEN ?=1 THEN NULL ELSE device_hash END WHERE id=? AND status='paid' AND generation=?`,await hash(token),now,Number(input.reset_device),before.id,before.generation),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) SELECT ?,?,'access.reissue','order',?,?,? WHERE changes()=1`,crypto.randomUUID(),actor,before.id,now,JSON.stringify({from_generation:before.generation,to_generation:before.generation+1,reset_device:input.reset_device})),
+   stmt(env.DB,`INSERT INTO support_notes(id,order_id,actor,note,created_at) SELECT ?,?,?,?,? WHERE changes()=1`,id,before.id,actor,input.note.trim(),now)
+  ]);
+  if(result[0].meta.changes!==1)throw new HttpError(409,'order_changed');
+  return json({access_url:new URL('/access/'+token,request.url).href,device_reset:input.reset_device});
+ }
  if(order&&method==='GET'){
   const o=await env.DB.prepare(`SELECT id,gmail,payment_code,total_vnd,status,created_at,expires_at,paid_at,paid_payment_id,access_issued_at,generation,CASE WHEN device_hash IS NULL THEN 0 ELSE 1 END device_bound FROM orders WHERE id=?`).bind(order[1]).first();
   if(!o)throw new HttpError(404,'not_found');

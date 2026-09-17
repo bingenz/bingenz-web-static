@@ -7,7 +7,7 @@ Owner resumed implementation after the previous documentation-only handoff. Work
 
 - Branch: codex/commerce-storefront. Started this resume clean at 37f6ff3.
 - Last completed implementation checkpoint: 8ae9c4f (private HTML/thumbnail uploads); prior: 0c4c15d (bulk metadata editing), 249f0fa (inactive product drafts).
-- Current order-detail checkpoint: resolve with git log -1 after commit.
+- Last committed order-detail checkpoint: ecaa46a. Support recovery is implemented locally and being checkpointed.
 - Production source baseline: origin/master 1a69783e5143e39fecae0bdd11089a078f2a1891.
 - Live deployment freshly rechecked: ac96a0ba-d62e-4d86-9131-f1b4e4a3e981 at 100%, created 2026-09-16T15:31:43Z. Its Git SHA is unknown. Do not assume it matches the baseline.
 - No task commits pushed/merged; no production deployment by this task.
@@ -28,6 +28,7 @@ Owner resumed implementation after the previous documentation-only handoff. Work
 - Admin bulk metadata editor updates 1–25 selected products per request with per-product audit. Optimistic updated_at guard reports skipped conflicts; versionless drafts cannot be bulk-activated. No bulk HTML overwrite/deletion.
 - Admin prepared HTML upload: local CLI reuses the established conservative transform and saves a private JSON package; Worker verifies byte hashes and 2 MiB limits, writes original/delivery to private R2 before publishing the new D1 version pointer and audit. A duplicate original hash is idempotent. Admin WebP replacement writes private R2 and serves only the current image through a narrow public Worker route, without public bucket access. New drafts remain inactive after upload.
 - Admin order detail shows immutable item price/version snapshots, entitlements and timing, linked or code-matched payments, support notes and manual refund records. Search supports Gmail, ID, BGZ, SePay reference/ID, date and product title/slug. No checkout or access hashes are returned.
+- Admin can add audited internal support notes and reissue a paid order's access link after recording customer verification. Reissue atomically rotates the hashed token and session generation, optionally resets device binding, and displays the raw replacement URL once. Old links and sessions fail; neither access nor device hashes appear in order detail.
 
 ## Cloudflare: local versus remote
 Fresh read-only checks this resume: remote R2 list succeeds and is empty; D1 still lists only the two unrelated databases below; deployments list confirms the version above.
@@ -65,7 +66,7 @@ Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no produc
 - Storefront 1440/390/360: 35 cards, placement, four desktop/two phone columns, cart persistence/removal, search, native dialog Escape/focus, no overflow/page errors. Screenshots inspected.
 - Existing-site regression: themes/modals/contact/old images/Cube Jump presence pass. Complete social-link/copy/game-navigation assertions still pending.
 - 35/35 originals passed baseline desktop/mobile load and initial interaction. Minified deliveries loaded for thumbnails. Full-cycle protected-wrapper tests remain pending for ALL 35.
-- Admin is PARTIAL: dashboard, order search/detail, inactive draft creation, basic product edit/list, version rollback, bulk metadata edit, prepared HTML upload and WebP replacement. Missing payment reconciliation, recovery/device reset, support-note creation, manual refund recording, exports, admin preview and further audited operations. HTML upload requires a local preparation step; server verifies integrity but does not independently re-minify. Cloudflare Access outer policy is not configured.
+- Admin is PARTIAL: dashboard, order search/detail, inactive draft creation, basic product edit/list, version rollback, bulk metadata edit, prepared HTML upload and WebP replacement, support notes and access recovery/device reset. Missing payment reconciliation, manual refund recording, exports, admin preview and further audited operations. HTML upload requires a local preparation step; server verifies integrity but does not independently re-minify. Cloudflare Access outer policy is not configured.
 - Exact expiration/activation-deadline race coverage, complete unpaid checkout-to-payment UI and live QR/provider tests remain incomplete. Signed JWT fixture coverage exists; live Access policy verification does not.
 - Review same-second SePay timestamps versus millisecond order creation: current payment fixtures shift order creation two seconds earlier. This boundary is not yet proven.
 - Legacy modal focus management remains incomplete. Invalid access-link errors are currently JSON rather than polished recovery UI.
@@ -73,11 +74,11 @@ Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no produc
 - Client-delivered source is not perfect DRM. No requirements waived; incomplete work is not deferred scope.
 
 ## Exact next action after a future Continue
-First follow Section 41.9 and verify Git/provider/resource state. Continue the admin milestone: add audited support-note creation and access recovery/device reset/reissue, then payment reconciliation. Add refund records, exports and admin preview. Complete remaining admin operations before marking the milestone done. Then finish customer/security/full35 simulation coverage and accessibility. Provision isolated preview resources; verify Access, Turnstile, SePay HMAC/BGZ/QR; complete Section 33 gates before master release and production smoke tests.
+First follow Section 41.9 and verify Git/provider/resource state. Continue the admin milestone with payment reconciliation. Add refund records, exports and admin preview. Complete remaining admin operations before marking the milestone done. Then finish customer/security/full35 simulation coverage and accessibility. Provision isolated preview resources; verify Access, Turnstile, SePay HMAC/BGZ/QR; complete Section 33 gates before master release and production smoke tests.
 
 ## Blockers, owner interaction, rollback
 No confirmed login/OTP/permission blocker now. Remote permissions/Google Access setup remain unverified, not assumed blocked. No current owner action required. R2 activation is resolved.
-Safe implementation rollback: 8ae9c4f before order detail, then current checkpoint. Production untouched by task; no deploy until all gates pass.
+Safe implementation rollback: ecaa46a before support recovery, then current checkpoint. Production untouched by task; no deploy until all gates pass.
 
 ## Resume commands
     git status --short --branch

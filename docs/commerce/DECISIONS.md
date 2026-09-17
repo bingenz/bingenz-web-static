@@ -103,3 +103,9 @@
 - Reason: seller operations need a consolidated evidence view before manual reconciliation or lost-link recovery is safe.
 - Consequences: read-only detail is implemented; related mutations are still pending. No remote change.
 - Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.
+
+## 2026-09-17 — verified support recovery
+- Decision: require an internal verification note and explicit customer-verified confirmation before a paid order's access link can be reissued. Rotate its stored access hash and session generation in one optimistic D1 batch with audit and support note; clear the device hash only when the seller selects reset. Return the new raw link once, without persisting it.
+- Reason: lost-link and lost-device support must invalidate earlier credentials and preserve a traceable reason without revealing raw tokens in the admin detail view.
+- Consequences: earlier links and sessions stop working immediately. Retaining device binding requires the original device; resetting it permits a new device. Verification is an operator attestation, not an automated identity check. No email is sent and no remote state changed.
+- Affected: src/admin.mjs, public/admin.html, public/admin.mjs, public/admin.css, tests/worker.test.mjs.

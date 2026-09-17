@@ -9,14 +9,14 @@ Tests are local; mocked provider success is not live provider verification.
 | Unit / schema | PASS: Gmail aliases, random codes/tokens, session tampering/purpose/expiry, HMAC bytes/timestamp window, body limit, invalid calendar dates, immutable price snapshots/cart constraints | Broader edge cases |
 | D1 integration | PASS: real workerd/D1 pricing, duplicate/inactive carts, pending ownership/reuse, concurrent payment dedupe, independent entitlements, atomic repeated Start | Expiration/deadline/rate-limit races |
 | Payment matcher | PASS: exact, under/over, unknown code, late, wrong account, outgoing, invalid signature; duplicate grants once | Same-second timestamp boundary; production official test |
-| Customer security | PASS: claim/exchange, hashed token persistence, wrong-device denial, no auth from Gmail, generation invalidation, revocation, origin rejection, private R2 permit/CSP/no-store/markers | Real admin reset/reissue operations, expired content/deadline coverage |
+| Customer security | PASS: claim/exchange, hashed token persistence, wrong-device denial, no auth from Gmail, audited admin reissue with generation invalidation and optional device reset, revocation, origin rejection, private R2 permit/CSP/no-store/markers | Expired content/deadline coverage; live Access policy |
 | Imports | PASS: local 35 products/35 versions, two full imports without duplicates, metadata/rollback preservation, partial-write recovery test | Remote uploads and bucket privacy verification |
 | Thumbnails | PASS: 35 WebP screenshots, contact sheet reviewed | Admin replacement workflow |
 | Storefront desktop | PASS: 1440px, 35 cards, correct placement, 4 columns, cart/search/persistence/dialog focus, no overflow/errors, light/dark screenshots | Full unpaid purchase flow |
 | Storefront mobile | PASS: 390/360px exactly 2 columns, cart/search/dialog, no overflow/errors | Live Turnstile/QR/payment completion |
 | Existing site | PASS: theme/modals/contact popup/old images, Cube Jump presence | Full navigation/social/copy assertions; legacy modal focus improvements |
 | Paid browser flow | PASS: checkout paid claim -> clean access page -> Start cancel/confirm -> sandbox iframe at 390px | Real payment screen and all 35 simulations |
-| Admin | PASS: signed-gated dashboard/order search/detail with immutable snapshots and no credential hashes, draft/edit/version rollback/bulk, prepared HTML upload to private R2 with hash/size checks and idempotent duplicate, WebP replacement/current-image route, audited changes, 390px browser render; direct admin.html denied | Reconciliation/recovery/device reset, support-note/refund mutations, export/preview; live policy |
+| Admin | PASS: signed-gated dashboard/order search/detail with immutable snapshots and no credential hashes, draft/edit/version rollback/bulk, prepared HTML upload to private R2 with hash/size checks and idempotent duplicate, WebP replacement/current-image route, audited support notes and paid-link reissue/device reset, 390px browser render; direct admin.html denied | Reconciliation, refund mutations, export/preview; live policy |
 | Access | PASS: signed local JWK valid/wrong email/audience/tampered denial; missing token rejects | Live Google policy and Access application |
 | Turnstile | PASS mocked-provider wrong hostname/action/replayed response denial | Production widget/secrets, fresh real token and replay |
 | SePay | Authenticated dashboard verified; #56829 enabled HMAC, incoming JSON, retry on, TPBank selected; source and signed test now use saved singular route, plural returns 404; no send-test performed | Secret matching, BGZ recognition/filter, alerts and official signed test/deployment |
@@ -76,4 +76,4 @@ Each original passed baseline desktop/mobile loading and initial interaction. Ea
 - No production smoke test, deployment, official SePay send-test or real payment performed.
 
 ## Next verification
-Complete/admin-test payment/support/recovery/refund/export/preview operations next; then expiry/deadline boundaries, full checkout, all35 protected full cycles at desktop/mobile and live infrastructure/provider gates. Do not advance tests from pending to pass based only on page rendering.
+Complete/admin-test payment reconciliation/refund/export/preview operations next; then expiry/deadline boundaries, full checkout, all35 protected full cycles at desktop/mobile and live infrastructure/provider gates. Do not advance tests from pending to pass based only on page rendering.
