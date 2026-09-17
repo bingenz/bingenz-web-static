@@ -246,6 +246,23 @@ test('pending reuse retains checkout ownership and server price/expiration',asyn
  assert.equal((await mf.dispatchFetch(origin+'/api/orders/'+first.body.id)).status,404);
  const own=await mf.dispatchFetch(origin+'/api/orders/'+first.body.id,{headers:{Cookie:first.cookie}});assert.equal(own.status,200);assert.ok(!(await own.text()).includes('gmail'));
 });
+test('simultaneous identical checkouts create only one pending order',async()=>{
+ const email='concurrentcheckout@gmail.com';
+ const attempts=await Promise.all([checkout(email),checkout(email)]);
+ assert.ok(attempts.every(x=>[200,201].includes(x.response.status)));
+ assert.equal(attempts[0].body.id,attempts[1].body.id);
+ assert.equal((await db.prepare("SELECT count(*) n FROM orders WHERE gmail_key=? AND status='pending'").bind('concurrentcheckout').first()).n,1);
+ assert.equal(attempts.filter(x=>x.body.claimable).length,1);
+});
+test('parallel checkout attempts enforce the canonical Gmail rate limit',async()=>{
+ const email='parallel.limit+many@gmail.com';
+ const attempts=await Promise.all(Array.from({length:6},()=>checkout(email)));
+ assert.equal(attempts.filter(x=>x.response.status===429).length,1);
+ assert.equal(attempts.filter(x=>[200,201].includes(x.response.status)).length,5);
+ const ids=new Set(attempts.filter(x=>x.response.ok).map(x=>x.body.id));
+ assert.equal(ids.size,1);
+ assert.equal((await db.prepare("SELECT count(*) n FROM orders WHERE gmail_key=? AND status='pending'").bind('parallellimit').first()).n,1);
+});
 test('Turnstile wrong action/host and replay fail closed',async()=>{
  for(const token of ['invalid','valid-wrong-action','valid-wrong-host']){
   const res=await post('/api/orders',{gmail:crypto.randomUUID().replaceAll('-','')+'@gmail.com',product_ids:['p'],turnstile_token:token});

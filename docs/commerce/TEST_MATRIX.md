@@ -1,15 +1,15 @@
 # Verification matrix
 
 Last updated: 2026-09-18. Preview D1/R2 imported and separate Worker deployed; production deployment unchanged.
-Current run: npm test — 32 tests, 32 passed, zero failures/skips. Separate protected-simulation run: 35 products × 2 viewports, all pass.
+Current run: npm test — 34 tests, 34 passed, zero failures/skips. Separate protected-simulation run: 35 products × 2 viewports, all pass.
 Tests use local Worker/D1/R2 for runtime behavior; mocked provider success is not live provider verification.
 
 | Area | Evidence and current result | Remaining |
 |---|---|---|
 | Unit / schema | PASS: Gmail aliases, random codes/tokens, session tampering/purpose/expiry, HMAC bytes/timestamp window, body limit, invalid calendar dates, immutable price snapshots/cart constraints | Broader edge cases |
-| D1 integration | PASS: real workerd/D1 pricing, duplicate/inactive carts, pending ownership/reuse, concurrent payment dedupe, independent entitlements, atomic repeated Start; expired activation and runtime are denied | Exact simultaneous deadline/rate-limit races |
+| D1 integration | PASS: real workerd/D1 pricing, duplicate/inactive carts, pending ownership/reuse, parallel identical checkout returns one pending order, parallel canonical-Gmail attempts enforce 5-in-10-minute limit, concurrent payment dedupe, independent entitlements, atomic repeated Start; expired activation and runtime are denied | Exact simultaneous deadline transition races |
 | Payment matcher | PASS: exact, under/over, unknown code, late, wrong account, outgoing, invalid signature; duplicate grants once; same-second order/SePay timestamp accepted and previous second rejected | Production official test |
-| Customer security | PASS: claim/exchange, hashed token persistence, wrong-device denial, no auth from Gmail, audited admin reissue with generation invalidation and optional device reset, revocation, origin rejection, private R2 permit/CSP/no-store/markers; expired activation Start and expired runtime permit/content denied | Exact-boundary race coverage; live Access policy |
+| Customer security | PASS: claim/exchange, hashed token persistence, wrong-device denial, no auth from Gmail, audited admin reissue with generation invalidation and optional device reset, revocation, origin rejection, private R2 permit/CSP/no-store/markers; expired activation Start and expired runtime permit/content denied | Exact-boundary transition coverage; live Access policy |
 | Imports | PASS: local and isolated preview each have 35 products/35 versions; local duplicate import and partial-write recovery tested; all 70 preview R2 objects match manifest byte lengths and SHA-256 | Production import and audit |
 | Thumbnails | PASS: 35 WebP screenshots, contact sheet reviewed; admin replacement tested locally | Live admin replacement workflow |
 | Storefront desktop | PASS: 1440px, 35 cards, correct placement, 4 columns, cart/search/persistence/dialog focus, no overflow/errors, light/dark screenshots | Full unpaid purchase flow |
@@ -66,7 +66,7 @@ Each original passed baseline desktop/mobile loading and initial interaction. Ev
 | object-detection-tiktok-pro-v2.html | object-detection-tiktok-pro-v2 | Local yes; preview yes; production no | Yes | Protected start/play/interaction/expiry pass | Protected start/play/interaction/expiry pass | Protected runtime + expiry pass | No page errors (protected) | Initial load pass | Protected initial interaction + expiry pass |
 
 ## Evidence and commands
-- tests/schema.test.mjs, security.test.mjs, import.test.mjs, worker.test.mjs: npm test 32/32 pass. Preview Wrangler dry-run passed; it did not access remote services.
+- tests/schema.test.mjs, security.test.mjs, import.test.mjs, worker.test.mjs: npm test 34/34 pass. Preview Wrangler dry-run passed; it did not access remote services.
 - STOREFRONT_TESTS.json: node scripts/test-storefront.mjs with local Worker on port4173.
 - REGRESSION_SITE_TESTS.json: node scripts/baseline-site.mjs http://127.0.0.1:4173. Original baseline remains separate.
 - BASELINE_SIMULATION_TESTS.json and SIMULATION_INVENTORY.json contain individual original observations.
