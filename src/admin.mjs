@@ -201,8 +201,16 @@ export async function adminRoute(request,env,actor,path){
  }
  const product=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})$/);
  const versions=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})\/versions$/);
+ const preview=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})\/versions\/([a-z0-9_-]{1,128})\/preview$/);
  const upload=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})\/upload$/);
  const thumbnail=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})\/thumbnail$/);
+ if(preview&&method==='GET'){
+  const version=await env.DB.prepare('SELECT delivery_key FROM product_versions WHERE id=? AND product_id=?').bind(preview[2],preview[1]).first();
+  if(!version)throw new HttpError(404,'not_found');
+  const object=await env.SIMULATIONS.get(version.delivery_key);
+  if(!object||object.size>2097152)throw new HttpError(503,'content_unavailable');
+  return new Response(object.body,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; sandbox allow-scripts"}});
+ }
  if(thumbnail&&method==='PUT'){
   requireValue((request.headers.get('Content-Type')||'').split(';')[0]==='image/webp',415,'webp_required');
   requireValue(Number(request.headers.get('Content-Length')||0)<=1048576,413,'image_too_large');

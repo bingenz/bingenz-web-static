@@ -98,6 +98,13 @@ test('admin requires a signed exact-identity Access JWT and audits product edits
  assert.equal((await db.prepare('SELECT current_version_id FROM products WHERE id=?').bind(draftBody.product.id).first()).current_version_id,version);
  const stored=await db.prepare('SELECT original_key,delivery_key FROM product_versions WHERE id=?').bind(version).first();
  const privateBucket=await mf.getR2Bucket('SIMULATIONS');assert.ok(await privateBucket.head(stored.original_key));assert.ok(await privateBucket.head(stored.delivery_key));
+ const previewUrl=origin+'/admin/api/products/'+draftBody.product.id+'/versions/'+version+'/preview';
+ assert.equal((await mf.dispatchFetch(previewUrl)).status,403);
+ const preview=await mf.dispatchFetch(previewUrl,{headers});assert.equal(preview.status,200);
+ assert.match(preview.headers.get('Content-Security-Policy'),/sandbox allow-scripts/);
+ assert.match(preview.headers.get('Cache-Control'),/no-store/);
+ assert.equal(await preview.text(),delivery.toString());
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/p/versions/'+version+'/preview',{headers})).status,404);
  assert.equal((await mf.dispatchFetch(origin+'/'+stored.delivery_key)).status,200); // Static asset fallback contains no paid source.
  assert.notEqual(await (await mf.dispatchFetch(origin+'/'+stored.delivery_key)).text(),delivery.toString());
  assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='product.upload' AND object_id=?").bind(draftBody.product.id).first()).n,1);
@@ -141,6 +148,12 @@ test('admin dashboard and product editor render in a browser with signed Access 
   const local=(await mf.ready).origin;
   await page.goto(local+'/admin');await page.locator('#product-list option').first().waitFor({state:'attached'});
   assert.ok(await page.locator('#metrics article').count()>=8);
+  const previewProduct=await db.prepare("SELECT id FROM products WHERE slug='new-draft'").first();
+  await page.locator('#product-list').selectOption(previewProduct.id);
+  await page.locator('#versions option').first().waitFor({state:'attached'});
+  await page.locator('#preview-version').click();await page.locator('#preview-dialog').waitFor({state:'visible'});
+  assert.equal(await page.frameLocator('#preview-frame').locator('h1').textContent(),'Private test');
+  await page.locator('#close-preview').click();await page.locator('#preview-dialog').waitFor({state:'hidden'});await page.waitForFunction(()=>!document.querySelector('#preview-frame').hasAttribute('src'));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}

@@ -127,3 +127,9 @@
 - Reason: a growing store should not silently truncate exports or buffer the entire dataset in Worker memory; customer/payment data must remain behind the exact admin identity check.
 - Consequences: concurrent writes during a long export may appear according to pagination timing rather than a single database snapshot. Tests cross the 500-row boundary and cover formula injection. No export was sent to an external service.
 - Affected: src/admin.mjs, public/admin.html, tests/worker.test.mjs.
+
+## 2026-09-17 — sandboxed admin version preview
+- Decision: serve a selected delivery version from private R2 only through the signed-admin route and render it in a modal iframe with `sandbox="allow-scripts"`; the Worker also sends restrictive CSP, no-store and no-referrer headers. Closing the modal clears the iframe source.
+- Reason: the seller must verify newly uploaded or historical HTML before activation/rollback without publishing paid assets or creating a customer entitlement.
+- Consequences: preview does not prove every simulation interaction works; full-cycle tests remain required. No public R2 URL or auth bypass is introduced.
+- Affected: src/admin.mjs, public/admin.html, public/admin.css, public/admin.mjs, tests/worker.test.mjs.

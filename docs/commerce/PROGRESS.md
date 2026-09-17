@@ -32,6 +32,7 @@ Owner resumed implementation after the previous documentation-only handoff. Work
 - Admin can search unmatched SePay transactions and manually reconcile a valid inbound, correct-bank, sufficiently funded payment to a pending order. Explicit review note and separate overpayment/code-mismatch confirmations are required. One D1 batch pays the order, creates entitlements through the existing trigger, marks the payment reconciled and audits the action. Underpayment, wrong bank and outgoing transfers cannot be fulfilled through this action.
 - Admin can record a refund request for a paid order, capped against all outstanding/completed requests, then record completion only after confirming a manual transfer outside the system. Completion may revoke entitlements. Both transitions are audited. No bank transfer API is called.
 - Admin can stream complete CSV exports of orders, payments and products through authenticated routes. UTF-8 BOM aids spreadsheet import and string cells that could execute spreadsheet formulas are neutralized; exports are private and no-store.
+- Admin can preview any stored product version through an authenticated private R2 route inside a sandboxed modal iframe. Delivery has no-store/CSP restrictions; closing the modal unloads the simulation. Unauthorized and wrong-product requests are denied.
 
 ## Cloudflare: local versus remote
 Fresh read-only checks this resume: remote R2 list succeeds and is empty; D1 still lists only the two unrelated databases below; deployments list confirms the version above.
@@ -69,7 +70,7 @@ Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no produc
 - Storefront 1440/390/360: 35 cards, placement, four desktop/two phone columns, cart persistence/removal, search, native dialog Escape/focus, no overflow/page errors. Screenshots inspected.
 - Existing-site regression: themes/modals/contact/old images/Cube Jump presence pass. Complete social-link/copy/game-navigation assertions still pending.
 - 35/35 originals passed baseline desktop/mobile load and initial interaction. Minified deliveries loaded for thumbnails. Full-cycle protected-wrapper tests remain pending for ALL 35.
-- Admin is PARTIAL: dashboard, order search/detail, payment reconciliation, manual refund records, CSV exports, inactive draft creation, basic product edit/list, version rollback, bulk metadata edit, prepared HTML upload and WebP replacement, support notes and access recovery/device reset. Missing admin preview and further audited operations. HTML upload requires a local preparation step; server verifies integrity but does not independently re-minify. Cloudflare Access outer policy is not configured.
+- Admin is PARTIAL: dashboard, order search/detail, payment reconciliation, manual refund records, CSV exports, private version preview, inactive draft creation, basic product edit/list, version rollback, bulk metadata edit, prepared HTML upload and WebP replacement, support notes and access recovery/device reset. Remaining audited entitlement operations and safe archival/deletion rules are incomplete. HTML upload requires a local preparation step; server verifies integrity but does not independently re-minify. Cloudflare Access outer policy is not configured.
 - Exact expiration/activation-deadline race coverage, complete unpaid checkout-to-payment UI and live QR/provider tests remain incomplete. Signed JWT fixture coverage exists; live Access policy verification does not.
 - Review same-second SePay timestamps versus millisecond order creation: current payment fixtures shift order creation two seconds earlier. This boundary is not yet proven.
 - Legacy modal focus management remains incomplete. Invalid access-link errors are currently JSON rather than polished recovery UI.
@@ -77,7 +78,7 @@ Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no produc
 - Client-delivered source is not perfect DRM. No requirements waived; incomplete work is not deferred scope.
 
 ## Exact next action after a future Continue
-First follow Section 41.9 and verify Git/provider/resource state. Continue the admin milestone with admin preview and remaining audited entitlement operations. Then finish customer/security/full35 simulation coverage and accessibility. Provision isolated preview resources; verify Access, Turnstile, SePay HMAC/BGZ/QR; complete Section 33 gates before master release and production smoke tests.
+First follow Section 41.9 and verify Git/provider/resource state. Continue the admin milestone with remaining audited entitlement operations and archival/deletion rules. Then finish customer/security/full35 simulation coverage and accessibility. Provision isolated preview resources; verify Access, Turnstile, SePay HMAC/BGZ/QR; complete Section 33 gates before master release and production smoke tests.
 
 ## Blockers, owner interaction, rollback
 No confirmed login/OTP/permission blocker now. Remote permissions/Google Access setup remain unverified, not assumed blocked. No current owner action required. R2 activation is resolved.
