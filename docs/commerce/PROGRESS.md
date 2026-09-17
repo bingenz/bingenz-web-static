@@ -1,13 +1,13 @@
 # Commerce implementation progress
 
-Last updated: 2026-09-17T11:36:50Z (18:36 Asia/Saigon).
+Last updated: 2026-09-17T11:45:59Z (18:45 Asia/Saigon).
 
 ## Handoff
 Owner resumed implementation after the previous documentation-only handoff. Work is active on the admin milestone; production remains untouched.
 
 - Branch: codex/commerce-storefront. Started this resume clean at 37f6ff3.
 - Last completed implementation checkpoint: 8ae9c4f (private HTML/thumbnail uploads); prior: 0c4c15d (bulk metadata editing), 249f0fa (inactive product drafts).
-- Last committed support-recovery checkpoint: e48afdc. Payment reconciliation is implemented locally and being checkpointed.
+- Latest implementation checkpoints: 5ea335b (manual payment reconciliation), e48afdc (support recovery), ecaa46a (order detail).
 - Production source baseline: origin/master 1a69783e5143e39fecae0bdd11089a078f2a1891.
 - Live deployment freshly rechecked: ac96a0ba-d62e-4d86-9131-f1b4e4a3e981 at 100%, created 2026-09-16T15:31:43Z. Its Git SHA is unknown. Do not assume it matches the baseline.
 - No task commits pushed/merged; no production deployment by this task.
