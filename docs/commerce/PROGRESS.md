@@ -1,13 +1,13 @@
 # Commerce implementation progress
 
-Last updated: 2026-09-17T06:39:09Z (13:39 Asia/Saigon).
+Last updated: 2026-09-17T06:47:54Z (13:47 Asia/Saigon).
 
 ## Handoff
-Owner explicitly requested: update all four Section 41 files, commit a coherent checkpoint, then stop implementation. This is an owner-requested pause, not completion or a login blocker. No implementation after this documentation checkpoint.
+Owner resumed implementation after the previous documentation-only handoff. Work is active again. The next checkpoint contains the canonical SePay route and the first admin API/UI slice; production remains untouched.
 
-- Branch: codex/commerce-storefront. Tree was clean before handoff documentation.
+- Branch: codex/commerce-storefront. Started clean at 396a05c; current admin work is being checkpointed.
 - Last implementation checkpoint: c386d07; prior: 553dfcd (import/thumbnails), 25d5c37 (Worker foundation), 52be239 (schema).
-- Handoff checkpoint: documentation commit containing this file; resolve with git log -1 after commit.
+- Previous handoff checkpoint: 396a05c. Current checkpoint: resolve with git log -1 after commit.
 - Production source baseline: origin/master 1a69783e5143e39fecae0bdd11089a078f2a1891.
 - Live deployment freshly rechecked: ac96a0ba-d62e-4d86-9131-f1b4e4a3e981 at 100%, created 2026-09-16T15:31:43Z. Its Git SHA is unknown. Do not assume it matches the baseline.
 - No task commits pushed/merged; no production deployment by this task.
@@ -22,6 +22,8 @@ Owner explicitly requested: update all four Section 41 files, commit a coherent 
 - 35 real-simulation WebP thumbnails generated; contact sheet inspected. Public thumbnails and hash metadata committed.
 - Vanilla storefront immediately after Cube Jump, cart/search, Gmail/Turnstile checkout UI, payment screen, access page, Start confirmation and runtime wrapper.
 - Existing contact-FAB child-click defect and unversioned JS/CSS/MJS immutable-cache rules fixed.
+- SePay route reconciled to the existing saved singular endpoint `/api/webhook/sepay`; plural route remains closed. Signed webhook fixture and invalid-signature tests use the actual saved path. No provider mutation.
+- First admin slice: `/admin` shell, dashboard, searchable order list, product list/basic edit with atomic D1 audit. Exact signed Cloudflare Access JWT email/audience/issuer tests and mobile browser rendering pass. No auth bypass was added to local or production code.
 
 ## Cloudflare: local versus remote
 Fresh read-only handoff checks: remote R2 list succeeds and is empty; D1 still lists only the two unrelated databases below; deployments list confirms the version above.
@@ -43,9 +45,7 @@ Two enabled webhooks were observed:
 - BinGenZ payment, ID 56829: HMAC-SHA256, incoming transfers, JSON, one selected TPBank API main account, automatic retries enabled, payment verification enabled. List reports no delivery yet.
 - Cube Jump VietQR payment: unrelated existing enabled HMAC integration; do not modify.
 
-Saved BinGenZ endpoint: https://bingenz.com/api/webhook/sepay (singular).
-Current source endpoint: /api/webhooks/sepay (plural).
-This mismatch MUST be reconciled before deployment/provider tests. No route/provider changes were made during handoff.
+Saved BinGenZ endpoint: https://bingenz.com/api/webhook/sepay (singular). Source now matches this exact path; regression tests reject plural. This is local code only and has not been deployed/provider-tested.
 
 BGZ recognition/filter is NOT verified. Filter screen showed CJ and MP choices, not BGZ; selection was not conclusively checked. General payment-code configuration remains uninspected. Only-send-with-payment-code checkbox is unchecked; consecutive-error alerts are disabled.
 
@@ -57,11 +57,11 @@ Non-secret: BANK_CODE, ADMIN_EMAIL, ACCESS_TEAM_DOMAIN, ACCESS_AUD, TURNSTILE_SI
 Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no production secrets set by task.
 
 ## Verification and known gaps
-- Final handoff npm test: 18/18 PASS. Includes SQLite, real workerd/D1/R2, mocked provider validation and Playwright paid claim/access/Start cancel+confirm/sandbox runtime.
+- Current npm test: 20/20 PASS. Includes SQLite, real workerd/D1/R2, mocked provider validation, signed Access JWT fixtures, audited admin edit and mobile admin browser, paid claim/access/Start/sandbox runtime.
 - Storefront 1440/390/360: 35 cards, placement, four desktop/two phone columns, cart persistence/removal, search, native dialog Escape/focus, no overflow/page errors. Screenshots inspected.
 - Existing-site regression: themes/modals/contact/old images/Cube Jump presence pass. Complete social-link/copy/game-navigation assertions still pending.
 - 35/35 originals passed baseline desktop/mobile load and initial interaction. Minified deliveries loaded for thumbnails. Full-cycle protected-wrapper tests remain pending for ALL 35.
-- Admin API/UI is NOT implemented. Missing dashboard, product editing/uploads/versions/bulk, reconciliation, recovery/device reset, support, manual refund records, export and operational audit actions.
+- Admin is PARTIAL: dashboard, order search and basic product edit/list only. Missing product creation/uploads/versions/bulk, order detail, payment reconciliation, recovery/device reset, support notes, manual refund records, exports and further audited operations. Cloudflare Access outer policy is not configured.
 - Exact expiration/activation-deadline race coverage, genuine signed Access JWT tests, complete unpaid checkout-to-payment UI and live QR/provider tests remain incomplete.
 - Review same-second SePay timestamps versus millisecond order creation: current payment fixtures shift order creation two seconds earlier. This boundary is not yet proven.
 - Legacy modal focus management remains incomplete. Invalid access-link errors are currently JSON rather than polished recovery UI.
@@ -69,13 +69,11 @@ Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no produc
 - Client-delivered source is not perfect DRM. No requirements waived; incomplete work is not deferred scope.
 
 ## Exact next action after a future Continue
-First follow Section 41.9: full spec/state files, Git/diffs and actual provider/resource state. Then inspect src/worker.mjs against SePay #56829 and reconcile the singular/plural webhook endpoint contract, record the canonical route and add regression coverage. Do not change the provider until its endpoint is safely deployable.
-
-Next implementation milestone: /admin APIs/UI behind adminIdentity plus exact-Origin guard, with atomic audited product/version/payment/support/recovery operations and signed-JWT tests. Then finish customer/security/full35 simulation coverage and accessibility. Provision isolated preview resources; verify Access, Turnstile, SePay HMAC/BGZ/QR; complete Section 33 gates before master release and production smoke tests.
+First follow Section 41.9 and verify Git/provider/resource state. Continue the admin milestone in src/admin.mjs/public/admin.*: add version/upload/rollback and bulk editing, then payment reconciliation and support recovery/device reset/reissue with atomic audits and tests. Complete the remaining admin operations before marking the milestone done. Then finish customer/security/full35 simulation coverage and accessibility. Provision isolated preview resources; verify Access, Turnstile, SePay HMAC/BGZ/QR; complete Section 33 gates before master release and production smoke tests.
 
 ## Blockers, owner interaction, rollback
-No confirmed login/OTP/permission blocker now. Paused ONLY by owner instruction. Remote permissions/Google Access setup remain unverified, not assumed blocked. No current owner action required. R2 activation is resolved.
-Safe implementation rollback: c386d07 plus current documentation checkpoint. Production untouched by task; no deploy until all gates pass.
+No confirmed login/OTP/permission blocker now. Remote permissions/Google Access setup remain unverified, not assumed blocked. No current owner action required. R2 activation is resolved.
+Safe implementation rollback: 396a05c before this admin slice, then current checkpoint. Production untouched by task; no deploy until all gates pass.
 
 ## Resume commands
     git status --short --branch

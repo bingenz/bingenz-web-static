@@ -2,13 +2,19 @@ import { HttpError,json,adminIdentity,originGuard } from './security.mjs';
 import { catalog,createOrder,orderStatus,qr } from './orders.mjs';
 import { webhook } from './payments.mjs';
 import { claim,exchange,accessList,start,playPermit,runtime,customer } from './access.mjs';
+import { adminRoute } from './admin.mjs';
 
 async function route(request,env) {
  const url=new URL(request.url),path=url.pathname,method=request.method;
  if(path==='/admin'||path.startsWith('/admin/')) {
-  await adminIdentity(request,env);
+  const actor=await adminIdentity(request,env);
   if(!['GET','HEAD'].includes(method))originGuard(request);
-  throw new HttpError(503,'admin_implementation_pending');
+  if(path.startsWith('/admin/api/'))return adminRoute(request,env,actor,path);
+  if(path==='/admin'&&method==='GET'){
+   const shell=await env.ASSETS.fetch(new Request(new URL('/admin.html',url),request));
+   const response=new Response(shell.body,shell);response.headers.set('Cache-Control','private, no-store');response.headers.set('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");return response;
+  }
+  throw new HttpError(404,'not_found');
  }
  if(path==='/api/catalog'&&method==='GET')return json({products:await catalog(env),turnstile_site_key:env.TURNSTILE_SITE_KEY||null});
  if(path==='/api/orders'&&method==='POST')return createOrder(request,env);
@@ -23,13 +29,14 @@ async function route(request,env) {
  if(content&&method==='GET')return runtime(request,env,content[1]);
  const order=path.match(/^\/api\/orders\/([a-f0-9-]{36})(\/qr)?$/);
  if(order&&method==='GET')return order[2]?qr(request,env,order[1]):orderStatus(request,env,order[1]);
- if(path==='/api/webhooks/sepay'&&method==='POST')return webhook(request,env);
+ if(path==='/api/webhook/sepay'&&method==='POST')return webhook(request,env);
  if(method==='GET'&&(path==='/access'||/^\/(play\/[a-f0-9]{32}|checkout\/[a-f0-9-]{36})$/.test(path))){
   if(path==='/access'||path.startsWith('/play/'))await customer(request,env);
   const shell=await env.ASSETS.fetch(new Request(new URL('/commerce.html',url),request));
   const response=new Response(shell.body,shell);response.headers.set('Cache-Control','private, no-store');response.headers.set('Referrer-Policy','no-referrer');response.headers.set('Content-Security-Policy',"frame-ancestors 'self'");return response;
  }
  // Reserved routes must never fall through to an asset or SPA fallback.
+ if(path==='/admin.html')throw new HttpError(404,'not_found');
  if(/^\/(api|access|play|runtime)(\/|$)/.test(path))throw new HttpError(404,'not_found');
  if(!['GET','HEAD'].includes(method))throw new HttpError(405,'method_not_allowed');
  return env.ASSETS.fetch(request);

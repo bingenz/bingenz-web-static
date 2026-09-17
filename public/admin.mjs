@@ -1,0 +1,17 @@
+const $=s=>document.querySelector(s),money=n=>new Intl.NumberFormat('vi-VN').format(n||0)+' ₫';
+let products=[];
+function say(message){$('#message').textContent=message;}
+async function api(path,options){const response=await fetch('/admin/api/'+path,options);const body=await response.json();if(!response.ok)throw Error(body.error||'Không tải được dữ liệu');return body;}
+function cell(row,value){const td=row.insertCell();td.textContent=value??'—';}
+function renderOrders(orders){const body=$('#orders');body.replaceChildren();for(const o of orders){const tr=body.insertRow();for(const value of [o.created_at,o.gmail,o.payment_code,o.products,money(o.total_vnd),o.status])cell(tr,value);}}
+function showProduct(){const p=products.find(x=>x.id===$('#product-list').value);if(!p)return;const f=$('#product-form');for(const key of ['title','slug','description','category','price_vnd','duration_seconds','activation_days','display_order'])f.elements[key].value=p[key]??'';f.elements.active.checked=!!p.active;f.elements.archived.checked=!!p.archived;}
+async function load(){const [dashboard,list,orders]=await Promise.all([api('dashboard'),api('products'),api('orders')]);
+ const metrics=[['Doanh thu 24 giờ',money(dashboard.revenue.today_vnd)],['Doanh thu 7 ngày',money(dashboard.revenue.week_vnd)],['Doanh thu 30 ngày',money(dashboard.revenue.month_vnd)],['Đơn đã trả',dashboard.orders.paid],['Chờ thanh toán',dashboard.orders.pending],['Chờ đã hết hạn',dashboard.orders.expired_pending],['Thanh toán cần xem',dashboard.manual_review_payments],['Quyền truy cập đang chạy',dashboard.active_entitlements]];
+ const target=$('#metrics');target.replaceChildren();for(const [label,value] of metrics){const article=document.createElement('article'),heading=document.createElement('span'),number=document.createElement('strong');heading.textContent=label;number.textContent=value;article.append(heading,number);target.append(article);}
+ $('#best').textContent=dashboard.best_sellers.map(x=>`${x.title}: ${x.sold}`).join(' · ')||'Chưa có giao dịch.';renderOrders(orders.orders);
+ products=list.products;const select=$('#product-list');select.replaceChildren();for(const p of products){const option=document.createElement('option');option.value=p.id;option.textContent=p.title;select.append(option);}showProduct();say('Đã tải dữ liệu.');}
+$('#product-list').addEventListener('change',showProduct);
+$('#search').addEventListener('submit',async e=>{e.preventDefault();try{renderOrders((await api('orders?q='+encodeURIComponent(new FormData(e.target).get('q')))).orders);say('Đã cập nhật danh sách đơn.');}catch(error){say(error.message);}});
+$('#product-form').addEventListener('submit',async e=>{e.preventDefault();const f=e.target,p=products.find(x=>x.id===$('#product-list').value);if(!p)return;const input={};for(const key of ['title','slug','description','category'])input[key]=f.elements[key].value.trim();for(const key of ['price_vnd','duration_seconds','display_order'])input[key]=Number(f.elements[key].value);input.activation_days=f.elements.activation_days.value?Number(f.elements.activation_days.value):null;for(const key of ['active','archived'])input[key]=Number(f.elements[key].checked);
+ try{const result=await api('products/'+p.id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(input)});Object.assign(p,result.product);$('#product-list').selectedOptions[0].textContent=p.title;say('Đã lưu sản phẩm và ghi nhật ký.');}catch(error){say(error.message);}});
+load().catch(error=>say(error.message));

@@ -6,18 +6,21 @@ import { build } from 'esbuild';
 import { Miniflare,convertV4MiniflareOptions } from 'miniflare';
 import { unstable_splitSqlQuery } from 'wrangler';
 import { chromium } from 'playwright';
-let mf,db;
+import { generateKeyPair, exportJWK, SignJWT } from 'jose';
+let mf,db,adminKey,adminJwk;
 const origin='https://shop.test',secret='test-only-webhook-signing-secret-for-local-fixtures';
 const consumed=new Set();
 before(async()=>{
+ const keys=await generateKeyPair('RS256');adminKey=keys.privateKey;adminJwk={...await exportJWK(keys.publicKey),kid:'local-admin-test',alg:'RS256',use:'sig'};
  const bundle=await build({entryPoints:['src/worker.mjs'],bundle:true,format:'esm',platform:'browser',write:false});
  mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0].text,compatibilityDate:'2026-09-16',d1Databases:['DB'],r2Buckets:['SIMULATIONS'],
-  bindings:{TURNSTILE_SECRET_KEY:'fixture',TURNSTILE_HOSTNAMES:'shop.test',ABUSE_HASH_KEY:secret,SESSION_SECRET:secret,SEPAY_WEBHOOK_SECRET:secret,BANK_ACCOUNT_NUMBER:'test-destination',BANK_CODE:'TPBank'},
+  bindings:{TURNSTILE_SECRET_KEY:'fixture',TURNSTILE_HOSTNAMES:'shop.test',ABUSE_HASH_KEY:secret,SESSION_SECRET:secret,SEPAY_WEBHOOK_SECRET:secret,BANK_ACCOUNT_NUMBER:'test-destination',BANK_CODE:'TPBank',ACCESS_TEAM_DOMAIN:'test.cloudflareaccess.com',ACCESS_AUD:'local-admin-aud',ADMIN_EMAIL:'lengocthuan09@gmail.com'},
   serviceBindings:{ASSETS:async request=>{
-   const file=new URL(request.url).pathname.slice(1),types={'commerce.html':'text/html','commerce.mjs':'text/javascript','commerce.css':'text/css','styles.css':'text/css'};
+   const file=new URL(request.url).pathname.slice(1),types={'commerce.html':'text/html','commerce.mjs':'text/javascript','commerce.css':'text/css','admin.html':'text/html','admin.mjs':'text/javascript','admin.css':'text/css','styles.css':'text/css'};
    return types[file]?new Response(await readFile('public/'+file),{headers:{'Content-Type':types[file]}}):new Response('static asset');
   }},
   outboundService:async req=>{
+   if(new URL(req.url).hostname==='test.cloudflareaccess.com')return Response.json({keys:[adminJwk]});
    assert.equal(new URL(req.url).hostname,'challenges.cloudflare.com');
    const b=await req.json(),success=b.response.startsWith('valid-')&&!consumed.has(b.response);consumed.add(b.response);
    return Response.json({success,action:b.response==='valid-wrong-action'?'other':'checkout',hostname:b.response==='valid-wrong-host'?'evil.test':'shop.test'});
@@ -37,6 +40,9 @@ before(async()=>{
 after(async()=>{await mf?.dispose();});
 let ip=0;
 function post(path,body,cookie='',extra={}){return mf.dispatchFetch(origin+path,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json','CF-Connecting-IP':'192.0.2.'+(++ip),Cookie:cookie,...extra},body:JSON.stringify(body)});}
+async function adminToken(email='lengocthuan09@gmail.com',aud='local-admin-aud'){
+ return new SignJWT({email,type:'app'}).setProtectedHeader({alg:'RS256',kid:'local-admin-test'}).setIssuer('https://test.cloudflareaccess.com').setAudience(aud).setIssuedAt().setExpirationTime('5m').sign(adminKey);
+}
 async function checkout(gmail,ids=['p'],cookie=''){
  const response=await post('/api/orders',{gmail,product_ids:ids,turnstile_token:'valid-'+crypto.randomUUID()},cookie);
  return {response,body:await response.json(),cookie:response.headers.get('Set-Cookie')?.split(';')[0]||cookie};
@@ -44,14 +50,47 @@ async function checkout(gmail,ids=['p'],cookie=''){
 async function sendPayment(order,overrides={},externalId=Date.now()){
  const body={id:externalId,transferAmount:order.total_vnd,transferType:'in',accountNumber:'test-destination',referenceCode:'ref-'+externalId,code:order.payment_code,gateway:'TPBank',transactionDate:new Date(Date.now()+7*3600000).toISOString().slice(0,19).replace('T',' '),...overrides};
  const raw=JSON.stringify(body),timestamp=String(Math.floor(Date.now()/1000));
- return mf.dispatchFetch(origin+'/api/webhooks/sepay',{method:'POST',body:raw,headers:{'X-SePay-Timestamp':timestamp,'X-SePay-Signature':'sha256='+createHmac('sha256',secret).update(timestamp+'.'+raw).digest('hex')}});
+ return mf.dispatchFetch(origin+'/api/webhook/sepay',{method:'POST',body:raw,headers:{'X-SePay-Timestamp':timestamp,'X-SePay-Signature':'sha256='+createHmac('sha256',secret).update(timestamp+'.'+raw).digest('hex')}});
 }
 test('real Worker preserves assets, hides protected routes and rejects unauthenticated admin',async()=>{
  assert.equal(await (await mf.dispatchFetch(origin+'/')).text(),'static asset');
  assert.equal((await mf.dispatchFetch(origin+'/runtime/secret')).status,404);
- assert.equal((await mf.dispatchFetch(origin+'/admin/api/orders')).status,503);
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/orders')).status,403);
+ assert.equal((await mf.dispatchFetch(origin+'/admin.html')).status,404);
  const catalog=await (await mf.dispatchFetch(origin+'/api/catalog')).json();assert.equal(catalog.products.length,2);
  assert.ok(!JSON.stringify(catalog).includes('delivery/'));
+});
+test('admin requires a signed exact-identity Access JWT and audits product edits',async()=>{
+ const url=origin+'/admin/api/products/p';
+ for(const token of [await adminToken('someone@gmail.com'),await adminToken('lengocthuan09@gmail.com','wrong-aud'),'forged']){
+  assert.equal((await mf.dispatchFetch(url,{headers:{'Cf-Access-Jwt-Assertion':token}})).status,403);
+ }
+ const token=await adminToken(),headers={'Cf-Access-Jwt-Assertion':token};
+ const dashboard=await mf.dispatchFetch(origin+'/admin/api/dashboard',{headers});assert.equal(dashboard.status,200);
+ const page=await mf.dispatchFetch(origin+'/admin',{headers});assert.equal(page.status,200);assert.match(await page.text(),/Quản trị mô phỏng/);
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products',{headers})).status,200);
+ const patch={method:'PATCH',headers:{...headers,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({price_vnd:12000,title:'Updated product'})};
+ assert.equal((await mf.dispatchFetch(url,{...patch,headers:{...patch.headers,Origin:'https://evil.test'}})).status,403);
+ const changed=await mf.dispatchFetch(url,patch);assert.equal(changed.status,200);
+ assert.equal((await db.prepare('SELECT price_vnd FROM products WHERE id=?').bind('p').first()).price_vnd,12000);
+ const audit=await db.prepare("SELECT actor,action,metadata FROM admin_audit_logs WHERE object_id='p'").first();
+ assert.equal(audit.actor,'lengocthuan09@gmail.com');assert.equal(audit.action,'product.update');assert.equal(JSON.parse(audit.metadata).after.price_vnd,12000);
+ assert.equal((await mf.dispatchFetch(url,{...patch,body:JSON.stringify({current_version_id:'vp'})})).status,400);
+ assert.equal((await mf.dispatchFetch(url,{...patch,body:JSON.stringify({price_vnd:10000,title:'p'})})).status,200);
+ const results=await (await mf.dispatchFetch(origin+'/admin/api/orders?q=paid%40gmail.com',{headers})).json();
+ assert.ok(Array.isArray(results.orders));
+});
+test('admin dashboard and product editor render in a browser with signed Access identity',async()=>{
+ const browser=await chromium.launch();
+ try{
+  const token=await adminToken(),page=await browser.newPage({extraHTTPHeaders:{'Cf-Access-Jwt-Assertion':token},viewport:{width:390,height:844}}),errors=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  const local=(await mf.ready).origin;
+  await page.goto(local+'/admin');await page.locator('#product-list option').first().waitFor({state:'attached'});
+  assert.ok(await page.locator('#metrics article').count()>=8);
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
 });
 test('checkout rejects tampering, inactive products, duplicate carts and wrong origin',async()=>{
  const b={gmail:'test@gmail.com',product_ids:['p'],turnstile_token:'valid-'+crypto.randomUUID()};
@@ -126,7 +165,8 @@ test('payment mismatch cases remain unfulfilled and invalid HMAC does not persis
   assert.equal((await db.prepare('SELECT count(*) n FROM entitlements WHERE order_id=?').bind(o.body.id).first()).n,0);
  }
  const before=await db.prepare('SELECT count(*) n FROM payments').first();
- assert.equal((await mf.dispatchFetch(origin+'/api/webhooks/sepay',{method:'POST',body:'{}'})).status,401);
+ assert.equal((await mf.dispatchFetch(origin+'/api/webhook/sepay',{method:'POST',body:'{}'})).status,401);
+ assert.equal((await mf.dispatchFetch(origin+'/api/webhooks/sepay',{method:'POST',body:'{}'})).status,404);
  assert.equal((await db.prepare('SELECT count(*) n FROM payments').first()).n,before.n);
 });
 test('browser paid-access claim, Start confirmation and sandbox runtime work together',async()=>{

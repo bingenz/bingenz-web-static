@@ -67,3 +67,11 @@
 - BGZ recognition/filter and secret matching remain unverified. Error alerts are off. Existing Cube Jump webhook must remain intact. No banking credentials or secrets copied to state files.
 - Cloudflare read-only refresh: remote R2 empty, only two unrelated D1 databases, live version ac96a0ba unchanged. Local D1/R2 imports are complete; remote commerce resources created by task remain zero.
 - Affected: four continuity files only; no implementation/provider changes. Last implementation commit c386d07; handoff commit contains this entry. No outstanding owner action; pause is intentional, not a technical blocker.
+
+## 2026-09-17 — resumed canonical webhook and admin foundation
+- Decision: match the existing saved SePay #56829 singular `/api/webhook/sepay` URL in source; keep the unused plural route closed. No dashboard change or deployment.
+- Reason: minimize provider mutation while fixing an independently verified integration mismatch. Official SePay HMAC documentation confirms the timestamp/raw-body signing format already used in source.
+- Decision: serve `/admin` only after signed Cloudflare Access JWT validation, with exact Origin on mutations; implement read-only dashboard/order/product APIs and audited basic product edits as a first slice. The raw `admin.html` asset path is blocked.
+- Reason: incremental admin operations need a fail-closed security boundary and real workerd/D1/browser tests before adding higher-risk reconciliation and recovery actions. Cloudflare's Access JWT guidance confirms issuer/audience/signature validation.
+- Consequences: admin is still incomplete, outer Access policy not configured, no remote resources changed. No local admin bypass. A product edit and its audit insert execute in one D1 batch; concurrent seller-edit conflict handling remains to be designed.
+- Affected: src/worker.mjs, src/admin.mjs, public/admin.*, tests/worker.test.mjs; local code only.

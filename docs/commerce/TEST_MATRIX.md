@@ -1,7 +1,7 @@
 # Verification matrix
 
-Last updated: 2026-09-17T06:39:09Z. Paused by owner after continuity checkpoint.
-Final handoff run: npm test — 18 tests, 18 passed, zero failures/skips.
+Last updated: 2026-09-17T06:47:54Z. Implementation resumed; remote deployment unchanged.
+Current run: npm test — 20 tests, 20 passed, zero failures/skips.
 Tests are local; mocked provider success is not live provider verification.
 
 | Area | Evidence and current result | Remaining |
@@ -16,10 +16,10 @@ Tests are local; mocked provider success is not live provider verification.
 | Storefront mobile | PASS: 390/360px exactly 2 columns, cart/search/dialog, no overflow/errors | Live Turnstile/QR/payment completion |
 | Existing site | PASS: theme/modals/contact popup/old images, Cube Jump presence | Full navigation/social/copy assertions; legacy modal focus improvements |
 | Paid browser flow | PASS: checkout paid claim -> clean access page -> Start cancel/confirm -> sandbox iframe at 390px | Real payment screen and all 35 simulations |
-| Admin | Routes fail closed; not implemented | All operations, audit, exports, reconciliation/recovery/refunds |
-| Access | Helper validates issuer/audience/signature/email; missing config rejects | Valid/wrong signed JWT fixtures and live Google policy |
+| Admin | PASS: signed-gated dashboard/order search/product list/edit, atomic audit, 390px browser render; direct admin.html denied | Creation, upload/version/rollback/bulk, reconciliation/recovery/device reset, support/refunds/export; live policy |
+| Access | PASS: signed local JWK valid/wrong email/audience/tampered denial; missing token rejects | Live Google policy and Access application |
 | Turnstile | PASS mocked-provider wrong hostname/action/replayed response denial | Production widget/secrets, fresh real token and replay |
-| SePay | Authenticated dashboard verified; #56829 enabled HMAC, incoming JSON, retry on, TPBank selected; no send-test performed | Singular/plural route mismatch, secret matching, BGZ recognition/filter, alerts and official signed test |
+| SePay | Authenticated dashboard verified; #56829 enabled HMAC, incoming JSON, retry on, TPBank selected; source and signed test now use saved singular route, plural returns 404; no send-test performed | Secret matching, BGZ recognition/filter, alerts and official signed test/deployment |
 | Cloudflare remote | Read-only lists verified; zero R2 buckets, only unrelated D1 databases; deployment ac96a0ba unchanged | Commerce provisioning, migrations/imports, production gates |
 | Simulation inventory | PASS: all 35 individually enumerated and syntax checked | Full protected runtime verification below |
 
@@ -76,4 +76,4 @@ Each original passed baseline desktop/mobile loading and initial interaction. Ea
 - No production smoke test, deployment, official SePay send-test or real payment performed.
 
 ## Next verification
-Reconcile /api/webhook/sepay saved at provider versus /api/webhooks/sepay in source and test the chosen route. Implement/admin-test next; then complete expiry/deadline boundaries, full checkout, all35 protected full cycles at desktop/mobile and live infrastructure/provider gates. Do not advance tests from pending to pass based only on page rendering.
+Complete/admin-test version/upload/bulk/payment/support/recovery/refund/export operations next; then expiry/deadline boundaries, full checkout, all35 protected full cycles at desktop/mobile and live infrastructure/provider gates. Do not advance tests from pending to pass based only on page rendering.
