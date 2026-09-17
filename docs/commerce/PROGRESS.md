@@ -77,7 +77,7 @@ Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no produc
 - Expired-state server boundaries and unpaid checkout-to-paid browser UI are now covered locally. Exact simultaneous expiration/activation races and live QR/provider tests remain incomplete. Signed JWT fixture coverage exists; live Access policy verification does not.
 - Same-second SePay/order timestamp boundary is fixed in migration 0003 and covered locally; older payment fixtures still shift creation earlier, while the dedicated boundary test proves same-second acceptance and previous-second rejection. Live provider behavior remains pending.
 - Legacy modal focus management remains incomplete. Invalid access-link errors are currently JSON rather than polished recovery UI.
-- Operational README/deploy scripts need finalization. package.json shortcuts do not all select local config; use explicit commands below.
+- Operational README now covers architecture, explicit local/preview configs, migrations/imports, secret names, SePay prerequisites, release gates and recovery. package.json local/preview shortcuts select their exact config; unsafe generic production shortcuts were removed. Production release procedure remains pending production config and all Section 33 gates.
 - Client-delivered source is not perfect DRM. No requirements waived; incomplete work is not deferred scope.
 
 ## Exact next action after a future Continue
