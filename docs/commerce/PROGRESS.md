@@ -35,6 +35,7 @@ Owner resumed implementation after the previous documentation-only handoff. Work
 - Admin can preview any stored product version through an authenticated private R2 route inside a sandboxed modal iframe. Delivery has no-store/CSP restrictions; closing the modal unloads the simulation. Unauthorized and wrong-product requests are denied.
 
 ## Cloudflare: local versus remote
+Planned isolated preview operation: create `bingenz-commerce-preview` D1 and R2 resources in the authenticated account, then bind only a dedicated preview Worker. Last safe checkpoint: cd54cb1 (private admin preview); existing production Worker/resources remain untouched. Record actual resource IDs and migration/import outcome immediately afterward. Do not use the two existing unrelated D1 databases.
 Fresh read-only checks this resume: remote R2 list succeeds and is empty; D1 still lists only the two unrelated databases below; deployments list confirms the version above.
 
 - Existing account Worker: bingenz-web-static; bingenz.com/www.bingenz.com; bingenz-web-static.lnth.workers.dev.
