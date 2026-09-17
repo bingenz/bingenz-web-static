@@ -178,6 +178,14 @@ test('signed payment is atomic, immutable and idempotent in real D1',async()=>{
  assert.equal((await db.prepare('SELECT status FROM orders WHERE id=?').bind(o.body.id).first()).status,'paid');
  assert.equal((await db.prepare('SELECT count(*) n FROM entitlements WHERE order_id=?').bind(o.body.id).first()).n,2);
  assert.equal((await db.prepare("SELECT count(*) n FROM payments WHERE external_id='7001'").first()).n,1);
+ const adminHeaders={'Cf-Access-Jwt-Assertion':await adminToken()};
+ const detail=await (await mf.dispatchFetch(origin+'/admin/api/orders/'+o.body.id,{headers:adminHeaders})).json();
+ assert.equal(detail.order.status,'paid');assert.equal(detail.items.length,2);assert.equal(detail.items[0].price_vnd,10000);assert.equal(detail.payments[0].external_id,'7001');
+ assert.ok(!JSON.stringify(detail).includes('checkout_hash'));assert.ok(!JSON.stringify(detail).includes('access_hash'));assert.ok(!JSON.stringify(detail).includes('device_hash'));
+ const found=await (await mf.dispatchFetch(origin+'/admin/api/orders?q='+encodeURIComponent(o.body.payment_code),{headers:adminHeaders})).json();assert.ok(found.orders.some(row=>row.id===o.body.id));
+ for(const query of ['ref-7001',detail.order.created_at.slice(0,10),'paid@gmail.com']){
+  const result=await (await mf.dispatchFetch(origin+'/admin/api/orders?q='+encodeURIComponent(query),{headers:adminHeaders})).json();assert.ok(result.orders.some(row=>row.id===o.body.id));
+ }
 });
 function sessionCookies(response){return response.headers.getSetCookie().map(s=>s.split(';')[0]).join('; ');}
 test('claim, token exchange, device binding, atomic independent starts and private R2',async()=>{

@@ -97,3 +97,9 @@
 - Alternatives: unminified direct HTML upload and public R2 object URLs rejected. A full runtime minifier rewrite is deferred.
 - Consequences: seller runs `npm run prepare:admin-upload -- <trusted.html>` locally before selecting the private JSON package. A failed D1 write can leave harmless content-addressed orphan R2 objects; retry is safe. Server checks integrity, not that uploaded delivery is semantically identical to original; exact admin identity is the trust boundary. Drafts remain inactive. No remote upload performed.
 - Affected: scripts/prepare-admin-upload.mjs, package.json, src/admin.mjs, src/worker.mjs, public/admin.*, README.md, tests/worker.test.mjs; private local `.private/admin-upload` artifact ignored.
+
+## 2026-09-17 — admin order detail without credentials
+- Decision: expose a signed-Access-gated order detail view with item snapshots, entitlement state/timestamps, payments, support notes and manual refund records. Search supports Gmail, order ID, BGZ code, SePay reference/ID, date and product. Exclude checkout/access/device hashes and raw tokens.
+- Reason: seller operations need a consolidated evidence view before manual reconciliation or lost-link recovery is safe.
+- Consequences: read-only detail is implemented; related mutations are still pending. No remote change.
+- Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.

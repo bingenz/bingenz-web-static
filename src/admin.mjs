@@ -66,12 +66,28 @@ export async function adminRoute(request,env,actor,path){
  }
  if(path==='/admin/api/orders'&&method==='GET'){
   const q=(url.searchParams.get('q')||'').trim();requireValue(q.length<=254);
+  const term='%'+q.replace(/[\\%_]/g,'\\$&')+'%';
   const rows=await env.DB.prepare(`SELECT o.id,o.gmail,o.total_vnd,o.status,o.payment_code,o.created_at,o.expires_at,o.paid_at,p.external_id,
    (SELECT group_concat(title, ', ') FROM order_items WHERE order_id=o.id) products
    FROM orders o LEFT JOIN payments p ON p.id=o.paid_payment_id
    WHERE ?='' OR o.id=? OR o.gmail LIKE ? ESCAPE '\\' OR o.payment_code=? OR p.external_id=?
-   ORDER BY o.created_at DESC LIMIT 100`).bind(q,q,'%'+q.replace(/[\\%_]/g,'\\$&')+'%',q.toUpperCase(),q).all();
+   OR o.created_at LIKE ? ESCAPE '\\'
+   OR EXISTS(SELECT 1 FROM payments x WHERE x.order_id=o.id AND (x.reference LIKE ? ESCAPE '\\' OR x.external_id=?))
+   OR EXISTS(SELECT 1 FROM order_items i JOIN products product ON product.id=i.product_id WHERE i.order_id=o.id AND (i.title LIKE ? ESCAPE '\\' OR product.slug LIKE ? ESCAPE '\\'))
+   ORDER BY o.created_at DESC LIMIT 100`).bind(q,q,term,q.toUpperCase(),q,term,term,q,term,term).all();
   return json({orders:rows.results});
+ }
+ const order=path.match(/^\/admin\/api\/orders\/([a-f0-9-]{36})$/);
+ if(order&&method==='GET'){
+  const o=await env.DB.prepare(`SELECT id,gmail,payment_code,total_vnd,status,created_at,expires_at,paid_at,paid_payment_id,access_issued_at,generation,CASE WHEN device_hash IS NULL THEN 0 ELSE 1 END device_bound FROM orders WHERE id=?`).bind(order[1]).first();
+  if(!o)throw new HttpError(404,'not_found');
+  const [items,payments,notes,refunds]=await env.DB.batch([
+   stmt(env.DB,`SELECT i.id,i.product_id,i.version_id,i.title,i.price_vnd,i.duration_seconds,i.activation_days,e.id entitlement_id,e.status entitlement_status,e.activation_deadline,e.started_at,e.expires_at FROM order_items i LEFT JOIN entitlements e ON e.order_item_id=i.id WHERE i.order_id=? ORDER BY i.title`,o.id),
+   stmt(env.DB,`SELECT id,external_id,reference,payment_code,amount_vnd,transaction_at,received_at,direction,bank_valid,status,note,reconciled_at,reconciled_by FROM payments WHERE order_id=? OR payment_code=? ORDER BY received_at DESC LIMIT 100`,o.id,o.payment_code),
+   stmt(env.DB,`SELECT id,actor,note,created_at FROM support_notes WHERE order_id=? ORDER BY created_at DESC LIMIT 50`,o.id),
+   stmt(env.DB,`SELECT id,status,amount_vnd,recorded_at,completed_at,actor,note FROM refunds WHERE order_id=? ORDER BY recorded_at DESC LIMIT 50`,o.id)
+  ]);
+  return json({order:o,items:items.results,payments:payments.results,notes:notes.results,refunds:refunds.results});
  }
  const product=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})$/);
  const versions=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})\/versions$/);

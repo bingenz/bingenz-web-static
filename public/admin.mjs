@@ -3,7 +3,15 @@ let products=[];
 function say(message){$('#message').textContent=message;}
 async function api(path,options){const response=await fetch('/admin/api/'+path,options);const body=await response.json();if(!response.ok)throw Error(body.error||'Không tải được dữ liệu');return body;}
 function cell(row,value){const td=row.insertCell();td.textContent=value??'—';}
-function renderOrders(orders){const body=$('#orders');body.replaceChildren();for(const o of orders){const tr=body.insertRow();for(const value of [o.created_at,o.gmail,o.payment_code,o.products,money(o.total_vnd),o.status])cell(tr,value);}}
+function renderOrders(orders){const body=$('#orders');body.replaceChildren();for(const o of orders){const tr=body.insertRow();const date=tr.insertCell();date.textContent=o.created_at+' ';const open=document.createElement('button');open.type='button';open.textContent='Xem';open.dataset.order=o.id;date.append(open);for(const value of [o.gmail,o.payment_code,o.products,money(o.total_vnd),o.status])cell(tr,value);}}
+$('#orders').addEventListener('click',async e=>{const id=e.target.closest('button[data-order]')?.dataset.order;if(!id)return;
+ try{const data=await api('orders/'+id),o=data.order;$('#order-detail').hidden=false;
+ $('#order-summary').textContent=`${o.id} · ${o.gmail} · ${o.payment_code} · ${money(o.total_vnd)} · ${o.status} · tạo ${o.created_at} · hạn thanh toán ${o.expires_at} · trả ${o.paid_at||'—'} · thiết bị ${o.device_bound?'đã gắn':'chưa gắn'}`;
+ const items=$('#order-items');items.replaceChildren();for(const i of data.items){const row=items.insertRow();for(const value of [i.title,money(i.price_vnd),i.version_id,i.entitlement_status||'—',i.started_at,i.expires_at])cell(row,value);}
+ const payments=$('#order-payments');payments.replaceChildren();for(const p of data.payments){const row=payments.insertRow();for(const value of [p.transaction_at,p.external_id,p.reference,money(p.amount_vnd),p.status])cell(row,value);}
+ $('#order-notes').textContent=data.notes.map(n=>`${n.created_at} · ${n.actor}: ${n.note}`).join('\n')||'Chưa có ghi chú.';
+ $('#order-refunds').textContent=data.refunds.map(r=>`${r.recorded_at} · ${r.status} · ${money(r.amount_vnd)} · ${r.note}`).join('\n')||'Chưa có bản ghi hoàn tiền.';
+ $('#order-detail').scrollIntoView({behavior:'smooth',block:'start'});say('Đã tải chi tiết đơn.');}catch(error){say(error.message);}});
 async function showProduct(){const p=products.find(x=>x.id===$('#product-list').value);if(!p)return;const f=$('#product-form');for(const key of ['title','slug','description','category','price_vnd','duration_seconds','activation_days','display_order'])f.elements[key].value=p[key]??'';f.elements.active.checked=!!p.active;f.elements.archived.checked=!!p.archived;
  try{const data=await api('products/'+p.id+'/versions');if($('#product-list').value!==p.id)return;const select=$('#versions');select.replaceChildren();for(const v of data.versions){const option=document.createElement('option');option.value=v.id;option.textContent=`${v.created_at} · ${v.sha256.slice(0,12)} · ${v.bytes} bytes${v.id===data.current_version_id?' (hiện tại)':''}`;select.append(option);}select.value=data.current_version_id;}catch(error){say(error.message);}}
 async function load(){const [dashboard,list,orders]=await Promise.all([api('dashboard'),api('products'),api('orders')]);
