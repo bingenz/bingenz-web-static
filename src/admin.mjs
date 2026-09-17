@@ -104,6 +104,36 @@ export async function adminRoute(request,env,actor,path){
   return json({order_id:target.id,payment_id:paymentId,status:'reconciled'});
  }
  const order=path.match(/^\/admin\/api\/orders\/([a-f0-9-]{36})$/);
+ const refundRequest=path.match(/^\/admin\/api\/orders\/([a-f0-9-]{36})\/refunds$/);
+ if(refundRequest&&method==='POST'){
+  const input=await jsonBody(request,4096);objectShape(input,['amount_vnd','note']);
+  requireValue(integer(input.amount_vnd,1,100000000)&&typeof input.note==='string'&&input.note.trim().length>=10&&input.note.length<=2000,400,'refund_request_invalid');
+  const target=await env.DB.prepare("SELECT id,total_vnd FROM orders WHERE id=? AND status='paid'").bind(refundRequest[1]).first();
+  if(!target)throw new HttpError(404,'paid_order_required');
+  const id=crypto.randomUUID(),now=iso();
+  const result=await env.DB.batch([
+   stmt(env.DB,`INSERT INTO refunds(id,order_id,status,amount_vnd,recorded_at,actor,note) SELECT ?,?,'requested',?,?,?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=? AND status='paid' AND total_vnd>=?+(SELECT coalesce(sum(amount_vnd),0) FROM refunds WHERE order_id=? AND status IN ('requested','completed'))) RETURNING id`,id,target.id,input.amount_vnd,now,actor,input.note.trim(),target.id,input.amount_vnd,target.id),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) SELECT ?,?,'refund.request','refund',?,?,? WHERE changes()=1`,crypto.randomUUID(),actor,id,now,JSON.stringify({order_id:target.id,amount_vnd:input.amount_vnd,note:input.note.trim()}))
+  ]);
+  if(result[0].results.length!==1)throw new HttpError(409,'refund_limit_exceeded');
+  return json({id,status:'requested',recorded_at:now},201);
+ }
+ const refundComplete=path.match(/^\/admin\/api\/orders\/([a-f0-9-]{36})\/refunds\/([a-f0-9-]{36})\/complete$/);
+ if(refundComplete&&method==='POST'){
+  const input=await jsonBody(request,4096);objectShape(input,['note','revoke_entitlements','manual_transfer_confirmed']);
+  requireValue(input.manual_transfer_confirmed===true&&typeof input.revoke_entitlements==='boolean'&&typeof input.note==='string'&&input.note.trim().length>=10&&input.note.length<=2000,400,'manual_refund_confirmation_required');
+  const before=await env.DB.prepare("SELECT r.id,r.amount_vnd,r.status,o.status order_status FROM refunds r JOIN orders o ON o.id=r.order_id WHERE r.id=? AND r.order_id=?").bind(refundComplete[2],refundComplete[1]).first();
+  if(!before)throw new HttpError(404,'not_found');
+  requireValue(before.status==='requested'&&before.order_status==='paid',409,'refund_not_pending');
+  const now=iso();
+  const result=await env.DB.batch([
+   stmt(env.DB,`UPDATE refunds SET status='completed',completed_at=?,note=note||'\nHoàn tất: '||?,actor=? WHERE id=? AND order_id=? AND status='requested' RETURNING id`,now,input.note.trim(),actor,before.id,refundComplete[1]),
+   stmt(env.DB,`UPDATE entitlements SET status='revoked' WHERE order_id=? AND ?=1 AND EXISTS(SELECT 1 FROM refunds WHERE id=? AND status='completed' AND completed_at=?) AND status!='revoked'`,refundComplete[1],Number(input.revoke_entitlements),before.id,now),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) SELECT ?,?,'refund.complete','refund',?,?,? WHERE EXISTS(SELECT 1 FROM refunds WHERE id=? AND status='completed' AND completed_at=?)`,crypto.randomUUID(),actor,before.id,now,JSON.stringify({order_id:refundComplete[1],amount_vnd:before.amount_vnd,revoke_entitlements:input.revoke_entitlements,note:input.note.trim()}),before.id,now)
+  ]);
+  if(result[0].results.length!==1)throw new HttpError(409,'refund_changed');
+  return json({id:before.id,status:'completed',completed_at:now});
+ }
  const noteRoute=path.match(/^\/admin\/api\/orders\/([a-f0-9-]{36})\/notes$/);
  if(noteRoute&&method==='POST'){
   const input=await jsonBody(request,4096);objectShape(input,['note']);

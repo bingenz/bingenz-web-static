@@ -272,6 +272,26 @@ test('admin reconciliation requires explicit review, sufficient valid funds and 
  assert.equal((await db.prepare('SELECT status,order_id FROM payments WHERE id=?').bind(unknown.id).first()).order_id,order.id);
  assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='payment.reconcile' AND object_id=?").bind(unknown.id).first()).n,1);
 });
+test('admin refund records never transfer funds and can revoke entitlements',async()=>{
+ const o=await checkout('refundfixture@gmail.com');assert.equal(o.response.status,201);
+ await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();
+ await sendPayment(o.body,{},9010);
+ const headers={'Cf-Access-Jwt-Assertion':await adminToken(),Origin:origin,'Content-Type':'application/json'};
+ const request=body=>mf.dispatchFetch(origin+'/admin/api/orders/'+o.body.id+'/refunds',{method:'POST',headers,body:JSON.stringify(body)});
+ assert.equal((await request({amount_vnd:10001,note:'Customer requested a refund'})).status,409);
+ const created=await request({amount_vnd:6000,note:'Customer requested a partial refund'});assert.equal(created.status,201);
+ const refund=(await created.json()).id;
+ assert.equal((await request({amount_vnd:5000,note:'Another partial refund request'})).status,409);
+ const complete=body=>mf.dispatchFetch(origin+'/admin/api/orders/'+o.body.id+'/refunds/'+refund+'/complete',{method:'POST',headers,body:JSON.stringify(body)});
+ assert.equal((await complete({note:'Bank transfer verified manually',manual_transfer_confirmed:false,revoke_entitlements:true})).status,400);
+ assert.equal((await db.prepare('SELECT status FROM refunds WHERE id=?').bind(refund).first()).status,'requested');
+ const done=await complete({note:'Bank transfer verified manually',manual_transfer_confirmed:true,revoke_entitlements:true});assert.equal(done.status,200);
+ assert.equal((await complete({note:'Bank transfer verified manually',manual_transfer_confirmed:true,revoke_entitlements:true})).status,409);
+ assert.equal((await db.prepare('SELECT status,completed_at FROM refunds WHERE id=?').bind(refund).first()).status,'completed');
+ assert.equal((await db.prepare('SELECT status FROM entitlements WHERE order_id=?').bind(o.body.id).first()).status,'revoked');
+ assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE object_id=? AND action IN ('refund.request','refund.complete')").bind(refund).first()).n,2);
+ assert.equal((await db.prepare('SELECT status FROM orders WHERE id=?').bind(o.body.id).first()).status,'paid');
+});
 test('browser paid-access claim, Start confirmation and sandbox runtime work together',async()=>{
  const o=await checkout('browser@gmail.com');
  await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();await sendPayment(o.body,{},9001);

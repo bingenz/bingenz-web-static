@@ -115,3 +115,9 @@
 - Reason: late and unmatched payments need a deliberate seller path, but underpayments, wrong-bank and outgoing records must not become a payment bypass. The existing paid-order trigger continues to create the entitlement snapshot.
 - Consequences: an operator can manually fulfill a late, overpaid or code-mismatched transaction after external verification. This is a high-trust admin action; it is not automatic proof from the bank statement. Underpaid payments remain for review. D1 `meta.changes` includes trigger work, so success uses the returned updated order row. No remote transactions were altered.
 - Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.
+
+## 2026-09-17 — manual refund ledger, no transfer automation
+- Decision: a paid order may receive bounded refund requests; the sum of requested and completed amounts cannot exceed the order total. Completion requires an operator attestation that the transfer occurred outside the application, a note, and an explicit choice whether to revoke entitlements. Each transition and optional revocation is grouped in a D1 batch with an audit record.
+- Reason: support needs traceable records while the specification forbids automatic outgoing transfers. A requested refund must not be shown as completed or revoke access before the operator confirms the external transfer.
+- Consequences: the ledger records intent and confirmation, not bank settlement proof. Completion date is the system recording time; the external transfer receipt remains outside this application. No remote payment or bank API was called.
+- Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.
