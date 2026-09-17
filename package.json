@@ -9,6 +9,7 @@
     "audit:simulations": "node scripts/audit-simulations.mjs",
     "prepare:admin-upload": "node scripts/prepare-admin-upload.mjs",
     "test:protected": "node scripts/test-protected-simulations.mjs",
+    "audit:preview-r2": "node scripts/audit-preview-r2.mjs",
     "deploy:preview": "wrangler deploy --config wrangler.preview.toml",
     "migrate:local": "wrangler d1 migrations apply DB --local --config wrangler.local.toml",
     "migrate:preview": "wrangler d1 migrations apply DB --remote --config wrangler.preview.toml"

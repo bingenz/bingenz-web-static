@@ -49,6 +49,7 @@ Required secret names: `SESSION_SECRET`, `ABUSE_HASH_KEY`, `SEPAY_WEBHOOK_SECRET
 3. Remote import (only after resource provisioning): `node scripts/import-products.mjs --remote --config <verified-config.toml> --bucket <private-bucket>`.
 
 Repeated imports preserve seller metadata and existing version history. New source hashes select a new version; rerunning identical source preserves an administrator's rollback. Never publish `.private/` or original HTML. Thumbnails alone belong in `public/product-thumbnails/`.
+Run `npm run audit:preview-r2` to read back every original/delivery object from the isolated preview bucket and compare its size and SHA-256 against the private manifest. This is read-only on Cloudflare and uses temporary local files.
 
 ## SePay và release
 
