@@ -447,4 +447,37 @@ test('browser unpaid checkout shows QR/countdown then polls into paid access',as
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
+test('admin browser searches a paid order and records audited support actions',async()=>{
+ const o=await checkout('adminbrowserfixture@gmail.com');assert.equal(o.response.status,201);
+ await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();
+ assert.equal((await sendPayment(o.body,{},9104)).status,200);
+ const browser=await chromium.launch();
+ try{
+  const page=await browser.newPage({extraHTTPHeaders:{'Cf-Access-Jwt-Assertion':await adminToken()},viewport:{width:1280,height:900}}),errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.goto((await mf.ready).origin+'/admin');
+  await page.locator('#orders tr').first().waitFor();
+  await page.locator('#search input[name=q]').fill('adminbrowserfixture@gmail.com');
+  await page.locator('#search button').click();
+  await page.locator('#orders button[data-order]').first().click();
+  await page.locator('#order-detail').waitFor({state:'visible'});
+  assert.match(await page.locator('#order-summary').innerText(),/adminbrowserfixture@gmail\.com/);
+  await page.locator('#support-note-form textarea').fill('Verified browser support note.');
+  await page.locator('#support-note-form button').click();
+  await page.getByText('Verified browser support note.').waitFor();
+  await page.locator('#order-items button[data-entitlement]').first().click();
+  await page.locator('#entitlement-form input[name=days]').fill('1');
+  await page.locator('#entitlement-form textarea').fill('Customer requested extra activation day.');
+  await page.locator('#entitlement-form button').click();
+  await page.getByText('Đã cập nhật quyền và ghi nhật ký.').waitFor();
+  await page.locator('#refund-request-form input[name=amount_vnd]').fill('1000');
+  await page.locator('#refund-request-form textarea').fill('Customer requested partial refund.');
+  await page.locator('#refund-request-form button').click();
+  await page.getByText('Đã ghi nhận yêu cầu hoàn tiền; chưa chuyển tiền.').waitFor();
+  assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE object_id=? AND action='support.note'").bind(o.body.id).first()).n,1);
+  assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='entitlement.extend_activation' AND json_extract(metadata,'$.order_id')=?").bind(o.body.id).first()).n,1);
+  assert.equal((await db.prepare("SELECT count(*) n FROM refunds WHERE order_id=? AND status='requested'").bind(o.body.id).first()).n,1);
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
 

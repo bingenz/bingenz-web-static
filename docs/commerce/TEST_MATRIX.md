@@ -1,7 +1,7 @@
 # Verification matrix
 
 Last updated: 2026-09-17. Preview D1/R2 imported; production deployment unchanged.
-Current run: npm test — 28 tests, 28 passed, zero failures/skips. Separate protected-simulation run: 35 products × 2 viewports, all pass.
+Current run: npm test — 29 tests, 29 passed, zero failures/skips. Separate protected-simulation run: 35 products × 2 viewports, all pass.
 Tests use local Worker/D1/R2 for runtime behavior; mocked provider success is not live provider verification.
 
 | Area | Evidence and current result | Remaining |
