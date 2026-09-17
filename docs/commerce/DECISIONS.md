@@ -58,3 +58,12 @@
 - Reason: avoid Strict cookies incorrectly rejecting a saved link opened from another site, while retaining CSRF protection and one-device binding.
 - Consequences: lost raw link still requires manual admin support; generation changes invalidate sessions and permits. Runtime permit expires within60 seconds, and every delivery rechecks D1. Sandbox allows scripts only; CSP denies network/forms/privileged origin, with no-store and markers. Browser heartbeat locks runtime on failed authorization.
 - Limitation: client-delivered code cannot be perfectly secret or remotely erased; documented source secrecy boundary remains.
+
+## 2026-09-17 — owner-requested handoff and corrected provider state
+- Decision: stop implementation, consolidate continuity records, validate existing work and create a documentation-only checkpoint. No implementation after commit.
+- Reason: explicit owner instruction; earlier chronological progress appendices contained stale current-state claims.
+- Correction: in-app browser is authenticated to SePay. Absence of Chrome is not a login blocker. Existing enabled BinGenZ payment webhook #56829 uses HMAC, incoming JSON, selected TPBank account, retries and payment verification. No provider mutation by this task.
+- Incompatibility: saved provider URL uses /api/webhook/sepay; source router uses /api/webhooks/sepay. Reconcile the canonical endpoint with regression coverage on the next authorized continuation before provider tests/deployment. Do not claim integration readiness.
+- BGZ recognition/filter and secret matching remain unverified. Error alerts are off. Existing Cube Jump webhook must remain intact. No banking credentials or secrets copied to state files.
+- Cloudflare read-only refresh: remote R2 empty, only two unrelated D1 databases, live version ac96a0ba unchanged. Local D1/R2 imports are complete; remote commerce resources created by task remain zero.
+- Affected: four continuity files only; no implementation/provider changes. Last implementation commit c386d07; handoff commit contains this entry. No outstanding owner action; pause is intentional, not a technical blocker.

@@ -1620,3 +1620,7 @@ Before ending any session that has performed implementation work, ensure that:
 - the repository is left in a state understandable by another engineer.
 
 The implementation should behave as if another senior engineer may take over at any moment.
+
+## Owner session directive — 2026-09-17
+
+The owner explicitly requested a safe handoff for this session: update all four Section 41 continuity files to reflect actual state, especially SePay progress, Cloudflare resources, blockers and exact next action; commit a coherent checkpoint; do not continue implementation after recording that checkpoint. This is a session stop instruction, not a change to the product requirements above. Future implementation resumes only on a subsequent owner instruction and follows Section 41.9. See PROGRESS.md for current handoff state.

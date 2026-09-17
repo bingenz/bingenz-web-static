@@ -1,76 +1,79 @@
 # Verification matrix
 
-Baseline syntax and browser smoke checks have run. Pending is not a pass; baseline is not production runtime validation.
+Last updated: 2026-09-17T06:39:09Z. Paused by owner after continuity checkpoint.
+Final handoff run: npm test — 18 tests, 18 passed, zero failures/skips.
+Tests are local; mocked provider success is not live provider verification.
 
-| Area | Required verification | Status |
+| Area | Evidence and current result | Remaining |
 |---|---|---|
-| Unit | Validation, pricing, payment matching, entitlement state machine | Pending |
-| Integration | D1 atomic transitions, idempotency, R2 private delivery | Pending |
-| Payment/webhook | Exact/under/over/late/unknown, duplicate, wrong bank, outgoing, invalid/replayed signature | Pending |
-| Security | Tokens, device binding/reset, expiry, admin JWT, CSRF, price tampering | Pending |
-| Storefront desktop | Existing features and full purchase flow | Pending |
-| Storefront mobile | Two columns, no overflow, purchase/access/runtime | Pending |
-| Admin | All operations, audit, exports, recovery | Pending |
-| Cloudflare Access | Exact Google account and JWT verification | Pending |
-| Turnstile | Server validation and rejection | Pending |
-| SePay | Official signed webhook test and BGZ recognition | Pending |
-| Simulation inventory | Individually enumerate live HTML files before implementation | Pending |
+| Unit / schema | PASS: Gmail aliases, random codes/tokens, session tampering/purpose/expiry, HMAC bytes/timestamp window, body limit, invalid calendar dates, immutable price snapshots/cart constraints | Broader edge cases |
+| D1 integration | PASS: real workerd/D1 pricing, duplicate/inactive carts, pending ownership/reuse, concurrent payment dedupe, independent entitlements, atomic repeated Start | Expiration/deadline/rate-limit races |
+| Payment matcher | PASS: exact, under/over, unknown code, late, wrong account, outgoing, invalid signature; duplicate grants once | Same-second timestamp boundary; production official test |
+| Customer security | PASS: claim/exchange, hashed token persistence, wrong-device denial, no auth from Gmail, generation invalidation, revocation, origin rejection, private R2 permit/CSP/no-store/markers | Real admin reset/reissue operations, expired content/deadline coverage |
+| Imports | PASS: local 35 products/35 versions, two full imports without duplicates, metadata/rollback preservation, partial-write recovery test | Remote uploads and bucket privacy verification |
+| Thumbnails | PASS: 35 WebP screenshots, contact sheet reviewed | Admin replacement workflow |
+| Storefront desktop | PASS: 1440px, 35 cards, correct placement, 4 columns, cart/search/persistence/dialog focus, no overflow/errors, light/dark screenshots | Full unpaid purchase flow |
+| Storefront mobile | PASS: 390/360px exactly 2 columns, cart/search/dialog, no overflow/errors | Live Turnstile/QR/payment completion |
+| Existing site | PASS: theme/modals/contact popup/old images, Cube Jump presence | Full navigation/social/copy assertions; legacy modal focus improvements |
+| Paid browser flow | PASS: checkout paid claim -> clean access page -> Start cancel/confirm -> sandbox iframe at 390px | Real payment screen and all 35 simulations |
+| Admin | Routes fail closed; not implemented | All operations, audit, exports, reconciliation/recovery/refunds |
+| Access | Helper validates issuer/audience/signature/email; missing config rejects | Valid/wrong signed JWT fixtures and live Google policy |
+| Turnstile | PASS mocked-provider wrong hostname/action/replayed response denial | Production widget/secrets, fresh real token and replay |
+| SePay | Authenticated dashboard verified; #56829 enabled HMAC, incoming JSON, retry on, TPBank selected; no send-test performed | Singular/plural route mismatch, secret matching, BGZ recognition/filter, alerts and official signed test |
+| Cloudflare remote | Read-only lists verified; zero R2 buckets, only unrelated D1 databases; deployment ac96a0ba unchanged | Commerce provisioning, migrations/imports, production gates |
+| Simulation inventory | PASS: all 35 individually enumerated and syntax checked | Full protected runtime verification below |
 
 ## Individual simulations
 
-Inventory complete: 35 originals. Each passed desktop/mobile baseline loading and initial interaction; screenshots are local audit evidence, not product thumbnails.
-Required columns: filename, product/slug, imported, thumbnail, desktop, mobile, runtime wrapper, console errors, minification/mangling, known issues.
+Each original passed baseline desktop/mobile loading and initial interaction. Each minified delivery loaded during local thumbnail capture. These are NOT full-cycle protected runtime passes. Actual imported slugs match the listed source stems; product IDs/version hashes are in PREPARED_PRODUCTS.json. Imports are local only.
 
-| Filename | Product / proposed slug | Imported | Thumbnail | Desktop | Mobile | Wrapper | Console | Minification | Issues |
+| Filename | Product / slug | Imported | Thumbnail | Desktop | Mobile | Wrapper | Console | Minification | Issues |
 |---|---|---|---|---|---|---|---|---|---|
-| 01-a-star-pathfinding.html | 01-a-star-pathfinding | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 02-quick-sort.html | 02-quick-sort | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 03-lru-cache.html | 03-lru-cache | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 04-dns-resolution.html | 04-dns-resolution | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 05-load-balancer.html | 05-load-balancer | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 06-rate-limiting.html | 06-rate-limiting | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 07-deadlock-detection.html | 07-deadlock-detection | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 08-jwt-authentication.html | 08-jwt-authentication | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 09-k-means-clustering.html | 09-k-means-clustering | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 10-blockchain-mining.html | 10-blockchain-mining | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 11-binary-search.html | 11-binary-search | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 12-merge-sort.html | 12-merge-sort | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 13-breadth-first-search.html | 13-breadth-first-search | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 14-depth-first-search.html | 14-depth-first-search | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 15-dijkstra-shortest-path.html | 15-dijkstra-shortest-path | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 16-hash-table-collision.html | 16-hash-table-collision | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 17-bloom-filter.html | 17-bloom-filter | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 18-trie-autocomplete.html | 18-trie-autocomplete | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 19-producer-consumer.html | 19-producer-consumer | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 20-message-queue-retry.html | 20-message-queue-retry | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 21-tcp-handshake.html | 21-tcp-handshake | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 22-cdn-cache.html | 22-cdn-cache | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 23-sql-transaction-locking.html | 23-sql-transaction-locking | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 24-garbage-collection-mark-sweep.html | 24-garbage-collection-mark-sweep | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 25-memory-paging-lru.html | 25-memory-paging-lru | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 26-cpu-round-robin.html | 26-cpu-round-robin | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 27-union-find.html | 27-union-find | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 28-topological-sort.html | 28-topological-sort | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 29-consistent-hashing.html | 29-consistent-hashing | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| 30-raft-leader-election.html | 30-raft-leader-election | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| battery-charge-animation-tiktok-9x16-v4.html | battery-charge-animation-tiktok-9x16-v4 | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| database-index-tiktok-pro.html | database-index-tiktok-pro | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| ddos-simulation-tiktok-pro.html | ddos-simulation-tiktok-pro | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| fingerprint-sim-tiktok-pro.html | fingerprint-sim-tiktok-pro | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
-| object-detection-tiktok-pro-v2.html | object-detection-tiktok-pro-v2 | Local yes; remote no | Yes | Pending | Pending | Pending | Pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 01-a-star-pathfinding.html | 01-a-star-pathfinding | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 02-quick-sort.html | 02-quick-sort | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 03-lru-cache.html | 03-lru-cache | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 04-dns-resolution.html | 04-dns-resolution | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 05-load-balancer.html | 05-load-balancer | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 06-rate-limiting.html | 06-rate-limiting | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 07-deadlock-detection.html | 07-deadlock-detection | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 08-jwt-authentication.html | 08-jwt-authentication | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 09-k-means-clustering.html | 09-k-means-clustering | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 10-blockchain-mining.html | 10-blockchain-mining | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 11-binary-search.html | 11-binary-search | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 12-merge-sort.html | 12-merge-sort | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 13-breadth-first-search.html | 13-breadth-first-search | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 14-depth-first-search.html | 14-depth-first-search | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 15-dijkstra-shortest-path.html | 15-dijkstra-shortest-path | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 16-hash-table-collision.html | 16-hash-table-collision | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 17-bloom-filter.html | 17-bloom-filter | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 18-trie-autocomplete.html | 18-trie-autocomplete | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 19-producer-consumer.html | 19-producer-consumer | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 20-message-queue-retry.html | 20-message-queue-retry | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 21-tcp-handshake.html | 21-tcp-handshake | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 22-cdn-cache.html | 22-cdn-cache | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 23-sql-transaction-locking.html | 23-sql-transaction-locking | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 24-garbage-collection-mark-sweep.html | 24-garbage-collection-mark-sweep | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 25-memory-paging-lru.html | 25-memory-paging-lru | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 26-cpu-round-robin.html | 26-cpu-round-robin | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 27-union-find.html | 27-union-find | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 28-topological-sort.html | 28-topological-sort | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 29-consistent-hashing.html | 29-consistent-hashing | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| 30-raft-leader-election.html | 30-raft-leader-election | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| battery-charge-animation-tiktok-9x16-v4.html | battery-charge-animation-tiktok-9x16-v4 | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| database-index-tiktok-pro.html | database-index-tiktok-pro | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| ddos-simulation-tiktok-pro.html | ddos-simulation-tiktok-pro | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| fingerprint-sim-tiktok-pro.html | fingerprint-sim-tiktok-pro | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
+| object-detection-tiktok-pro-v2.html | object-detection-tiktok-pro-v2 | Local yes; remote no | Yes | Baseline pass; full cycle pending | Baseline pass; full cycle pending | Pending | Baseline clear; wrapper pending | Initial load pass | Syntax and baseline load/initial run pass; protected full-cycle test pending |
 
+## Evidence and commands
+- tests/schema.test.mjs, security.test.mjs, import.test.mjs, worker.test.mjs: npm test, final 18/18 pass.
+- STOREFRONT_TESTS.json: node scripts/test-storefront.mjs with local Worker on port4173.
+- REGRESSION_SITE_TESTS.json: node scripts/baseline-site.mjs http://127.0.0.1:4173. Original baseline remains separate.
+- BASELINE_SIMULATION_TESTS.json and SIMULATION_INVENTORY.json contain individual original observations.
+- PREPARED_PRODUCTS.json: 35 original/delivery hashes and thumbnails; no paid HTML bodies.
+- Ignored .private/products/import-local-result.json: second import verified 35 products/35 versions.
+- Screenshots under ignored test-results/storefront and test-results/audit; thumbnail sheet test-results/thumbnails.png.
+- No production smoke test, deployment, official SePay send-test or real payment performed.
 
-## Foundation checkpoint — 2026-09-17
-
-13 automated tests pass (npm test): SQLite constraints; Gmail/code/session/HMAC/body validation; real workerd/D1 router, server prices, inactive/duplicate cart rejection, pending reuse and ownership, Turnstile wrong host/action and replay, concurrent duplicate payment with two independent entitlements. Provider Siteverify is mocked only in the test harness outbound binding. Live Turnstile/SePay tests remain pending. Admin currently fails closed pending implementation/configuration.
-
-## Local import verification — 2026-09-17
-
-35/35 local products and versions imported twice without duplication; 35 WebP thumbnails generated. Remote import remains pending. Minified files loaded in browser during thumbnail capture; complete desktop/mobile minification compatibility and protected full-cycle tests remain pending. 17 automated tests now pass including import interruption/rollback and access/device/atomic Start/R2/mismatch payment tests.
-
-
-## Storefront and access verification — 2026-09-17
-
-STOREFRONT_TESTS.json: 1440/390/360; 35 cards; correct placement; two mobile columns; no overflow/page errors; cart add/remove/persistence; native dialog Escape/focus return; search; light/dark screenshots inspected.
-REGRESSION_SITE_TESTS.json preserves original baseline separately: theme/modals/contact pass, Cube Jump section present, existing images load. Lazy offscreen thumbnail loading is not a failed asset.
-Worker suite: paid claim/exchange, wrong-device denial, no raw token persistence, repeated Start same expiry, independent item timers, R2 sandbox/no-store/watermark, revocation and generation invalidation, six payment mismatch cases, invalid signature rejected. Browser claim/access/Start cancel+confirm/play passes. Full35 protected suite and live provider tests still pending.
+## Next verification
+Reconcile /api/webhook/sepay saved at provider versus /api/webhooks/sepay in source and test the chosen route. Implement/admin-test next; then complete expiry/deadline boundaries, full checkout, all35 protected full cycles at desktop/mobile and live infrastructure/provider gates. Do not advance tests from pending to pass based only on page rendering.
