@@ -35,11 +35,11 @@ Owner resumed implementation after the previous documentation-only handoff. Work
 - Admin can preview any stored product version through an authenticated private R2 route inside a sandboxed modal iframe. Delivery has no-store/CSP restrictions; closing the modal unloads the simulation. Unauthorized and wrong-product requests are denied.
 
 ## Cloudflare: local versus remote
-Planned isolated preview operation: create `bingenz-commerce-preview` D1 and R2 resources in the authenticated account, then bind only a dedicated preview Worker. Last safe checkpoint: cd54cb1 (private admin preview); existing production Worker/resources remain untouched. Record actual resource IDs and migration/import outcome immediately afterward. Do not use the two existing unrelated D1 databases.
-Fresh read-only checks this resume: remote R2 list succeeds and is empty; D1 still lists only the two unrelated databases below; deployments list confirms the version above.
+Isolated preview resources were created in the authenticated account: D1 `bingenz-commerce-preview` (45e95b13-841f-4e71-b21c-5055758f8607, APAC) and private R2 bucket `bingenz-commerce-preview` (APAC, Standard). `wrangler.preview.toml` binds only these resources to a separate Worker name and enables logs/traces. Next risky operation: apply the two existing migrations to this new empty D1 only, then import the 35 reviewed assets; last safe code checkpoint cd54cb1. No preview Worker deployment or secret/configuration write yet. Existing production Worker and the two unrelated D1 databases remain untouched.
+Fresh read-only checks before creation showed remote R2 empty; D1 listed only the two unrelated databases below; deployments list confirmed the version above.
 
 - Existing account Worker: bingenz-web-static; bingenz.com/www.bingenz.com; bingenz-web-static.lnth.workers.dev.
-- Remote resources created by this task: NONE. No remote migrations/imports/secret writes/Access or Turnstile changes/deployments.
+- Remote resources created by this task: isolated preview D1 and R2 above. No remote migrations/imports/secret writes/Access or Turnstile changes/deployments yet.
 - R2 subscription activated by owner. No remote commerce bucket or binding.
 - Existing D1: bingenz-db (5fe27fd2-18ef-402e-aa46-abc424732474), cube-jump-chat-logs (faa75ad6-a591-4691-8d3f-1d81b3a5a72f). Do not alter unrelated resources.
 - Local-only config wrangler.local.toml: Worker bingenz-commerce-local; D1 DB / bingenz-commerce-local / placeholder UUID 00000000-0000-0000-0000-000000000000; R2 SIMULATIONS / bingenz-commerce-local; ASSETS.
