@@ -139,3 +139,9 @@
 - Reason: live end-to-end verification needs real D1/R2 without risking legacy production data. The first remote migration attempt failed atomically with `incomplete input`; the new DB remained empty. A known Cloudflare D1 trigger parsing issue matched this syntax.
 - Consequences: both migrations now exist remotely with all four triggers; no products, secrets or Worker deployment yet. The preview resources can accrue Cloudflare usage. Local tests remain green.
 - Affected: wrangler.preview.toml, migrations/0001_commerce.sql, docs/commerce/PROGRESS.md.
+
+## 2026-09-17 — bounded entitlement support operations
+- Decision: expose four reason-required, audited admin actions on a single entitlement: extend a live activation window, extend an active run, reopen an expired activation window, or revoke. Guard each against the current status and timestamps; use an optimistic D1 update plus audit and support note in one batch.
+- Reason: support must resolve timing/device issues without granting arbitrary access or bypassing paid-order status. Existing customer runtime checks continue to enforce revoked and expired states.
+- Consequences: extensions are bounded per operation but can be repeated by an authorized admin, with a separate audit record each time. No automatic refunds or customer emails are triggered.
+- Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.

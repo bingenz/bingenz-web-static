@@ -305,6 +305,29 @@ test('admin refund records never transfer funds and can revoke entitlements',asy
  assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE object_id=? AND action IN ('refund.request','refund.complete')").bind(refund).first()).n,2);
  assert.equal((await db.prepare('SELECT status FROM orders WHERE id=?').bind(o.body.id).first()).status,'paid');
 });
+test('admin entitlement support actions are guarded and audited',async()=>{
+ const o=await checkout('entitlementsupport@gmail.com',['p','q']);assert.equal(o.response.status,201);
+ await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();await sendPayment(o.body,{},9011);
+ const rows=(await db.prepare('SELECT id,activation_deadline FROM entitlements WHERE order_id=? ORDER BY id').bind(o.body.id).all()).results,id=rows[0].id;
+ const headers={'Cf-Access-Jwt-Assertion':await adminToken(),Origin:origin,'Content-Type':'application/json'};
+ const action=body=>mf.dispatchFetch(origin+'/admin/api/entitlements/'+id+'/adjust',{method:'POST',headers,body:JSON.stringify(body)});
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/entitlements/'+id+'/adjust',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:'{}'})).status,403);
+ assert.equal((await action({action:'extend_activation',days:0,note:'Support adjusted the deadline'})).status,400);
+ assert.equal((await action({action:'extend_activation',days:2,note:'Support adjusted the deadline'})).status,200);
+ const extended=await db.prepare('SELECT activation_deadline FROM entitlements WHERE id=?').bind(id).first();assert.ok(extended.activation_deadline>rows[0].activation_deadline);
+ await db.prepare("UPDATE entitlements SET activation_deadline=?,status='activation_expired' WHERE id=?").bind(new Date(Date.now()-86400000).toISOString(),id).run();
+ assert.equal((await action({action:'reopen',days:1,note:'Verified activation issue'})).status,200);
+ assert.equal((await db.prepare('SELECT status FROM entitlements WHERE id=?').bind(id).first()).status,'not_started');
+ const started=new Date().toISOString(),expiry=new Date(Date.now()+900000).toISOString();
+ await db.prepare("UPDATE entitlements SET status='active',started_at=?,expires_at=? WHERE id=?").bind(started,expiry,id).run();
+ assert.equal((await action({action:'extend_active',seconds:900,note:'Support granted extra runtime'})).status,200);
+ assert.ok((await db.prepare('SELECT expires_at FROM entitlements WHERE id=?').bind(id).first()).expires_at>expiry);
+ assert.equal((await action({action:'revoke',note:'Customer requested access revocation'})).status,200);
+ assert.equal((await action({action:'revoke',note:'Customer requested access revocation'})).status,409);
+ assert.equal((await db.prepare('SELECT status FROM entitlements WHERE id=?').bind(id).first()).status,'revoked');
+ assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE object_id=? AND action LIKE 'entitlement.%'").bind(id).first()).n,4);
+ assert.equal((await db.prepare('SELECT count(*) n FROM support_notes WHERE order_id=?').bind(o.body.id).first()).n,4);
+});
 test('admin CSV exports stream complete pages and neutralize spreadsheet formulas',async()=>{
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/export/orders')).status,403);
  const now=new Date().toISOString();

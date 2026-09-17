@@ -130,6 +130,41 @@ export async function adminRoute(request,env,actor,path){
   return json({order_id:target.id,payment_id:paymentId,status:'reconciled'});
  }
  const order=path.match(/^\/admin\/api\/orders\/([a-f0-9-]{36})$/);
+ const entitlementAction=path.match(/^\/admin\/api\/entitlements\/([a-f0-9]{32})\/adjust$/);
+ if(entitlementAction&&method==='POST'){
+  const input=await jsonBody(request,4096);objectShape(input,['action','days','seconds','note']);
+  requireValue(['extend_activation','extend_active','reopen','revoke'].includes(input.action)&&typeof input.note==='string'&&input.note.trim().length>=10&&input.note.length<=2000,400,'entitlement_adjustment_invalid');
+  const before=await env.DB.prepare('SELECT e.id,e.order_id,e.status,e.activation_deadline,e.started_at,e.expires_at,o.status order_status FROM entitlements e JOIN orders o ON o.id=e.order_id WHERE e.id=?').bind(entitlementAction[1]).first();
+  if(!before)throw new HttpError(404,'not_found');
+  requireValue(before.order_status==='paid',409,'order_not_paid');
+  const now=iso();let next,sql,params;
+  if(input.action==='extend_activation'||input.action==='reopen'){
+   requireValue(integer(input.days,1,365)&&input.seconds===undefined,400,'days_required');
+   requireValue(before.started_at===null&&['not_started','activation_expired'].includes(before.status),409,'entitlement_not_eligible');
+   if(input.action==='extend_activation')requireValue(before.status==='not_started'&&before.activation_deadline>now,409,'entitlement_not_eligible');
+   if(input.action==='reopen')requireValue(before.status==='activation_expired'||before.activation_deadline<=now,409,'entitlement_not_expired');
+   next=new Date(Math.max(Date.parse(before.activation_deadline),Date.now())+input.days*86400000).toISOString();
+   sql="UPDATE entitlements SET status='not_started',activation_deadline=? WHERE id=? AND status=? AND started_at IS NULL AND activation_deadline=? RETURNING id";
+   params=[next,before.id,before.status,before.activation_deadline];
+  }else if(input.action==='extend_active'){
+   requireValue(integer(input.seconds,60,86400)&&input.days===undefined,400,'seconds_required');
+   requireValue(before.status==='active'&&before.started_at!==null&&before.expires_at>now,409,'entitlement_not_active');
+   next=new Date(Date.parse(before.expires_at)+input.seconds*1000).toISOString();
+   sql="UPDATE entitlements SET expires_at=? WHERE id=? AND status='active' AND expires_at=? RETURNING id";
+   params=[next,before.id,before.expires_at];
+  }else{
+   requireValue(input.days===undefined&&input.seconds===undefined,400,'unexpected_duration');
+   requireValue(before.status!=='revoked',409,'already_revoked');
+   next='revoked';sql="UPDATE entitlements SET status='revoked' WHERE id=? AND status=? RETURNING id";params=[before.id,before.status];
+  }
+  const result=await env.DB.batch([
+   stmt(env.DB,sql,...params),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) SELECT ?,?,'entitlement.'||?,'entitlement',?,?,? WHERE changes()=1`,crypto.randomUUID(),actor,input.action,before.id,now,JSON.stringify({order_id:before.order_id,before:{status:before.status,activation_deadline:before.activation_deadline,expires_at:before.expires_at},after:next,note:input.note.trim()})),
+   stmt(env.DB,`INSERT INTO support_notes(id,order_id,actor,note,created_at) SELECT ?,?,?,?,? WHERE changes()=1`,crypto.randomUUID(),before.order_id,actor,input.note.trim(),now)
+  ]);
+  if(result[0].results.length!==1)throw new HttpError(409,'entitlement_changed');
+  return json({id:before.id,action:input.action,result:next});
+ }
  const refundRequest=path.match(/^\/admin\/api\/orders\/([a-f0-9-]{36})\/refunds$/);
  if(refundRequest&&method==='POST'){
   const input=await jsonBody(request,4096);objectShape(input,['amount_vnd','note']);
