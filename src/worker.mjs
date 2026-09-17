@@ -12,7 +12,7 @@ async function route(request,env) {
   if(!['GET','HEAD'].includes(method))originGuard(request);
   if(path.startsWith('/admin/api/'))return adminRoute(request,env,actor,path);
   if(path==='/admin'&&method==='GET'){
-   const shell=await env.ASSETS.fetch(new Request(new URL('/admin.html',url),request));
+   const shell=await env.ASSETS.fetch(new Request(new URL('/admin',url),request));
    const response=new Response(shell.body,shell);response.headers.set('Cache-Control','private, no-store');response.headers.set('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");return response;
   }
   throw new HttpError(404,'not_found');
@@ -30,7 +30,7 @@ async function route(request,env) {
  const claimRoute=path.match(/^\/api\/orders\/([a-f0-9-]{36})\/claim$/);
  if(claimRoute&&method==='POST')return claim(request,env,claimRoute[1]);
  if(path==='/access/recovery'&&method==='GET'){
-  const shell=await env.ASSETS.fetch(new Request(new URL('/commerce.html',url),request));
+  const shell=await env.ASSETS.fetch(new Request(new URL('/commerce',url),request));
   const response=new Response(shell.body,shell);response.headers.set('Cache-Control','private, no-store');response.headers.set('Referrer-Policy','no-referrer');response.headers.set('Content-Security-Policy',"frame-ancestors 'self'");return response;
  }
  const tokenRoute=path.match(/^\/access\/([A-Za-z0-9_-]{43})$/);
@@ -51,7 +51,7 @@ async function route(request,env) {
   if(path==='/access'||path.startsWith('/play/')){
    try{await customer(request,env);}catch(error){if(path==='/access'&&error instanceof HttpError&&error.status===401)return recoveryRedirect();throw error;}
   }
-  const shell=await env.ASSETS.fetch(new Request(new URL('/commerce.html',url),request));
+  const shell=await env.ASSETS.fetch(new Request(new URL('/commerce',url),request));
   const response=new Response(shell.body,shell);response.headers.set('Cache-Control','private, no-store');response.headers.set('Referrer-Policy','no-referrer');response.headers.set('Content-Security-Policy',"frame-ancestors 'self'");return response;
  }
  // Reserved routes must never fall through to an asset or SPA fallback.

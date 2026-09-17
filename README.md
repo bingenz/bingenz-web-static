@@ -6,7 +6,7 @@ Website của `bingenz.com`, với giao diện HTML/CSS/JS trong `public/`. Comm
 
 Worker `src/worker.mjs` phục vụ API/HTML của cửa hàng; D1 giữ sản phẩm, đơn, giao dịch, quyền sử dụng và audit; R2 riêng tư giữ bản gốc, bản giao cho người mua và ảnh quản trị tải lên. `public/` chỉ chứa giao diện và thumbnail công khai. Checkout cần Turnstile server-side; SePay webhook HMAC đối chiếu tiền vào, tài khoản, mã `BGZ`, số tiền và hạn 15 phút trước khi cấp quyền. Trang admin cần Cloudflare Access + kiểm tra JWT/email ở Worker. Quyền truy cập khách dùng token băm, cookie HttpOnly gắn thiết bị, Start độc lập và permit ngắn hạn. HTML gửi tới trình duyệt không thể là DRM tuyệt đối.
 
-Preview tách biệt với production: `wrangler.preview.toml` trỏ tới D1/R2 `bingenz-commerce-preview`, đã nạp 35 sản phẩm; preview Worker và các secret chưa triển khai. `wrangler.toml` hiện vẫn là Worker static production cũ. Không chạy lệnh deploy production cho đến khi các cổng ở mục 33 của đặc tả đều qua.
+Preview tách biệt với production: `wrangler.preview.toml` trỏ tới D1/R2 `bingenz-commerce-preview`, đã nạp 35 sản phẩm và triển khai Worker tại `https://bingenz-commerce-preview.lnth.workers.dev`. Chỉ có secret ngẫu nhiên cho session/abuse trên preview; thanh toán/admin còn fail-closed cho tới khi Access, Turnstile và SePay được cấu hình. Chạy `npm run test:preview` để smoke test live không tạo đơn hay chuyển tiền. `wrangler.toml` hiện vẫn là Worker static production cũ. Không chạy lệnh deploy production cho đến khi các cổng ở mục 33 của đặc tả đều qua.
 
 ## Xem giao diện static local
 

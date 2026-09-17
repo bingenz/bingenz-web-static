@@ -18,7 +18,9 @@ before(async()=>{
   bindings:{TURNSTILE_SECRET_KEY:'fixture',TURNSTILE_HOSTNAMES:'shop.test',ABUSE_HASH_KEY:secret,SESSION_SECRET:secret,SEPAY_WEBHOOK_SECRET:secret,BANK_ACCOUNT_NUMBER:'test-destination',BANK_CODE:'TPBank',ACCESS_TEAM_DOMAIN:'test.cloudflareaccess.com',ACCESS_AUD:'local-admin-aud',ADMIN_EMAIL:'lengocthuan09@gmail.com'},
   serviceBindings:{ASSETS:async request=>{
    const file=new URL(request.url).pathname.slice(1),types={'commerce.html':'text/html','commerce.mjs':'text/javascript','commerce.css':'text/css','admin.html':'text/html','admin.mjs':'text/javascript','admin.css':'text/css','styles.css':'text/css'};
-   return types[file]?new Response(await readFile('public/'+file),{headers:{'Content-Type':types[file]}}):new Response('static asset');
+   if(file==='commerce.html'||file==='admin.html')return Response.redirect(new URL('/'+file.slice(0,-5),request.url),307);
+   const source=file==='commerce'||file==='admin'?file+'.html':file;
+   return types[source]?new Response(await readFile('public/'+source),{headers:{'Content-Type':types[source]}}):new Response('static asset');
   }},
   outboundService:async req=>{
    if(new URL(req.url).hostname==='test.cloudflareaccess.com')return Response.json({keys:[adminJwk]});

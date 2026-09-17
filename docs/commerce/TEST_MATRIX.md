@@ -1,6 +1,6 @@
 # Verification matrix
 
-Last updated: 2026-09-17. Preview D1/R2 imported; production deployment unchanged.
+Last updated: 2026-09-18. Preview D1/R2 imported and separate Worker deployed; production deployment unchanged.
 Current run: npm test — 31 tests, 31 passed, zero failures/skips. Separate protected-simulation run: 35 products × 2 viewports, all pass.
 Tests use local Worker/D1/R2 for runtime behavior; mocked provider success is not live provider verification.
 
@@ -20,7 +20,7 @@ Tests use local Worker/D1/R2 for runtime behavior; mocked provider success is no
 | Access | PASS: signed local JWK valid/wrong email/audience/tampered denial; missing token rejects. Cloudflare One read-only check found no applications and an active-plan setup gate. | Owner activates a plan; then configure and verify live Google policy and Access application |
 | Turnstile | PASS mocked-provider wrong hostname/action/replayed response denial | Production widget/secrets, fresh real token and replay |
 | SePay | Authenticated dashboard verified; #56829 enabled HMAC, incoming JSON, retry on, TPBank selected; source and signed test use saved singular route, plural returns 404. Read-only general configuration confirms only CJ/MP active patterns, no BGZ; BinGenZ webhook prefix filter has no selection. No send-test performed. | Add BGZ + 12 alphanumeric pattern after endpoint/HMAC readiness; verify secret, alerts and official signed test/deployment |
-| Cloudflare remote | Isolated preview D1/R2 created in APAC; migrations 0001/0002/0003 applied and four triggers verified; 35 products/versions imported, all 70 private R2 objects hash/size verified; production deployment ac96a0ba unchanged | Preview Worker/secrets/Access/Turnstile/SePay and production gates |
+| Cloudflare remote | Isolated preview D1/R2 and Worker deployed; migrations 0001/0002/0003 and four triggers verified; 35 products/versions imported, all 70 private R2 objects hash/size verified. Preview live smoke passes catalog/mobile/recovery/private-path denial; two random preview-only session/abuse secrets installed. Production deployment ac96a0ba unchanged. | Access/Turnstile/SePay/bank secrets, live provider/payment/admin policy and production gates |
 | Simulation inventory | PASS: all 35 individually enumerated, syntax checked and protected runtime/initial-interaction/expiry verified at desktop/mobile | Deeper scenario-specific interactions and live preview/production verification |
 
 ## Individual simulations

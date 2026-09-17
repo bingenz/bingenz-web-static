@@ -157,3 +157,9 @@
 - Reason: a valid transfer during the order's creation second otherwise appears earlier than `created_at` and is wrongly classified as late.
 - Consequences: a transfer reported in that same second is accepted even if its actual sub-second instant preceded order creation; SePay does not provide enough precision to distinguish it. The tolerance is under one second, not an extension of the 15-minute deadline. Local boundary test and remote trigger inspection pass; real provider validation remains pending.
 - Affected: migrations/0003_payment_second_precision.sql, tests/schema.test.mjs, tests/import.test.mjs, tests/worker.test.mjs.
+
+## 2026-09-18 — isolated live preview and canonical asset shells
+- Decision: deploy commerce to a separate `bingenz-commerce-preview` Worker bound only to isolated preview D1/R2, with independent random session/abuse secrets. Leave payment, bank, Turnstile and Access secrets/policies unset until their real integrations are verified. Fetch canonical extensionless `/commerce` and `/admin` paths through the Assets binding for protected shells.
+- Reason: a live smoke test is needed without changing production. Cloudflare Assets redirects `/commerce.html` to `/commerce`; wrapping the redirect as a shell response broke checkout/recovery routes even though local asset mocks passed. Extensionless fetches return actual HTML, and the test binding now emulates the redirect to catch regressions.
+- Consequences: preview catalog is publicly viewable but checkout/admin fail closed; private R2 remains unreachable by direct URL. Production deployment stays unchanged. Live preview smoke covers catalog, mobile layout, recovery shell and route denial, not real payment or admin authentication.
+- Affected: wrangler.preview.toml, src/worker.mjs, tests/worker.test.mjs, scripts/test-preview-smoke.mjs, docs/commerce/PROGRESS.md.

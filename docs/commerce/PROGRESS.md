@@ -1,12 +1,12 @@
 # Commerce implementation progress
 
-Last updated: 2026-09-17T17:10:45Z (2026-09-18 00:10 Asia/Saigon).
+Last updated: 2026-09-17T23:33:42Z (2026-09-18 06:33 Asia/Saigon).
 
 ## Handoff
 Owner resumed implementation after the previous documentation-only handoff. Work is active on the admin milestone; production remains untouched.
 
 - Branch: codex/commerce-storefront. Working tree clean before this documentation update.
-- Latest checkpoint: 118f51a (35 protected simulation cycles); earlier checkpoints cover payment timestamp precision, guarded product deletion, entitlement adjustments, private admin preview, CSV exports and manual refund records.
+- Latest committed implementation checkpoint before this preview smoke update: af1d62a (audited default activation setting); earlier checkpoints cover protected 35-simulation cycles, payment timestamp precision, guarded product deletion, entitlement adjustments, admin preview/exports and support operations.
 - Production source baseline: origin/master 1a69783e5143e39fecae0bdd11089a078f2a1891.
 - Live deployment freshly rechecked: ac96a0ba-d62e-4d86-9131-f1b4e4a3e981 at 100%, created 2026-09-16T15:31:43Z. Its Git SHA is unknown. Do not assume it matches the baseline.
 - No task commits pushed/merged; no production deployment by this task.
@@ -37,19 +37,20 @@ Owner resumed implementation after the previous documentation-only handoff. Work
 - Admin can permanently delete only a never-imported, inactive, versionless draft with no order items; deletion is audited. Uploaded or historical products must use archival, preserving their versions and order snapshots.
 
 ## Cloudflare: local versus remote
-Isolated preview resources were created in the authenticated account: D1 `bingenz-commerce-preview` (45e95b13-841f-4e71-b21c-5055758f8607, APAC) and private R2 bucket `bingenz-commerce-preview` (APAC, Standard). `wrangler.preview.toml` binds only these resources to a separate Worker name and enables logs/traces. The first two remote migrations applied and all four triggers exist; migration 0003 is recorded below. The first remote apply failed atomically on D1 trigger `CASE ... END` parsing; parenthesizing CASE expressions in migration 0001 resolved it. All 35 reviewed original/delivery pairs were uploaded to private preview R2 and imported into preview D1; remote queries confirm 35 products, 35 versions, 35 import markers, 35 active products and zero missing version pointers. A full read-only preview R2 audit downloaded all 70 original/delivery objects into temporary local files and verified every byte length and SHA-256 against the private prepared manifest (70/70 pass); temporary files were removed. No preview Worker deployment or secret/configuration write yet. Existing production Worker and the two unrelated D1 databases remain untouched.
-Preview migration `0003_payment_second_precision.sql` applied successfully only to D1 `bingenz-commerce-preview`. Remote `d1_migrations` lists 0001/0002/0003, the `match_payment` trigger contains the second-precision comparison, and all 35 imported products remain present. Production D1/Worker were not changed. Local 25/25 tests pass including a same-second match and previous-second rejection.
+Isolated preview resources were created in the authenticated account: D1 `bingenz-commerce-preview` (45e95b13-841f-4e71-b21c-5055758f8607, APAC) and private R2 bucket `bingenz-commerce-preview` (APAC, Standard). `wrangler.preview.toml` binds only these resources to a separate Worker name and enables logs/traces. The first two remote migrations applied and all four triggers exist; migration 0003 is recorded below. The first remote apply failed atomically on D1 trigger `CASE ... END` parsing; parenthesizing CASE expressions in migration 0001 resolved it. All 35 reviewed original/delivery pairs were uploaded to private preview R2 and imported into preview D1; remote queries confirm 35 products, 35 versions, 35 import markers, 35 active products and zero missing version pointers. A full read-only preview R2 audit downloaded all 70 original/delivery objects into temporary local files and verified every byte length and SHA-256 against the private prepared manifest (70/70 pass); temporary files were removed. The separate preview Worker is now deployed at `https://bingenz-commerce-preview.lnth.workers.dev`; only independent random `SESSION_SECRET` and `ABUSE_HASH_KEY` were set in its secret store. No SePay/Turnstile/banking secret, Access policy or production configuration was changed. Existing production Worker and the two unrelated D1 databases remain untouched.
+Preview migration `0003_payment_second_precision.sql` applied successfully only to D1 `bingenz-commerce-preview`. Remote `d1_migrations` lists 0001/0002/0003, the `match_payment` trigger contains the second-precision comparison, and all 35 imported products remain present. Production D1/Worker were not changed. The current local suite is 31/31 and includes same-second acceptance and previous-second rejection.
 Fresh read-only checks before creation showed remote R2 empty; D1 listed only the two unrelated databases below; deployments list confirmed the version above.
 
 - Existing account Worker: bingenz-web-static; bingenz.com/www.bingenz.com; bingenz-web-static.lnth.workers.dev.
-- Remote resources created by this task: isolated preview D1 and R2 above; three commerce migrations and 35-product import applied only to preview. No secret writes/Access or Turnstile changes/deployments yet.
+- Remote resources created by this task: isolated preview D1/R2 and separate preview Worker above; three commerce migrations and 35-product import applied only to preview. Preview Worker has two independent random session/abuse secrets; no Access/Turnstile/SePay change or production deployment.
 - R2 subscription activated by owner; isolated preview commerce bucket exists. No production commerce bucket or binding.
 - Existing D1: bingenz-db (5fe27fd2-18ef-402e-aa46-abc424732474), cube-jump-chat-logs (faa75ad6-a591-4691-8d3f-1d81b3a5a72f). Do not alter unrelated resources.
 - Local-only config wrangler.local.toml: Worker bingenz-commerce-local; D1 DB / bingenz-commerce-local / placeholder UUID 00000000-0000-0000-0000-000000000000; R2 SIMULATIONS / bingenz-commerce-local; ASSETS.
 - Local persistence: ignored .wrangler/state/v3. Local products 35; remote preview products imported by task 35; remote production products imported by task 0; generated thumbnails 35.
-- Production wrangler.toml remains static-only. Preview config/resources exist; preview Worker has not been deployed.
+- Production wrangler.toml remains static-only. Preview Worker latest verified version is `c3c5b551-2bd7-492d-900c-29f18281b9b5`; production remains `ac96a0ba-d62e-4d86-9131-f1b4e4a3e981`.
 - Access: JWT helper exists and admin routes fail closed. Read-only Cloudflare One check on 2026-09-17 found no Access applications; Applications page says "Finish your account setup" and requires an active plan before continuing. Google IdP/policy/audience are not configured or verified. Plan selection needs owner action; no plan was chosen.
 - Turnstile: client/server code and mocked tests exist; production widget/secret and real-token/replay verification pending.
+- Live preview smoke: `/api/catalog` returns 35, 390px browser shows two-column grid without overflow/errors, thumbnail serves WebP, private R2 path is 404, `/api/access` is 401, `/admin` is 503 fail-closed without Access config, `/admin.html` is 404, invalid access token redirects to recovery. First deploy exposed Cloudflare Assets' canonical `.html` redirect: shell fetches returned 307 to `/commerce`, breaking recovery/checkout. Worker now fetches canonical extensionless `/commerce` and `/admin`; re-deployed preview recovery and checkout shell return 200. `npm run test:preview` passes; it does not validate payment/provider/admin login.
 
 ## SePay: actual configuration at handoff
 Authenticated session is AVAILABLE in Codex in-app browser at https://my.sepay.vn/webhooks, verified again this resume. Earlier statements requiring session restoration were incorrect: no Chrome surface did not mean no authenticated in-app session.
@@ -82,7 +83,7 @@ Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no produc
 - Client-delivered source is not perfect DRM. No requirements waived; incomplete work is not deferred scope.
 
 ## Exact next action after a future Continue
-First follow Section 41.9 and verify Git/provider/resource state. Continue with end-to-end admin and customer/security/full35 simulation coverage and accessibility. Preview storage is provisioned; configure and verify Access, Turnstile, SePay HMAC/BGZ/QR on preview; complete Section 33 gates before master release and production smoke tests.
+First follow Section 41.9 and verify Git/provider/resource state. Continue scenario-specific deep simulation/admin/security coverage. Preview Worker/storage are provisioned and public catalog/security smoke tests pass; configure and verify Access, Turnstile, SePay HMAC/BGZ/QR on preview, then complete Section 33 gates before master release and production smoke tests.
 
 ## Blockers, owner interaction, rollback
 Cloudflare One Access setup is blocked by the account's inactive-plan prompt. Owner must choose/activate an appropriate plan and handle any associated terms or payment; this task made no plan change. Turnstile widget configuration is awaiting the owner's hostname/action confirmation. SePay BGZ pattern is confirmed absent and needs configuration after endpoint/HMAC readiness. R2 activation is resolved. Local implementation/tests can continue meanwhile.
