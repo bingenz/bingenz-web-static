@@ -1,13 +1,13 @@
 # Commerce implementation progress
 
-Last updated: 2026-09-17T06:57:14Z (13:57 Asia/Saigon).
+Last updated: 2026-09-17T07:00:03Z (14:00 Asia/Saigon).
 
 ## Handoff
 Owner resumed implementation after the previous documentation-only handoff. Work is active on the admin milestone; production remains untouched.
 
 - Branch: codex/commerce-storefront. Started this resume clean at 37f6ff3.
-- Last completed implementation checkpoint: 37f6ff3 (admin version rollback); prior: 69c5c1f (admin foundation), c386d07 (customer runtime).
-- Current product-draft checkpoint: resolve with git log -1 after commit.
+- Last completed implementation checkpoint: 249f0fa (inactive product drafts); prior: 37f6ff3 (admin version rollback), 69c5c1f (admin foundation).
+- Current bulk-edit checkpoint: resolve with git log -1 after commit.
 - Production source baseline: origin/master 1a69783e5143e39fecae0bdd11089a078f2a1891.
 - Live deployment freshly rechecked: ac96a0ba-d62e-4d86-9131-f1b4e4a3e981 at 100%, created 2026-09-16T15:31:43Z. Its Git SHA is unknown. Do not assume it matches the baseline.
 - No task commits pushed/merged; no production deployment by this task.
@@ -25,6 +25,7 @@ Owner resumed implementation after the previous documentation-only handoff. Work
 - SePay route reconciled to the existing saved singular endpoint `/api/webhook/sepay`; plural route remains closed. Signed webhook fixture and invalid-signature tests use the actual saved path. No provider mutation.
 - First admin slice: `/admin` shell, dashboard, searchable order list, product list/basic edit, private version history and rollback without deleting R2 objects; edits/rollback have atomic D1 audits. Exact signed Cloudflare Access JWT email/audience/issuer tests and mobile browser rendering pass. No auth bypass was added to local or production code.
 - Admin can create an inactive draft with safe default price/duration and no version; it cannot appear in the public catalog until a validated HTML version is attached and it is deliberately activated. Creation is audited and duplicate slugs reject. Upload and activation workflow remains incomplete.
+- Admin bulk metadata editor updates 1–25 selected products per request with per-product audit. Optimistic updated_at guard reports skipped conflicts; versionless drafts cannot be bulk-activated. No bulk HTML overwrite/deletion.
 
 ## Cloudflare: local versus remote
 Fresh read-only checks this resume: remote R2 list succeeds and is empty; D1 still lists only the two unrelated databases below; deployments list confirms the version above.
@@ -58,11 +59,11 @@ Non-secret: BANK_CODE, ADMIN_EMAIL, ACCESS_TEAM_DOMAIN, ACCESS_AUD, TURNSTILE_SI
 Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no production secrets set by task.
 
 ## Verification and known gaps
-- Current npm test: 20/20 PASS. Includes SQLite, real workerd/D1/R2, mocked provider validation, signed Access JWT fixtures, audited admin draft/edit/version rollback and mobile admin browser, paid claim/access/Start/sandbox runtime.
+- Current npm test: 20/20 PASS. Includes SQLite, real workerd/D1/R2, mocked provider validation, signed Access JWT fixtures, audited admin draft/edit/version rollback/bulk and mobile admin browser, paid claim/access/Start/sandbox runtime.
 - Storefront 1440/390/360: 35 cards, placement, four desktop/two phone columns, cart persistence/removal, search, native dialog Escape/focus, no overflow/page errors. Screenshots inspected.
 - Existing-site regression: themes/modals/contact/old images/Cube Jump presence pass. Complete social-link/copy/game-navigation assertions still pending.
 - 35/35 originals passed baseline desktop/mobile load and initial interaction. Minified deliveries loaded for thumbnails. Full-cycle protected-wrapper tests remain pending for ALL 35.
-- Admin is PARTIAL: dashboard, order search, inactive draft creation, basic product edit/list and version rollback. Missing HTML/thumbnail uploads, bulk, order detail, payment reconciliation, recovery/device reset, support notes, manual refund records, exports and further audited operations. Cloudflare Access outer policy is not configured.
+- Admin is PARTIAL: dashboard, order search, inactive draft creation, basic product edit/list, version rollback and bulk metadata edit. Missing HTML/thumbnail uploads, order detail, payment reconciliation, recovery/device reset, support notes, manual refund records, exports and further audited operations. Cloudflare Access outer policy is not configured.
 - Exact expiration/activation-deadline race coverage, genuine signed Access JWT tests, complete unpaid checkout-to-payment UI and live QR/provider tests remain incomplete.
 - Review same-second SePay timestamps versus millisecond order creation: current payment fixtures shift order creation two seconds earlier. This boundary is not yet proven.
 - Legacy modal focus management remains incomplete. Invalid access-link errors are currently JSON rather than polished recovery UI.
@@ -70,11 +71,11 @@ Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no produc
 - Client-delivered source is not perfect DRM. No requirements waived; incomplete work is not deferred scope.
 
 ## Exact next action after a future Continue
-First follow Section 41.9 and verify Git/provider/resource state. Continue the admin milestone in src/admin.mjs/public/admin.*: add secure HTML version and thumbnail upload for drafts/existing products, then bulk editing, payment reconciliation and support recovery/device reset/reissue with atomic audits and tests. Complete the remaining admin operations before marking the milestone done. Then finish customer/security/full35 simulation coverage and accessibility. Provision isolated preview resources; verify Access, Turnstile, SePay HMAC/BGZ/QR; complete Section 33 gates before master release and production smoke tests.
+First follow Section 41.9 and verify Git/provider/resource state. Continue the admin milestone in src/admin.mjs/public/admin.*: design secure HTML version and thumbnail upload for drafts/existing products (the Node-based local minifier cannot bundle for Worker; do not serve unminified source), then order detail, payment reconciliation and support recovery/device reset/reissue with atomic audits and tests. Complete remaining admin operations before marking the milestone done. Then finish customer/security/full35 simulation coverage and accessibility. Provision isolated preview resources; verify Access, Turnstile, SePay HMAC/BGZ/QR; complete Section 33 gates before master release and production smoke tests.
 
 ## Blockers, owner interaction, rollback
 No confirmed login/OTP/permission blocker now. Remote permissions/Google Access setup remain unverified, not assumed blocked. No current owner action required. R2 activation is resolved.
-Safe implementation rollback: 37f6ff3 before draft creation, then current checkpoint. Production untouched by task; no deploy until all gates pass.
+Safe implementation rollback: 249f0fa before bulk editing, then current checkpoint. Production untouched by task; no deploy until all gates pass.
 
 ## Resume commands
     git status --short --branch

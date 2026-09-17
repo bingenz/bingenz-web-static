@@ -83,3 +83,10 @@
 - Alternatives: one-step public creation rejected because it could expose a product with no working paid asset.
 - Consequences: drafts are absent from the public catalog. Admin upload/activation remains required; no remote data was changed. A concurrent duplicate slug still resolves safely to the SQL unique constraint, but its user-facing error needs refinement.
 - Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.
+
+## 2026-09-17 — bounded bulk metadata edits
+- Decision: allow 1–25 selected products to update a validated shared metadata field, recording one audit row per successful optimistic D1 update. A versionless draft is skipped when activating. Report updated and skipped IDs rather than claiming the whole selection succeeded.
+- Reason: maintain clear per-product outcomes under concurrent admin edits and prevent a draft without paid content from becoming purchasable.
+- Alternatives: blanket update without per-product audit or version guard rejected. HTML mass replacement is not part of metadata bulk edit.
+- Consequences: conflicting rows may be skipped while others succeed. Tests verify audit count, duplicate selection denial and inactive draft guard. Admin HTML upload needs a separate safe transform path; installed html-minifier-terser cannot browser-platform bundle because of Node built-ins.
+- Affected: src/admin.mjs, public/admin.html, public/admin.mjs, tests/worker.test.mjs.

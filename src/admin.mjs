@@ -46,6 +46,24 @@ export async function adminRoute(request,env,actor,path){
   ]);
   return json({product:created},201);
  }
+ if(path==='/admin/api/products/bulk'&&method==='PATCH'){
+  const input=await jsonBody(request,8192);objectShape(input,['ids','changes']);
+  requireValue(Array.isArray(input.ids)&&input.ids.length>=1&&input.ids.length<=25&&new Set(input.ids).size===input.ids.length&&input.ids.every(id=>typeof id==='string'&&/^[a-z0-9_-]{1,64}$/.test(id)),400,'invalid_selection');
+  objectShape(input.changes,['active','price_vnd','duration_seconds','activation_days','display_order','category']);
+  const fields=Object.keys(input.changes);requireValue(fields.length>=1);validateProduct(input.changes);
+  const placeholders=input.ids.map(()=>'?').join(',');
+  const rows=await env.DB.prepare(`SELECT ${productFields} FROM products WHERE id IN (${placeholders})`).bind(...input.ids).all();
+  requireValue(rows.results.length===input.ids.length,404,'not_found');
+  const byId=new Map(rows.results.map(row=>[row.id,row])),now=iso(),batch=[];
+  for(const id of input.ids){
+   const before=byId.get(id),after={...before,...input.changes,updated_at:now};
+   batch.push(stmt(env.DB,`UPDATE products SET ${fields.map(k=>k+'=?').join(',')},updated_at=? WHERE id=? AND updated_at=?${input.changes.active===1?' AND current_version_id IS NOT NULL':''}`,...fields.map(k=>input.changes[k]),now,id,before.updated_at));
+   batch.push(stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) SELECT ?,?,'product.bulk_update','product',?,?,? WHERE changes()=1`,crypto.randomUUID(),actor,id,now,JSON.stringify({before,after})));
+  }
+  const result=await env.DB.batch(batch);
+  const updated=input.ids.filter((_,i)=>result[2*i].meta.changes===1);
+  return json({updated,skipped:input.ids.filter(id=>!updated.includes(id))});
+ }
  if(path==='/admin/api/orders'&&method==='GET'){
   const q=(url.searchParams.get('q')||'').trim();requireValue(q.length<=254);
   const rows=await env.DB.prepare(`SELECT o.id,o.gmail,o.total_vnd,o.status,o.payment_code,o.created_at,o.expires_at,o.paid_at,p.external_id,
