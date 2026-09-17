@@ -29,9 +29,10 @@ before(async()=>{
  }));
  db=await mf.getD1Database('DB');
  // D1 exec is line-oriented; prepare accepts each complete trigger statement.
- const sql=await readFile('migrations/0001_commerce.sql','utf8');
- const statements=unstable_splitSqlQuery(sql);
- for(const q of statements)await db.prepare(q).run();
+ for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql']){
+  const statements=unstable_splitSqlQuery(await readFile('migrations/'+file,'utf8'));
+  for(const q of statements)await db.prepare(q).run();
+ }
  for(const id of ['p','q','inactive']){
   await db.prepare('INSERT INTO products(id,slug,title,created_at,updated_at) VALUES (?,?,?,?,?)').bind(id,id,id,new Date().toISOString(),new Date().toISOString()).run();
   await db.prepare('INSERT INTO product_versions VALUES (?,?,?,?,?,?,?)').bind('v'+id,id,'a'.repeat(64),'original/'+id,'delivery/'+id,123,new Date().toISOString()).run();
@@ -206,6 +207,18 @@ test('signed payment is atomic, immutable and idempotent in real D1',async()=>{
  for(const query of ['ref-7001',detail.order.created_at.slice(0,10),'paid@gmail.com']){
   const result=await (await mf.dispatchFetch(origin+'/admin/api/orders?q='+encodeURIComponent(query),{headers:adminHeaders})).json();assert.ok(result.orders.some(row=>row.id===o.body.id));
  }
+});
+test('SePay second-precision timestamp matches an order created in that same second',async()=>{
+ const o=await checkout('samesecond@gmail.com');assert.equal(o.response.status,201);
+ const created=await db.prepare('SELECT created_at FROM orders WHERE id=?').bind(o.body.id).first();
+ const vietnamTime=ms=>new Date(ms+7*3600000).toISOString().slice(0,19).replace('T',' ');
+ const second=Date.parse(created.created_at);
+ assert.equal((await sendPayment(o.body,{transactionDate:vietnamTime(second)},9012)).status,200);
+ assert.equal((await db.prepare('SELECT status FROM orders WHERE id=?').bind(o.body.id).first()).status,'paid');
+ const earlier=await checkout('previoussecond@gmail.com');assert.equal(earlier.response.status,201);
+ const prior=await db.prepare('SELECT created_at FROM orders WHERE id=?').bind(earlier.body.id).first();
+ assert.equal((await sendPayment(earlier.body,{transactionDate:vietnamTime(Date.parse(prior.created_at)-1000)},9013)).status,200);
+ assert.equal((await db.prepare('SELECT status FROM payments WHERE external_id=?').bind('9013').first()).status,'late');
 });
 function sessionCookies(response){return response.headers.getSetCookie().map(s=>s.split(';')[0]).join('; ');}
 test('claim, token exchange, device binding, atomic independent starts and private R2',async()=>{
