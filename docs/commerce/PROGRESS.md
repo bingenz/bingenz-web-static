@@ -1,6 +1,6 @@
 # Commerce implementation progress
 
-Last updated: 2026-09-17T16:46:40Z (23:46 Asia/Saigon).
+Last updated: 2026-09-17T16:50:00Z (23:50 Asia/Saigon).
 
 ## Handoff
 Owner resumed implementation after the previous documentation-only handoff. Work is active on the admin milestone; production remains untouched.
@@ -59,7 +59,7 @@ Two enabled webhooks were observed:
 
 Saved BinGenZ endpoint: https://bingenz.com/api/webhook/sepay (singular). Source now matches this exact path; regression tests reject plural. This is local code only and has not been deployed/provider-tested.
 
-BGZ recognition/filter is NOT verified. Filter screen showed CJ and MP choices, not BGZ; selection was not conclusively checked. General payment-code configuration remains uninspected. Only-send-with-payment-code checkbox is unchecked; consecutive-error alerts are disabled.
+Read-only SePay configuration check on 2026-09-17 confirms automatic payment-code recognition is enabled, but its only active patterns are `CJ` (6–12 alphanumeric suffix) and `MP` (6–8 numeric suffix); no `BGZ` pattern exists. The BinGenZ webhook's prefix filter has no selected prefix (the CJ/MP dropdown entries are available options, not selected tokens). Thus BGZ transactions are not currently recognized into the expected `code` field. The webhook's only-send-with-payment-code checkbox is unchecked; consecutive-error alerts are disabled. No SePay configuration was saved. Add an active `BGZ` + 12 alphanumeric suffix pattern after the receiving endpoint and HMAC secret have been verified; then run an official signed test.
 
 No HMAC secret revealed/copied/generated/rotated by this task. Provider-to-Worker secret matching is pending. No official send-test, real payment or refund performed. Existing BinGenZ webhook creation history is unknown; do not attribute it to this task. Edit dialog cancelled without saving. Banking values are deliberately omitted here.
 
@@ -84,7 +84,7 @@ Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no produc
 First follow Section 41.9 and verify Git/provider/resource state. Continue with end-to-end admin and customer/security/full35 simulation coverage and accessibility. Preview storage is provisioned; configure and verify Access, Turnstile, SePay HMAC/BGZ/QR on preview; complete Section 33 gates before master release and production smoke tests.
 
 ## Blockers, owner interaction, rollback
-Cloudflare One Access setup is blocked by the account's inactive-plan prompt. Owner must choose/activate an appropriate plan and handle any associated terms or payment; this task made no plan change. Turnstile widget configuration is awaiting the owner's hostname/action confirmation. R2 activation is resolved. Local implementation/tests can continue meanwhile.
+Cloudflare One Access setup is blocked by the account's inactive-plan prompt. Owner must choose/activate an appropriate plan and handle any associated terms or payment; this task made no plan change. Turnstile widget configuration is awaiting the owner's hostname/action confirmation. SePay BGZ pattern is confirmed absent and needs configuration after endpoint/HMAC readiness. R2 activation is resolved. Local implementation/tests can continue meanwhile.
 Safe implementation rollback: e48afdc before payment reconciliation, then current checkpoint. Production untouched by task; no deploy until all gates pass.
 
 ## Resume commands
