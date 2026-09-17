@@ -1,13 +1,12 @@
 # Commerce implementation progress
 
-Last updated: 2026-09-17T11:45:59Z (18:45 Asia/Saigon).
+Last updated: 2026-09-17T16:41:50Z (23:41 Asia/Saigon).
 
 ## Handoff
 Owner resumed implementation after the previous documentation-only handoff. Work is active on the admin milestone; production remains untouched.
 
-- Branch: codex/commerce-storefront. Started this resume clean at 37f6ff3.
-- Last completed implementation checkpoint: 8ae9c4f (private HTML/thumbnail uploads); prior: 0c4c15d (bulk metadata editing), 249f0fa (inactive product drafts).
-- Latest implementation checkpoints: 5ea335b (manual payment reconciliation), e48afdc (support recovery), ecaa46a (order detail).
+- Branch: codex/commerce-storefront. Working tree clean before this documentation update.
+- Latest checkpoint: 118f51a (35 protected simulation cycles); earlier checkpoints cover payment timestamp precision, guarded product deletion, entitlement adjustments, private admin preview, CSV exports and manual refund records.
 - Production source baseline: origin/master 1a69783e5143e39fecae0bdd11089a078f2a1891.
 - Live deployment freshly rechecked: ac96a0ba-d62e-4d86-9131-f1b4e4a3e981 at 100%, created 2026-09-16T15:31:43Z. Its Git SHA is unknown. Do not assume it matches the baseline.
 - No task commits pushed/merged; no production deployment by this task.
@@ -42,13 +41,13 @@ Preview migration `0003_payment_second_precision.sql` applied successfully only 
 Fresh read-only checks before creation showed remote R2 empty; D1 listed only the two unrelated databases below; deployments list confirmed the version above.
 
 - Existing account Worker: bingenz-web-static; bingenz.com/www.bingenz.com; bingenz-web-static.lnth.workers.dev.
-- Remote resources created by this task: isolated preview D1 and R2 above; two commerce migrations and 35-product import applied only to preview. No secret writes/Access or Turnstile changes/deployments yet.
-- R2 subscription activated by owner. No remote commerce bucket or binding.
+- Remote resources created by this task: isolated preview D1 and R2 above; three commerce migrations and 35-product import applied only to preview. No secret writes/Access or Turnstile changes/deployments yet.
+- R2 subscription activated by owner; isolated preview commerce bucket exists. No production commerce bucket or binding.
 - Existing D1: bingenz-db (5fe27fd2-18ef-402e-aa46-abc424732474), cube-jump-chat-logs (faa75ad6-a591-4691-8d3f-1d81b3a5a72f). Do not alter unrelated resources.
 - Local-only config wrangler.local.toml: Worker bingenz-commerce-local; D1 DB / bingenz-commerce-local / placeholder UUID 00000000-0000-0000-0000-000000000000; R2 SIMULATIONS / bingenz-commerce-local; ASSETS.
 - Local persistence: ignored .wrangler/state/v3. Local products 35; remote preview products imported by task 35; remote production products imported by task 0; generated thumbnails 35.
-- Production wrangler.toml remains static-only. Preview config/resources do not exist.
-- Access: JWT helper exists and admin routes fail closed. Application/Google IdP/policy/audience not configured or verified.
+- Production wrangler.toml remains static-only. Preview config/resources exist; preview Worker has not been deployed.
+- Access: JWT helper exists and admin routes fail closed. Read-only Cloudflare One check on 2026-09-17 found no Access applications; Applications page says "Finish your account setup" and requires an active plan before continuing. Google IdP/policy/audience are not configured or verified. Plan selection needs owner action; no plan was chosen.
 - Turnstile: client/server code and mocked tests exist; production widget/secret and real-token/replay verification pending.
 
 ## SePay: actual configuration at handoff
@@ -85,7 +84,7 @@ Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no produc
 First follow Section 41.9 and verify Git/provider/resource state. Continue with end-to-end admin and customer/security/full35 simulation coverage and accessibility. Preview storage is provisioned; configure and verify Access, Turnstile, SePay HMAC/BGZ/QR on preview; complete Section 33 gates before master release and production smoke tests.
 
 ## Blockers, owner interaction, rollback
-No confirmed login/OTP/permission blocker now. Remote permissions/Google Access setup remain unverified, not assumed blocked. No current owner action required. R2 activation is resolved.
+Cloudflare One Access setup is blocked by the account's inactive-plan prompt. Owner must choose/activate an appropriate plan and handle any associated terms or payment; this task made no plan change. Turnstile widget configuration is awaiting the owner's hostname/action confirmation. R2 activation is resolved. Local implementation/tests can continue meanwhile.
 Safe implementation rollback: e48afdc before payment reconciliation, then current checkpoint. Production untouched by task; no deploy until all gates pass.
 
 ## Resume commands
