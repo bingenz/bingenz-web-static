@@ -75,3 +75,4 @@
 - Reason: incremental admin operations need a fail-closed security boundary and real workerd/D1/browser tests before adding higher-risk reconciliation and recovery actions. Cloudflare's Access JWT guidance confirms issuer/audience/signature validation.
 - Consequences: admin is still incomplete, outer Access policy not configured, no remote resources changed. No local admin bypass. A product edit and its audit insert execute in one D1 batch; concurrent seller-edit conflict handling remains to be designed.
 - Affected: src/worker.mjs, src/admin.mjs, public/admin.*, tests/worker.test.mjs; local code only.
+- Follow-on: version history API exposes only version metadata, not private R2 keys; rollback changes only the current version pointer and audits the previous/selected IDs in one D1 batch. Historical order_items keep their purchased version. No object is deleted. Tested with a second version and cross-product rejection.

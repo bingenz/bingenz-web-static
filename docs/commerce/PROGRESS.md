@@ -1,6 +1,6 @@
 # Commerce implementation progress
 
-Last updated: 2026-09-17T06:47:54Z (13:47 Asia/Saigon).
+Last updated: 2026-09-17T06:50:34Z (13:50 Asia/Saigon).
 
 ## Handoff
 Owner resumed implementation after the previous documentation-only handoff. Work is active again. The next checkpoint contains the canonical SePay route and the first admin API/UI slice; production remains untouched.
@@ -23,7 +23,7 @@ Owner resumed implementation after the previous documentation-only handoff. Work
 - Vanilla storefront immediately after Cube Jump, cart/search, Gmail/Turnstile checkout UI, payment screen, access page, Start confirmation and runtime wrapper.
 - Existing contact-FAB child-click defect and unversioned JS/CSS/MJS immutable-cache rules fixed.
 - SePay route reconciled to the existing saved singular endpoint `/api/webhook/sepay`; plural route remains closed. Signed webhook fixture and invalid-signature tests use the actual saved path. No provider mutation.
-- First admin slice: `/admin` shell, dashboard, searchable order list, product list/basic edit with atomic D1 audit. Exact signed Cloudflare Access JWT email/audience/issuer tests and mobile browser rendering pass. No auth bypass was added to local or production code.
+- First admin slice: `/admin` shell, dashboard, searchable order list, product list/basic edit, private version history and rollback without deleting R2 objects; edits/rollback have atomic D1 audits. Exact signed Cloudflare Access JWT email/audience/issuer tests and mobile browser rendering pass. No auth bypass was added to local or production code.
 
 ## Cloudflare: local versus remote
 Fresh read-only handoff checks: remote R2 list succeeds and is empty; D1 still lists only the two unrelated databases below; deployments list confirms the version above.
@@ -57,11 +57,11 @@ Non-secret: BANK_CODE, ADMIN_EMAIL, ACCESS_TEAM_DOMAIN, ACCESS_AUD, TURNSTILE_SI
 Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no production secrets set by task.
 
 ## Verification and known gaps
-- Current npm test: 20/20 PASS. Includes SQLite, real workerd/D1/R2, mocked provider validation, signed Access JWT fixtures, audited admin edit and mobile admin browser, paid claim/access/Start/sandbox runtime.
+- Current npm test: 20/20 PASS. Includes SQLite, real workerd/D1/R2, mocked provider validation, signed Access JWT fixtures, audited admin edit/version rollback and mobile admin browser, paid claim/access/Start/sandbox runtime.
 - Storefront 1440/390/360: 35 cards, placement, four desktop/two phone columns, cart persistence/removal, search, native dialog Escape/focus, no overflow/page errors. Screenshots inspected.
 - Existing-site regression: themes/modals/contact/old images/Cube Jump presence pass. Complete social-link/copy/game-navigation assertions still pending.
 - 35/35 originals passed baseline desktop/mobile load and initial interaction. Minified deliveries loaded for thumbnails. Full-cycle protected-wrapper tests remain pending for ALL 35.
-- Admin is PARTIAL: dashboard, order search and basic product edit/list only. Missing product creation/uploads/versions/bulk, order detail, payment reconciliation, recovery/device reset, support notes, manual refund records, exports and further audited operations. Cloudflare Access outer policy is not configured.
+- Admin is PARTIAL: dashboard, order search, basic product edit/list and version rollback only. Missing product creation/uploads/bulk, order detail, payment reconciliation, recovery/device reset, support notes, manual refund records, exports and further audited operations. Cloudflare Access outer policy is not configured.
 - Exact expiration/activation-deadline race coverage, genuine signed Access JWT tests, complete unpaid checkout-to-payment UI and live QR/provider tests remain incomplete.
 - Review same-second SePay timestamps versus millisecond order creation: current payment fixtures shift order creation two seconds earlier. This boundary is not yet proven.
 - Legacy modal focus management remains incomplete. Invalid access-link errors are currently JSON rather than polished recovery UI.
@@ -69,7 +69,7 @@ Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no produc
 - Client-delivered source is not perfect DRM. No requirements waived; incomplete work is not deferred scope.
 
 ## Exact next action after a future Continue
-First follow Section 41.9 and verify Git/provider/resource state. Continue the admin milestone in src/admin.mjs/public/admin.*: add version/upload/rollback and bulk editing, then payment reconciliation and support recovery/device reset/reissue with atomic audits and tests. Complete the remaining admin operations before marking the milestone done. Then finish customer/security/full35 simulation coverage and accessibility. Provision isolated preview resources; verify Access, Turnstile, SePay HMAC/BGZ/QR; complete Section 33 gates before master release and production smoke tests.
+First follow Section 41.9 and verify Git/provider/resource state. Continue the admin milestone in src/admin.mjs/public/admin.*: add secure product creation/upload/thumbnail replacement and bulk editing, then payment reconciliation and support recovery/device reset/reissue with atomic audits and tests. Complete the remaining admin operations before marking the milestone done. Then finish customer/security/full35 simulation coverage and accessibility. Provision isolated preview resources; verify Access, Turnstile, SePay HMAC/BGZ/QR; complete Section 33 gates before master release and production smoke tests.
 
 ## Blockers, owner interaction, rollback
 No confirmed login/OTP/permission blocker now. Remote permissions/Google Access setup remain unverified, not assumed blocked. No current owner action required. R2 activation is resolved.

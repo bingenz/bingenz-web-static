@@ -77,8 +77,21 @@ test('admin requires a signed exact-identity Access JWT and audits product edits
  assert.equal(audit.actor,'lengocthuan09@gmail.com');assert.equal(audit.action,'product.update');assert.equal(JSON.parse(audit.metadata).after.price_vnd,12000);
  assert.equal((await mf.dispatchFetch(url,{...patch,body:JSON.stringify({current_version_id:'vp'})})).status,400);
  assert.equal((await mf.dispatchFetch(url,{...patch,body:JSON.stringify({price_vnd:10000,title:'p'})})).status,200);
+ await db.prepare('INSERT INTO product_versions VALUES (?,?,?,?,?,?,?)').bind('vp2','p','b'.repeat(64),'original/p2','delivery/p2',120,new Date().toISOString()).run();
+ const versions=await (await mf.dispatchFetch(url+'/versions',{headers})).json();assert.equal(versions.versions.length,2);
+ const rollback={method:'POST',headers:{...headers,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({version_id:'vp2'})};
+ assert.equal((await mf.dispatchFetch(url+'/versions',{...rollback,body:JSON.stringify({version_id:'vq'})})).status,404);
+ assert.equal((await mf.dispatchFetch(url+'/versions',rollback)).status,200);
+ assert.equal((await db.prepare('SELECT current_version_id FROM products WHERE id=?').bind('p').first()).current_version_id,'vp2');
+ assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='product.rollback' AND object_id='p'").first()).n,1);
+ assert.equal((await mf.dispatchFetch(url+'/versions',{...rollback,body:JSON.stringify({version_id:'vp'})})).status,200);
  const results=await (await mf.dispatchFetch(origin+'/admin/api/orders?q=paid%40gmail.com',{headers})).json();
  assert.ok(Array.isArray(results.orders));
+ await db.prepare('INSERT INTO products(id,slug,title,created_at,updated_at) VALUES (?,?,?,?,?)').bind('sim_test','sim-test','Test',new Date().toISOString(),new Date().toISOString()).run();
+ await db.prepare('INSERT INTO product_versions VALUES (?,?,?,?,?,?,?)').bind('ver_test','sim_test','c'.repeat(64),'original/test','delivery/test',120,new Date().toISOString()).run();
+ await db.prepare('UPDATE products SET current_version_id=? WHERE id=?').bind('ver_test','sim_test').run();
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/sim_test/versions',{headers})).status,200);
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/sim_test/versions',{...rollback,body:JSON.stringify({version_id:'ver_test'})})).status,200);
 });
 test('admin dashboard and product editor render in a browser with signed Access identity',async()=>{
  const browser=await chromium.launch();

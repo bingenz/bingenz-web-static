@@ -31,7 +31,31 @@ export async function adminRoute(request,env,actor,path){
    ORDER BY o.created_at DESC LIMIT 100`).bind(q,q,'%'+q.replace(/[\\%_]/g,'\\$&')+'%',q.toUpperCase(),q).all();
   return json({orders:rows.results});
  }
- const product=path.match(/^\/admin\/api\/products\/([a-z0-9-]{1,64})$/);
+ const product=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})$/);
+ const versions=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})\/versions$/);
+ if(versions&&method==='GET'){
+  const p=await env.DB.prepare('SELECT id,current_version_id FROM products WHERE id=?').bind(versions[1]).first();
+  if(!p)throw new HttpError(404,'not_found');
+  const rows=await env.DB.prepare('SELECT id,sha256,bytes,created_at FROM product_versions WHERE product_id=? ORDER BY created_at DESC').bind(p.id).all();
+  return json({current_version_id:p.current_version_id,versions:rows.results});
+ }
+ if(versions&&method==='POST'){
+  const input=await jsonBody(request,1024);objectShape(input,['version_id']);
+  requireValue(typeof input.version_id==='string'&&/^[a-z0-9_-]{1,128}$/.test(input.version_id),400,'invalid_version');
+  const before=await env.DB.prepare('SELECT id,current_version_id FROM products WHERE id=?').bind(versions[1]).first();
+  if(!before)throw new HttpError(404,'not_found');
+  const target=await env.DB.prepare('SELECT id FROM product_versions WHERE id=? AND product_id=?').bind(input.version_id,before.id).first();
+  if(!target)throw new HttpError(404,'not_found');
+  if(before.current_version_id===target.id)return json({current_version_id:target.id,unchanged:true});
+  const updated=iso();
+  const result=await env.DB.batch([
+   stmt(env.DB,'UPDATE products SET current_version_id=?,updated_at=? WHERE id=? AND current_version_id=?',target.id,updated,before.id,before.current_version_id),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata)
+   SELECT ?,?,'product.rollback','product',?,?,? WHERE changes()=1`,crypto.randomUUID(),actor,before.id,updated,JSON.stringify({from:before.current_version_id,to:target.id}))
+  ]);
+  if(result[0].meta.changes!==1)throw new HttpError(409,'product_changed');
+  return json({current_version_id:target.id});
+ }
  if(product&&method==='PATCH'){
   const id=product[1],input=await jsonBody(request,8192);objectShape(input,editable);
   requireValue(Object.keys(input).length>0);
