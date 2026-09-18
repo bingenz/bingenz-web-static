@@ -7,6 +7,7 @@ import { Miniflare,convertV4MiniflareOptions } from 'miniflare';
 import { unstable_splitSqlQuery } from 'wrangler';
 import { chromium } from 'playwright';
 import { transform } from '../scripts/prepare-products.mjs';
+import { runtime } from '../src/access.mjs';
 import { generateKeyPair, exportJWK, SignJWT } from 'jose';
 let mf,db,adminKey,adminJwk;
 const origin='https://shop.test',secret='test-only-webhook-signing-secret-for-local-fixtures';
@@ -373,6 +374,23 @@ test('activation deadline and active runtime expire independently on the server'
  assert.equal((await post('/api/entitlements/'+active.id+'/start',{},jar)).status,410);
  assert.equal((await post('/api/entitlements/'+active.id+'/play',{},jar)).status,410);
  assert.equal((await mf.dispatchFetch(origin+permit.url,{headers:{Cookie:jar}})).status,410);
+});
+test('runtime refuses content when entitlement is revoked during private R2 read',async()=>{
+ const o=await checkout('r2race@gmail.com');assert.equal(o.response.status,201);
+ await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();
+ assert.equal((await sendPayment(o.body,{},9103)).status,200);
+ const claimResponse=await post('/api/orders/'+o.body.id+'/claim',{},o.cookie),jar=sessionCookies(claimResponse);
+ const access=await (await mf.dispatchFetch(origin+'/api/access',{headers:{Cookie:jar}})).json(),id=access.items[0].id;
+ assert.equal((await post('/api/entitlements/'+id+'/start',{},jar)).status,200);
+ const permit=await (await post('/api/entitlements/'+id+'/play',{},jar)).json();
+ const request=new Request(origin+permit.url,{headers:{Cookie:jar}});
+ let read=false;
+ const env={DB:db,SESSION_SECRET:secret,SIMULATIONS:{get:async()=>({size:40,text:async()=>{
+  read=true;await db.prepare("UPDATE entitlements SET status='revoked' WHERE id=?").bind(id).run();
+  return '<html><body>must not escape</body></html>';
+ }})}};
+ await assert.rejects(runtime(request,env,id),error=>error.status===410);
+ assert.equal(read,true);
 });
 test('expired unpaid checkout cannot serve QR or become paid from a late transfer',async()=>{
  const o=await checkout('expiredcheckout@gmail.com');assert.equal(o.response.status,201);

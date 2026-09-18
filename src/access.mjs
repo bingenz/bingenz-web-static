@@ -66,8 +66,10 @@ export async function runtime(request,env,id){
  requireValue(permit&&permit.entitlement===id&&permit.order===order.id&&permit.generation===order.generation&&permit.device===order.device_hash,403,'play_denied');
  const e=await activeEntitlement(env,order,id),object=await env.SIMULATIONS.get(e.delivery_key);requireValue(object,503,'content_unavailable');
  requireValue(object.size<=2097152,503,'content_unavailable');
- const marker='BGZ-'+id.slice(0,8),remaining=Math.max(0,Date.parse(e.expires_at)-Date.now());
  const html=await object.text();
+ // R2 reads may outlive an expiry, revocation or access-link rotation.
+ const current=await activeEntitlement(env,order,id);
+ const marker='BGZ-'+id.slice(0,8),remaining=Math.max(0,Date.parse(current.expires_at)-Date.now());
  const injection=`<div id="bgz-license" style="position:fixed;top:4px;right:8px;font:10px system-ui;color:#b8bcc8;opacity:.65;z-index:2147483647;pointer-events:none">${marker}</div><script>/* license:${id} */setTimeout(()=>{document.body.replaceChildren(Object.assign(document.createElement('p'),{textContent:'Đã hết hạn. Mua lại để tiếp tục.'}));},${remaining});</script>`;
  const headers={'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff',
  'Content-Security-Policy':"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; sandbox allow-scripts"};
