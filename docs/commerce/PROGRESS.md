@@ -50,6 +50,15 @@
 - Remediation in progress: accept signed, schema-valid ID `0` as a non-persisting health test that returns `{"success":true}`. It cannot create a payment, webhook event, entitlement, or order transition. Real transaction IDs remain strictly positive and follow the existing idempotent persistence path.
 - Production rollback is not needed because this failed test made no Cloudflare, database, or provider-configuration change. Exact next action: complete the regression, rerun the full local suite and bundle dry-run, then release through the Git-backed deployment path before retrying `Gửi thử`.
 
+### Pre-operation checkpoint: production migration and bank-secret conversion
+
+- Release candidate: merge commit `04fbca5`, which includes `origin/master` `a8f0093` without history rewriting. Post-merge `npm test` passes 36/36 and the production Wrangler dry-run succeeds.
+- Remote pre-state: D1 records 0001–0004 and reports only `0005_restore_payment_window.sql` pending. The Worker has four existing secret-text bindings; `BANK_ACCOUNT_NUMBER` is absent from the secret list because the active deployment still stores that value as a plain variable.
+- Intended production actions: apply only migration 0005 to the existing `bingenz-commerce` D1, then replace the existing bank destination binding with a same-value `secret_text` binding without printing or committing the value. No D1/R2 resource is recreated and no customer/payment row is edited.
+- Rollback: migration 0005 changes only `match_payment`; if required, restore the recovered 0004 trigger body with a forward corrective migration, never by deleting migration history. Secret conversion preserves the same runtime value; rollback should use another secret version, never return the value to Git/plain configuration.
+- Deployment path: Cloudflare native Workers Builds is preferred for `master`. Its one-time GitHub App authorization and Cloudflare dashboard 2FA are explicit owner checkpoints; do not substitute another manual direct release as the long-term path.
+- Exact next action: apply remote migration 0005, verify migration/trigger and unchanged row counts, then perform the same-value secret conversion and verify only the binding type/version changed.
+
 Last updated: 2026-09-17T23:39:32Z (2026-09-18 06:39 Asia/Saigon).
 
 ## Handoff
