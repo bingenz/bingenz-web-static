@@ -666,6 +666,25 @@ html[data-theme="dark"] .bottom-bar-btn:hover{color:#fff;background:rgba(255,255
 /* Ensure footer has space for bottom bar */
 .footer-main{padding-bottom:80px}
 
-
-
+/* Upcoming Algorithm Simulation */
+.simulation-coming-soon{padding:0 0 34px}
+.simulation-coming-card{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:20px;max-width:900px;margin:0 auto;padding:22px 24px;overflow:hidden;border:1px solid var(--line);border-radius:24px;background:var(--panel);box-shadow:var(--shadow-pill)}
+.simulation-coming-card::before{content:"";position:absolute;top:0;left:0;width:100%;height:4px;background:var(--grad-brand)}
+.simulation-coming-icon{display:flex;align-items:center;justify-content:center;width:52px;height:52px;flex-shrink:0;border-radius:16px;color:#111827;background:var(--grad-brand);box-shadow:0 10px 28px rgba(212,160,23,.18)}
+.simulation-coming-icon svg{width:25px;height:25px}
+.simulation-coming-content{min-width:0}
+.simulation-coming-badge{display:inline-flex;align-items:center;margin-bottom:7px;font-size:.68em;font-weight:900;line-height:1;letter-spacing:.12em;color:var(--y1)}
+.simulation-coming-content h2{margin:0 0 7px;color:var(--text);font-size:clamp(1.05em,2.2vw,1.3em);font-weight:900;line-height:1.3;letter-spacing:-.015em}
+.simulation-coming-content p{margin:0;color:var(--muted);font-size:.84em;line-height:1.6}
+.simulation-coming-content p strong{color:var(--text);font-weight:800}
+.simulation-coming-contact{display:flex;align-items:center;gap:9px;flex-shrink:0;padding:11px 14px;border:1px solid var(--line);border-radius:14px;color:var(--text);background:var(--surface2);text-decoration:none;font-size:.76em;white-space:nowrap;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.simulation-coming-contact span{color:var(--muted);font-weight:600}
+.simulation-coming-contact strong{font-weight:900}
+.simulation-coming-contact svg{width:16px;height:16px;color:var(--y1);transition:transform .18s ease}
+.simulation-coming-contact:hover{transform:translateY(-2px);border-color:rgba(212,160,23,.4);box-shadow:0 10px 25px rgba(15,23,42,.08)}
+.simulation-coming-contact:hover svg{transform:translateX(2px)}
+html[data-theme="dark"] .simulation-coming-card{border-color:rgba(245,230,66,.13);background:radial-gradient(circle at 0 0,rgba(245,230,66,.06),transparent 38%),var(--panel)}
+html[data-theme="dark"] .simulation-coming-contact{background:rgba(255,255,255,.04)}
+@media(max-width:680px){.simulation-coming-soon{padding:0 0 24px}.simulation-coming-card{grid-template-columns:44px minmax(0,1fr);gap:14px;padding:19px 18px;border-radius:20px}.simulation-coming-icon{width:44px;height:44px;border-radius:14px}.simulation-coming-icon svg{width:22px;height:22px}.simulation-coming-content h2{font-size:1em;line-height:1.35}.simulation-coming-content p{font-size:.8em;line-height:1.55}.simulation-coming-contact{grid-column:1/-1;justify-content:center;width:100%;padding:12px 14px}}
+@media(max-width:420px){.simulation-coming-card{padding:17px 16px}.simulation-coming-badge{font-size:.62em}.simulation-coming-content h2{font-size:.94em}.simulation-coming-contact span{display:none}.simulation-coming-contact{font-size:.8em}}
 
