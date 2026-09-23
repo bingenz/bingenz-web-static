@@ -59,6 +59,13 @@
 - Deployment path: Cloudflare native Workers Builds is preferred for `master`. Its one-time GitHub App authorization and Cloudflare dashboard 2FA are explicit owner checkpoints; do not substitute another manual direct release as the long-term path.
 - Exact next action: apply remote migration 0005, verify migration/trigger and unchanged row counts, then perform the same-value secret conversion and verify only the binding type/version changed.
 
+### 2026-09-23 production migration, secret, and Git-build result
+
+- Applied production migration 0005 successfully. A fresh migration list reports none pending; the live `match_payment` SQL contains both provider transaction-time bounds. Production remains 3 orders, 0 payments, 0 webhook events and 0 entitlements.
+- Pushing `codex/sepay-payment-deploy-fix` triggered the existing Cloudflare Workers Builds integration. GitHub check `Workers Builds: bingenz-web-static` completed successfully and created undeployed preview version `8dd8eaa3-4151-498c-b53a-9555e55ac867`, proving GitHub-to-Cloudflare build connectivity.
+- Because that preview was newer than the active version, legacy `wrangler secret put` correctly refused an immediate secret deployment. Recovered the existing plain bank destination in memory from active version metadata and used `wrangler versions secret put` through stdin. Undeployed version `5b38b767-10df-42be-a9fe-337aa65a5763` now has `BANK_ACCOUNT_NUMBER` as `secret_text`; the value was neither printed nor written to Git.
+- Production traffic is still 100% on `4c7d4749-975f-4dc6-97e5-fd0be33b4553`; staging the secret did not change traffic. The next `master` Git build must inherit the five secret bindings, deploy the candidate, and be verified before SePay's official test is retried.
+
 Last updated: 2026-09-17T23:39:32Z (2026-09-18 06:39 Asia/Saigon).
 
 ## Handoff
