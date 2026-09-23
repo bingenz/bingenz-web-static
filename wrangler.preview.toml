@@ -1,6 +1,8 @@
-name = "bingenz-web-static"
+# Isolated commerce preview. Never point this config at the production Worker or legacy D1.
+name = "bingenz-commerce-preview"
 main = "src/worker.mjs"
 compatibility_date = "2026-09-16"
+workers_dev = true
 
 [assets]
 directory = "./public"
@@ -9,21 +11,18 @@ run_worker_first = true
 
 [[d1_databases]]
 binding = "DB"
-database_name = "bingenz-commerce"
-database_id = "43923fef-60e5-4eef-9ba4-195e11bfe9b8"
+database_name = "bingenz-commerce-preview"
+database_id = "45e95b13-841f-4e71-b21c-5055758f8607"
 migrations_dir = "migrations"
 
 [[r2_buckets]]
 binding = "SIMULATIONS"
-bucket_name = "bingenz-commerce"
+bucket_name = "bingenz-commerce-preview"
 
 [vars]
-ACCESS_AUD = "7652cd6bf37a508f721f1686c8f4db38aa9701d8a5498068f3c05254d5362473"
-ACCESS_TEAM_DOMAIN = "lnth.cloudflareaccess.com"
-TURNSTILE_SITE_KEY = "0x4AAAAAAE7bsOwFbKLKG7vm"
 BANK_CODE = "TPBank"
 ADMIN_EMAIL = "lengocthuan09@gmail.com"
-TURNSTILE_HOSTNAMES = "bingenz.com,www.bingenz.com"
+TURNSTILE_HOSTNAMES = "bingenz-commerce-preview.lnth.workers.dev"
 
 [observability]
 enabled = true

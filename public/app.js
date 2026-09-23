@@ -16,11 +16,25 @@ function toggleTheme() {
   applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
 }
 
+const modalOpeners = new Map();
 function setModal(id, open) {
   const modal = document.getElementById(id);
   if (!modal) return;
+  const wasOpen = modal.style.display === 'flex';
+  if (open && !wasOpen) modalOpeners.set(id, document.activeElement);
+  if (!open && !wasOpen) return;
   modal.style.display = open ? 'flex' : 'none';
   document.body.classList.toggle('scroll-locked', open);
+  if (open) {
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', modal.querySelector('.modal-title')?.textContent || 'Hộp thoại');
+    modal.querySelector('.close-btn')?.focus();
+  } else {
+    const opener = modalOpeners.get(id);
+    modalOpeners.delete(id);
+    if (opener?.isConnected) opener.focus();
+  }
 }
 
 function openDevModal() { setModal('devModal', true); }
@@ -72,6 +86,8 @@ function setCommPanelOpen(type, open) {
   const toggle = document.getElementById(`commToggle${type}`);
   if (!panel || !toggle) return;
   panel.classList.toggle('is-open', open);
+  panel.inert = !open;
+  panel.setAttribute('aria-hidden', String(!open));
   toggle.classList.toggle('is-open', open);
   toggle.setAttribute('aria-expanded', String(open));
 }
@@ -151,12 +167,33 @@ function applyInstagram24Icon() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  for (const type of ['Game', 'GiaoLuu']) setCommPanelOpen(type, false);
+  const serviceTrigger = document.querySelector('.service-dark');
+  if (serviceTrigger) {
+    serviceTrigger.tabIndex = 0;
+    serviceTrigger.setAttribute('role', 'button');
+    serviceTrigger.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openDevModal(); }
+    });
+  }
   applyTheme(localStorage.getItem('theme') || 'light');
   restoreSocialIcons();
   applyRequestedBrandIcons();
   applyInstagram24Icon();
   initScrollReveal();
   document.addEventListener('keydown', (event) => {
+    if (event.key === 'Tab') {
+      const modal = [...document.querySelectorAll('.modal')].find(node => node.style.display === 'flex');
+      if (modal) {
+        const focusable = [...modal.querySelectorAll('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter(node => !node.disabled && !node.closest('[inert]') && node.getClientRects().length);
+        if (focusable.length) {
+          const first = focusable[0], last = focusable.at(-1);
+          if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+          else if (!event.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+        }
+      }
+      return;
+    }
     if (event.key !== 'Escape') return;
     closeDevModal();
     closeCommunityPopup();
@@ -166,6 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', (event) => {
     const popup = document.getElementById('contactFabPopup');
     const button = document.getElementById('contactFab');
-    if (popup?.classList.contains('is-open') && !popup.contains(event.target) && event.target !== button) popup.classList.remove('is-open');
+    if (popup?.classList.contains('is-open') && !popup.contains(event.target) && !button?.contains(event.target)) popup.classList.remove('is-open');
   });
 });

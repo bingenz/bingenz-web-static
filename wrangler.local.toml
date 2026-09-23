@@ -1,0 +1,26 @@
+# Local-only configuration. Never use this file with deploy.
+name = "bingenz-commerce-local"
+main = "src/worker.mjs"
+compatibility_date = "2026-09-16"
+workers_dev = false
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bingenz-commerce-local"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "SIMULATIONS"
+bucket_name = "bingenz-commerce-local"
+
+[vars]
+BANK_CODE = "TPBank"
+ADMIN_EMAIL = "lengocthuan09@gmail.com"
+TURNSTILE_HOSTNAMES = "localhost,127.0.0.1"
+

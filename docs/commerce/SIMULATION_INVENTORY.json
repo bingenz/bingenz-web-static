@@ -1,0 +1,963 @@
+{
+  "source": "C:/Users/Acer/Downloads/QuickShare_2609122051",
+  "inventory": [
+    {
+      "filename": "01-a-star-pathfinding.html",
+      "slug": "01-a-star-pathfinding",
+      "title": "A* Pathfinding",
+      "bytes": 32891,
+      "sha256": "35390e36456b5beb12ef488c5e995c902a3558e3ca6ed27dce4d9425b34d024c",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "6d58d0aa6b3b38d40cacc9182a51445abb24b7e200a63352fc6e4e2ac417b2a7",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "02-quick-sort.html",
+      "slug": "02-quick-sort",
+      "title": "Quick Sort",
+      "bytes": 32834,
+      "sha256": "6ae36812c2f0c39b08f6bcc72e17dfe3b40951cc2afaeba4c84a073506b95b55",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "3ea09e8709770db107753ac2e7b77a9a4c609f48dab329f00a3f7f8215740338",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "draw",
+        "qs",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "03-lru-cache.html",
+      "slug": "03-lru-cache",
+      "title": "LRU Cache",
+      "bytes": 33308,
+      "sha256": "09a65352442c2fb9c445f6ffe2fecd4028c027d8e3b77c3a4d0160a99005430b",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "6d47d4559b376547be1d99ff0322ed1a3a10e45487d4056bc0a0cc9820d69fdf",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "draw",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "04-dns-resolution.html",
+      "slug": "04-dns-resolution",
+      "title": "DNS Resolution",
+      "bytes": 33149,
+      "sha256": "753ca507e75eba15ae2d09d42c55d1c3e46f252e648df1b5ebb587301cc9b1ab",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "a43b905fff47e77df745503321a6eec0b53c9882b8a2499036cc49202048eaa9",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "moveTo",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "05-load-balancer.html",
+      "slug": "05-load-balancer",
+      "title": "Load Balancer",
+      "bytes": 32539,
+      "sha256": "568de816f624402e4efc1ba602dfdf493a4e66dd413b4e3f8d83183813c0f04f",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "d3e6f1230b370259768430f38ec2986372a9394f1a38630f33bd463b2c63e8af",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "06-rate-limiting.html",
+      "slug": "06-rate-limiting",
+      "title": "Rate Limiting",
+      "bytes": 32400,
+      "sha256": "c941b63ef5efdea858ff0f5fe9613457ab11b4b221c453b1ca5f89a36f42fa26",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "20adf40aae971c1fb1c942a1e73d8ae5deecfdc532346aaf8928374d762fe618",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "paint",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "07-deadlock-detection.html",
+      "slug": "07-deadlock-detection",
+      "title": "Deadlock Detection",
+      "bytes": 33196,
+      "sha256": "bcf6b11170380b2751367dc3161ccedad9d110de21354109a974c7eb86a3d6cb",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "009853ac1ec65d737bb16f949ed1e50bb197576680111a7a010818adffd65619",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "08-jwt-authentication.html",
+      "slug": "08-jwt-authentication",
+      "title": "JWT Authentication",
+      "bytes": 32644,
+      "sha256": "3c4c83013220ef450c6dcd7766eae1bb4a65ccbafe66cb38323d9e092dee4966",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "cbca26438c64650025e3def7b75f978c89cc46c56ce8dd29106733baa375e29d",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "09-k-means-clustering.html",
+      "slug": "09-k-means-clustering",
+      "title": "K-Means Clustering",
+      "bytes": 33125,
+      "sha256": "778ce936dae5ce1077f9105ca4337e32237bcd0e48fb431ba34076ef006eef7f",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "0e178a215b49b7c41e92762af792ed3312023e00893cb76afe3c80609f24f694",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "render",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "10-blockchain-mining.html",
+      "slug": "10-blockchain-mining",
+      "title": "Blockchain Mining",
+      "bytes": 32816,
+      "sha256": "f4b1cdb0722a6038a7031d3432e64fa34ea45f5893af7778fde23b33eba432c3",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "f458f11a49d5b85ec210010689e40923f3eb75b9a113e9a76e8d1115101d4917",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "fakeHash",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "11-binary-search.html",
+      "slug": "11-binary-search",
+      "title": "Binary Search",
+      "bytes": 32304,
+      "sha256": "1d54dd5bd33f5b917f4ea99063cc9b275cbed46d6f2f2fd19fab15cf5b4921ea",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "bb55774d10d82175bbfaf96a4854a789a3f1748fd062aca74e2c7fc0faae1725",
+        "7b47ae5c156f1837f12ce7b01b8e9b0870bc6476ba4072e169804b2bfcc2ad61"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "12-merge-sort.html",
+      "slug": "12-merge-sort",
+      "title": "Merge Sort",
+      "bytes": 32207,
+      "sha256": "ce77ca4e3100b56ab03c40b49e334095bbfb463b5f05cbf3ac1c371cb6535ac7",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "d452bcca4f5b6cda2007d0f9e19ca9f9b6822ca465a895d60b163d4b898c42ed",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "draw",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "13-breadth-first-search.html",
+      "slug": "13-breadth-first-search",
+      "title": "Breadth-First Search",
+      "bytes": 32646,
+      "sha256": "a9167f279d31f6e8ecd7119a9b6ae7c8c519580b3251b2d83c0b5f430ce12276",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "066b542a0ac6cd450997bb48623f942c0b1def226d6dbc77af9b336a24e70769",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "buildGraph",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "14-depth-first-search.html",
+      "slug": "14-depth-first-search",
+      "title": "Depth-First Search",
+      "bytes": 32622,
+      "sha256": "938447c811245cc6a945f58c73869589723448566e6d8ea43eddd63102f77595",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "ee4d428e4bffeea890c749cb817b7f7e5b3b8abc1e70a845dc3eff3eb426c8b3",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "buildGraph",
+        "run",
+        "dfs"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "15-dijkstra-shortest-path.html",
+      "slug": "15-dijkstra-shortest-path",
+      "title": "Dijkstra Shortest Path",
+      "bytes": 33166,
+      "sha256": "16f5c66f82bcccfdc99ef7c5c905165ecb370ec21ad6245ee76d3543359500b4",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "db1f82e9efedf6f8b72c2789135cc3f6f22af0b74f6a0de3cfbd3580177f3470",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "build",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "16-hash-table-collision.html",
+      "slug": "16-hash-table-collision",
+      "title": "Hash Table Collision",
+      "bytes": 31894,
+      "sha256": "887b9f6113610ece6daad7844a575fe3e1e79cba432f51383750a1f566cc6a8d",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "df3ac4897146e3cf09d9c8ad159b883712bdc1af9ac73c95b5c3e0b485ca65cd",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "draw",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "17-bloom-filter.html",
+      "slug": "17-bloom-filter",
+      "title": "Bloom Filter",
+      "bytes": 32115,
+      "sha256": "479079bb12b7087ebd6fd7e0e013e067c906ee143de7eca199e22d0b1345425b",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "168b14377379bad18a3e93322408a3438ab77b7da2c707ba968a38a5720c2c8c",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "idxs",
+        "draw",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "18-trie-autocomplete.html",
+      "slug": "18-trie-autocomplete",
+      "title": "Trie Autocomplete",
+      "bytes": 31967,
+      "sha256": "7ccff3222249621df241c66a928afb31ce36f4cb4e8eb5a377374ded3729994d",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "1f048151beebe172d4f9e8f4b18111be7d228ff5e3b834915fbf834208cb54d4",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "build",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "19-producer-consumer.html",
+      "slug": "19-producer-consumer",
+      "title": "Producer Consumer",
+      "bytes": 32069,
+      "sha256": "dc1af23fbabe6079c3fe7089ce4da84bb7da7669251b725de0e3181dab99b7a6",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "1c61687961a18e248dfb99c802c8caa9f21aa7a9c986f9a89d30d2a0a22be591",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "20-message-queue-retry.html",
+      "slug": "20-message-queue-retry",
+      "title": "Message Queue Retry",
+      "bytes": 32205,
+      "sha256": "4b9d95dd02ef1a115faad59cea23e57573412887e6e260c012a730d856420da0",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "5ba1aae51a48b28a1cf7ad4e2d18f50efb64b8ab112659f35ca5f34600a0f777",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "21-tcp-handshake.html",
+      "slug": "21-tcp-handshake",
+      "title": "TCP Handshake",
+      "bytes": 31906,
+      "sha256": "1839e12c3f2ba43faef6cfc27649902a4903d60ce755b11c7515a67f7b391b7c",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "b20ab2604d2199ef7e682e23e52540736935770792e875b918c45b70e5d2e54f",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "fly",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "22-cdn-cache.html",
+      "slug": "22-cdn-cache",
+      "title": "CDN Cache",
+      "bytes": 31908,
+      "sha256": "3b92be62ad43aab4423712b5ebd4514d18ce59efe3a85aa85e7dc581bd3e436c",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "ae66d5907e813330bbcc8694159222a6ff3bce5130a299ae13700c0874468bdf",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [
+        "fetch"
+      ],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "23-sql-transaction-locking.html",
+      "slug": "23-sql-transaction-locking",
+      "title": "SQL Transaction Locking",
+      "bytes": 32080,
+      "sha256": "a53880f4b36480ac8829865e93fc7f00ad96144035f3c6a42bba927ca68b3715",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "2ada06b8a76e5897f44ba14d92745458978950bb22e64cc897c0ad7916e22f29",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "24-garbage-collection-mark-sweep.html",
+      "slug": "24-garbage-collection-mark-sweep",
+      "title": "Garbage Collection",
+      "bytes": 31927,
+      "sha256": "1d66fd1570e3057bef98bb3731f0d8aeb1fb54fb2c7dee730f1373707aec5045",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "60ee3ed0b178b90240f6b552a3ac48f01fc3956e322e95ab468465caaf55d90d",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "build",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "25-memory-paging-lru.html",
+      "slug": "25-memory-paging-lru",
+      "title": "Memory Paging",
+      "bytes": 32097,
+      "sha256": "511d690fbf3a899513fc4762ef15c69c231467c583161fff6d4c3d10810d9bb2",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "c83f0843d4c82351861b512083c238964c3cec70807e3d1187c6f8949366cf05",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "paint",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "26-cpu-round-robin.html",
+      "slug": "26-cpu-round-robin",
+      "title": "CPU Round Robin",
+      "bytes": 32015,
+      "sha256": "8a37a6f55c732b330856ecaef3563bc56d4b8f30b503e405fdb4358e24ac500b",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "7993b43d7d0e03d40881f59646ad9a13860cf07d763e3e69af45a0cbeba6a6e1",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "paint",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "27-union-find.html",
+      "slug": "27-union-find",
+      "title": "Union-Find",
+      "bytes": 31862,
+      "sha256": "d4f268157ae554cd44409ed1f289c4961ab85850ec59c8c7f699a514f6001231",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "5111f83ddcc30cf2dd86f420eb98e43d9b2e571ffa381b2f17eb733a441fd328",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "f",
+        "draw",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "28-topological-sort.html",
+      "slug": "28-topological-sort",
+      "title": "Topological Sort",
+      "bytes": 32587,
+      "sha256": "4dc16688ebffc6ab498fe9f44847be3eac7c1b5f3666607112dabff76b71e0d0",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "8ace01bdb0e999330d7fb12a3df67823388ba1db1a678886546cae7673df7757",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "buildGraph",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "29-consistent-hashing.html",
+      "slug": "29-consistent-hashing",
+      "title": "Consistent Hashing",
+      "bytes": 32385,
+      "sha256": "fda8343f92b27c828d1100256e8371d49abd926802a4d2969c3f9845c4396026",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "63b45d733865afd9e37c06cbbc82476ef367735ab01289f339831d5b1a85b862",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "pt",
+        "draw",
+        "owner",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "30-raft-leader-election.html",
+      "slug": "30-raft-leader-election",
+      "title": "Raft Leader Election",
+      "bytes": 32387,
+      "sha256": "04a636d0c9d8f5d63fbfd3317c6082561efc50056db1a007e6e000c0bfebd117",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "82d56614a9480b42c45dc24f97b40e12717aa8f3fe483ef07f98726810fdba20",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "setActive",
+        "addLog",
+        "sleep",
+        "run"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "battery-charge-animation-tiktok-9x16-v4.html",
+      "slug": "battery-charge-animation-tiktok-9x16-v4",
+      "title": "bateria = bateria + 1;",
+      "bytes": 50981,
+      "sha256": "8b87e8a56500b28901338670c9e0399d04514f6abc73fc440069e94f0fa91b53",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "a1b978bbc392816133cbeff8424b54e62a85faa7dda7e0f40e58a16369b57d0b",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "clearActive",
+        "colorForBattery",
+        "render",
+        "log",
+        "smoothstep",
+        "getInterval",
+        "finish",
+        "scheduleNext",
+        "tick",
+        "start"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "database-index-tiktok-pro.html",
+      "slug": "database-index-tiktok-pro",
+      "title": "Full Scan vs B-Tree",
+      "bytes": 54784,
+      "sha256": "fefc0d93110523a532a8de4f50f7fd349b75f552448d3a9fa2e61ddb48b5b440",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "1a81545b502fa2e3e66c3e222443728883ed9e1d0b2643783f41c9a809b0ac0c",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "fmt",
+        "easeOutCubic",
+        "pause",
+        "syncBottombarHeight",
+        "pickTarget",
+        "setupCanvas",
+        "drawScan",
+        "startScan",
+        "frame",
+        "el",
+        "renderTreeSkeleton",
+        "setDot",
+        "animateSweep",
+        "frame",
+        "startTree",
+        "seq",
+        "resetState",
+        "checkBothReady",
+        "finishBoth",
+        "showSummary",
+        "runQuery"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "ddos-simulation-tiktok-pro.html",
+      "slug": "ddos-simulation-tiktok-pro",
+      "title": "DDoS Simulation",
+      "bytes": 51471,
+      "sha256": "823aaa5d0863a7d8fd7150f4f8771f125f9cab32b46c56ec965073c02728e516",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "a325353dc62443af63d42071896eb3c82c96b52d6107fb7e740754ee4b55c1e0",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "randOctet",
+        "timeNow",
+        "addLog",
+        "attackText",
+        "svgNS",
+        "spawnMovePacket",
+        "spawnFlash",
+        "onLegitArrive",
+        "onAttackDirectArrive",
+        "onAttackScrubArrive",
+        "onArrive",
+        "frame",
+        "setMode"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "fingerprint-sim-tiktok-pro.html",
+      "slug": "fingerprint-sim-tiktok-pro",
+      "title": "Fingerprint Hash Match",
+      "bytes": 52481,
+      "sha256": "f4fd0a1fe6fd789a89d8d7b5921992fc9b282572b8ae9aa3122867aea6669d23",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "ffa55197ad8cafbd54c7bef5692b6ca87b8137f6c962bb8f2f989e5f64cea684",
+        "168e2ec2f686225193b798685eb550a0a9b650d6fe657047f6575e8a73e1029c"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "mulberry32",
+        "genMinutiae",
+        "jitter",
+        "canonical",
+        "sha256Hex",
+        "similarity",
+        "drawFingerprint",
+        "setStep",
+        "clearSteps",
+        "wait",
+        "animateReveal",
+        "frame",
+        "typeHash",
+        "setBusy",
+        "initEnroll",
+        "runScan"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    },
+    {
+      "filename": "object-detection-tiktok-pro-v2.html",
+      "slug": "object-detection-tiktok-pro-v2",
+      "title": "Object Detection — Sliding Window",
+      "bytes": 60353,
+      "sha256": "a57803c943679db7fa7ac12339c68de53f8e6582e5bc341b65b853484c440439",
+      "scripts": 3,
+      "scriptHashes": [
+        "9d0fbb4ae8ef31a5c204faba69e456c2984108f172514426c4991b2107e3e1f2",
+        "cf49ddd2495bf3745a5d1a3a02640f45eb6edce095936866cd4ff6ec6e17f2ac",
+        "425f883c90ac70e377362bf85e2c06b998b519090ef348e03cf180db5d5e3951"
+      ],
+      "functions": [
+        "trimLogs",
+        "layout",
+        "schedule",
+        "percentX",
+        "percentY",
+        "buildCells",
+        "shapeAt",
+        "clearActive",
+        "log",
+        "renderShapes",
+        "drawDetectBox",
+        "moveWindow",
+        "setSummary",
+        "finish",
+        "completeImmediately",
+        "scheduleNext",
+        "tick",
+        "start"
+      ],
+      "externalAssets": [],
+      "sensitiveAPIs": [],
+      "syntaxErrors": []
+    }
+  ]
+}
