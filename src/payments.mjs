@@ -15,14 +15,22 @@ export async function webhook(request,env){
   return json({success:false},401);
  }
  let b;try{b=JSON.parse(raw);}catch{return json({success:false},400);}
- requireValue(b&&typeof b==='object'&&Number.isSafeInteger(b.id)&&b.id>0,400,'invalid_transaction');
+ requireValue(b&&typeof b==='object'&&Number.isSafeInteger(b.id)&&b.id>=0,400,'invalid_transaction');
  requireValue(Number.isSafeInteger(b.transferAmount)&&b.transferAmount>=0&&b.transferAmount<=100000000000,400,'invalid_amount');
- requireValue(['in','out'].includes(b.transferType)&&typeof b.accountNumber==='string'&&b.accountNumber.length<=64,400,'invalid_transaction');
+ requireValue(['in','out'].includes(b.transferType)&&typeof b.accountNumber==='string'&&b.accountNumber.length>0&&b.accountNumber.length<=64,400,'invalid_transaction');
+ requireValue(typeof b.gateway==='string'&&b.gateway.length>0&&b.gateway.length<=64,400,'invalid_transaction');
  requireValue(typeof b.referenceCode==='string'&&b.referenceCode.length<=200,400,'invalid_reference');
  const code=typeof b.code==='string'&&/^BGZ[A-Z0-9]{12}$/.test(b.code)?b.code:null;
+ const txAt=transactionTime(b.transactionDate);
+ // SePay's signed "Gửi thử" payload uses transaction ID 0. Acknowledge it only
+ // after authentication and schema validation, and never persist or fulfill it.
+ if(b.id===0){
+  console.info(JSON.stringify({event:'webhook_test_accepted'}));
+  return json({success:true});
+ }
  requireValue(env.BANK_ACCOUNT_NUMBER&&env.BANK_CODE,503,'payment_configuration_required');
  const bankValid=b.accountNumber===env.BANK_ACCOUNT_NUMBER&&b.gateway===env.BANK_CODE?1:0;
- const txAt=transactionTime(b.transactionDate),id=crypto.randomUUID();
+ const id=crypto.randomUUID();
  await env.DB.batch([
   stmt(env.DB,`INSERT INTO payments(id,external_id,reference,payment_code,amount_vnd,transaction_at,received_at,direction,bank_valid,status) VALUES (?,?,?,?,?,?,?,?,?,'candidate') ON CONFLICT(external_id) DO NOTHING`,id,String(b.id),b.referenceCode,code,b.transferAmount,txAt,now,b.transferType,bankValid),
   stmt(env.DB,`INSERT INTO webhook_events(id,external_id,received_at,outcome,body_hash) VALUES (?,?,?,'accepted',?)`,crypto.randomUUID(),String(b.id),now,bodyHash)

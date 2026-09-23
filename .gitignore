@@ -12,3 +12,4 @@ ref-images-v2/
 .private/
 test-results/
 playwright-report/
+wrangler.toml.*.bak

@@ -1,12 +1,12 @@
 # BinGenZ website and commerce
 
-Website của `bingenz.com`, với giao diện HTML/CSS/JS trong `public/`. Commerce đang được triển khai trên nhánh `codex/commerce-storefront`, theo [đặc tả](docs/commerce/IMPLEMENTATION_SPEC.md). Xem [tiến độ và hướng dẫn tiếp tục](docs/commerce/PROGRESS.md) trước khi chỉnh sửa. Production chưa nhận mã commerce của nhánh này.
+Website và commerce Worker của `bingenz.com`, với giao diện HTML/CSS/JS trong `public/`, API trong `src/`, D1 và R2 riêng tư. Theo [đặc tả](docs/commerce/IMPLEMENTATION_SPEC.md) và xem [tiến độ](docs/commerce/PROGRESS.md) trước khi chỉnh sửa. Production đã chạy commerce; mọi release tiếp theo phải đi từ `master` qua đường triển khai Git đã xác minh.
 
 ## Kiến trúc và trạng thái
 
 Worker `src/worker.mjs` phục vụ API/HTML của cửa hàng; D1 giữ sản phẩm, đơn, giao dịch, quyền sử dụng và audit; R2 riêng tư giữ bản gốc, bản giao cho người mua và ảnh quản trị tải lên. `public/` chỉ chứa giao diện và thumbnail công khai. Checkout cần Turnstile server-side; SePay webhook HMAC đối chiếu tiền vào, tài khoản, mã `BGZ`, số tiền và hạn 15 phút trước khi cấp quyền. Trang admin cần Cloudflare Access + kiểm tra JWT/email ở Worker. Quyền truy cập khách dùng token băm, cookie HttpOnly gắn thiết bị, Start độc lập và permit ngắn hạn. HTML gửi tới trình duyệt không thể là DRM tuyệt đối.
 
-Preview tách biệt với production: `wrangler.preview.toml` trỏ tới D1/R2 `bingenz-commerce-preview`, đã nạp 35 sản phẩm và triển khai Worker tại `https://bingenz-commerce-preview.lnth.workers.dev`. Chỉ có secret ngẫu nhiên cho session/abuse trên preview; thanh toán/admin còn fail-closed cho tới khi Access, Turnstile và SePay được cấu hình. Chạy `npm run test:preview` để smoke test live không tạo đơn hay chuyển tiền. `wrangler.toml` hiện vẫn là Worker static production cũ. Không chạy lệnh deploy production cho đến khi các cổng ở mục 33 của đặc tả đều qua.
+Preview tách biệt với production: `wrangler.preview.toml` trỏ tới D1/R2 `bingenz-commerce-preview`, đã nạp 35 sản phẩm và triển khai Worker tại `https://bingenz-commerce-preview.lnth.workers.dev`. Production `wrangler.toml` trỏ tới Worker/D1/R2 commerce thật và tuyệt đối không được chứa secret. Chạy `npm run test:preview` để smoke test preview không tạo đơn hay chuyển tiền.
 
 ## Xem giao diện static local
 
@@ -19,13 +19,13 @@ Mở `http://localhost:4173`.
 
 ## Cloudflare production hiện tại
 
-Production dùng Worker hiện có `bingenz-web-static`, repository `bingenz/bingenz-web-static`:
+Production dùng Worker `bingenz-web-static`, repository `bingenz/bingenz-web-static`:
 
-- Build command: để trống
-- Build output directory: `public`
+- Build/deploy command: `npx wrangler deploy --config wrangler.toml`
+- Root directory: repository root
 - Production branch: `master`
 
-Giữ domain `bingenz.com` và `www.bingenz.com`. Kiến trúc commerce dùng Workers, D1, R2 riêng tư, Cloudflare Access + Google, Turnstile và SePay. Không đưa HTML mô phỏng trả phí vào `public/`. Không deploy nhánh đang phát triển trước khi hoàn tất các bước xác minh trong đặc tả.
+Giữ domain `bingenz.com` và `www.bingenz.com`. Không đưa HTML mô phỏng trả phí vào `public/`, không đặt secret trong `wrangler.toml`, và không deploy nhánh phát triển trực tiếp lên production.
 
 ## Quy trình chỉnh sửa
 
@@ -53,7 +53,7 @@ Run `npm run audit:preview-r2` to read back every original/delivery object from 
 
 ## SePay và release
 
-Webhook BinGenZ #56829 đang lưu URL production `/api/webhook/sepay` (số ít), HMAC-SHA256 và tài khoản TPBank được chọn. Chưa đối chiếu secret với Worker, chưa gửi thử chính thức. Cấu hình nhận diện mã hiện chỉ có `CJ`/`MP`; cần thêm mẫu `BGZ` + 12 ký tự chữ/số sau khi endpoint và HMAC sẵn sàng. Không thay đổi webhook Cube Jump. QR proxy dùng tài khoản từ secret và mã `BGZ` làm nội dung chuyển khoản. Không chuyển tiền hoặc hoàn tiền tự động trong kiểm thử.
+Webhook BinGenZ #57962 dùng URL production `/api/webhook/sepay` (số ít), HMAC-SHA256, TPBank, retry và cảnh báo lỗi. Worker chỉ ghi giao dịch thật có ID dương; payload `Gửi thử` đã ký với ID `0` được xác thực nhưng không ghi D1 hay cấp quyền. SePay phải đồng bộ cả từ khóa `BGZ`, và mẫu nhận diện phải là đúng 12 ký tự chữ/số. Không thay đổi webhook Cube Jump. QR proxy dùng tài khoản từ secret và mã `BGZ` làm nội dung chuyển khoản. Không chuyển tiền hoặc hoàn tiền tự động trong kiểm thử.
 
 Trước production release: xác minh migration, mọi object R2 và 35 mô phỏng, Access/Google và JWT live, Turnstile token thật/replay, SePay HMAC và nhận diện BGZ, QR/payment đúng hạn/sai hạn, giao diện mobile, hết hạn quyền, không có secret trong Git. Chỉ khi đó mới cập nhật cấu hình Worker production hiện có, triển khai và smoke test domain thật. Xem [ma trận](docs/commerce/TEST_MATRIX.md) để biết bằng chứng và ca còn thiếu.
 

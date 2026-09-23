@@ -39,7 +39,7 @@ before(async()=>{
  }));
  db=await mf.getD1Database('DB');
  // D1 exec is line-oriented; prepare accepts each complete trigger statement.
- for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql']){
+ for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql','0004_fix_payment_trigger.sql','0005_restore_payment_window.sql']){
   const statements=unstable_splitSqlQuery(await readFile('migrations/'+file,'utf8'));
   for(const q of statements)await db.prepare(q).run();
  }
@@ -302,6 +302,15 @@ test('SePay second-precision timestamp matches an order created in that same sec
  assert.equal((await sendPayment(earlier.body,{transactionDate:vietnamTime(Date.parse(prior.created_at)-1000)},9013)).status,200);
  assert.equal((await db.prepare('SELECT status FROM payments WHERE external_id=?').bind('9013').first()).status,'late');
 });
+test('a timely bank transfer still fulfills when SePay delivery is delayed',async()=>{
+ const o=await checkout('delayedwebhook@gmail.com');assert.equal(o.response.status,201);
+ const createdAt=new Date(Date.now()-30*60*1000),expiresAt=new Date(createdAt.getTime()+15*60*1000);
+ await db.prepare('UPDATE orders SET created_at=?,expires_at=? WHERE id=?').bind(createdAt.toISOString(),expiresAt.toISOString(),o.body.id).run();
+ const transactionDate=new Date(createdAt.getTime()+5*60*1000+7*3600000).toISOString().slice(0,19).replace('T',' ');
+ assert.equal((await sendPayment(o.body,{transactionDate},9014)).status,200);
+ assert.equal((await db.prepare('SELECT status FROM orders WHERE id=?').bind(o.body.id).first()).status,'paid');
+ assert.equal((await db.prepare('SELECT status FROM payments WHERE external_id=?').bind('9014').first()).status,'matched');
+});
 function sessionCookies(response){return response.headers.getSetCookie().map(s=>s.split(';')[0]).join('; ');}
 test('claim, token exchange, device binding, atomic independent starts and private R2',async()=>{
  const o=await checkout('access@gmail.com',['p','q']);
@@ -403,7 +412,7 @@ test('expired unpaid checkout cannot serve QR or become paid from a late transfe
  assert.equal((await db.prepare('SELECT count(*) n FROM entitlements WHERE order_id=?').bind(o.body.id).first()).n,0);
  assert.equal((await post('/api/orders/'+o.body.id+'/claim',{},o.cookie)).status,409);
 });
-test('payment mismatch cases remain unfulfilled and invalid HMAC does not persist',async()=>{
+test('payment mismatch cases remain unfulfilled; provider test and invalid HMAC do not persist',async()=>{
  const cases=[['underpaid',{transferAmount:9999}],['overpaid',{transferAmount:10001}],['wrong_bank',{accountNumber:'other'}],['outgoing',{transferType:'out'}],['unknown_code',{code:'BGZ222222222222'}],['late',{transactionDate:'2020-01-01 00:00:00'}]];
  for(let i=0;i<cases.length;i++){
   const [status,override]=cases[i],o=await checkout('case'+i+'@gmail.com');
@@ -413,6 +422,11 @@ test('payment mismatch cases remain unfulfilled and invalid HMAC does not persis
   assert.equal((await db.prepare('SELECT count(*) n FROM entitlements WHERE order_id=?').bind(o.body.id).first()).n,0);
  }
  const before=await db.prepare('SELECT count(*) n FROM payments').first();
+ const eventsBefore=await db.prepare('SELECT count(*) n FROM webhook_events').first();
+ const providerTest=await sendPayment({total_vnd:10000,payment_code:'BGZ000000000000'},{id:0,accountNumber:'provider-test-account',gateway:'ProviderTest'},9999);
+ assert.equal(providerTest.status,200);assert.deepEqual(await providerTest.json(),{success:true});
+ assert.equal((await db.prepare('SELECT count(*) n FROM payments').first()).n,before.n);
+ assert.equal((await db.prepare('SELECT count(*) n FROM webhook_events').first()).n,eventsBefore.n);
  assert.equal((await mf.dispatchFetch(origin+'/api/webhook/sepay',{method:'POST',body:'{}'})).status,401);
  assert.equal((await mf.dispatchFetch(origin+'/api/webhooks/sepay',{method:'POST',body:'{}'})).status,404);
  assert.equal((await db.prepare('SELECT count(*) n FROM payments').first()).n,before.n);
@@ -543,7 +557,7 @@ test('browser unpaid checkout shows QR/countdown then polls into paid access',as
   assert.ok(await page.locator('.payment-qr').evaluate(image=>image.naturalWidth>0));
   assert.equal((await mf.dispatchFetch(origin+'/api/orders/'+o.body.id+'/qr')).status,404);
   await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();
-  assert.equal((await sendPayment(o.body,{},9103)).status,200);
+  assert.equal((await sendPayment(o.body,{},9105)).status,200);
   await page.locator('[data-start]').waitFor({timeoutMs:10000});
   assert.equal(new URL(page.url()).pathname,'/access');
   assert.equal(await page.locator('#copy-access').count(),1);

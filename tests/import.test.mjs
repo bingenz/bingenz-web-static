@@ -6,7 +6,7 @@ import {importSQL} from '../scripts/import-sql.mjs';
 import {transform} from '../scripts/prepare-products.mjs';
 test('import resumes after partial version insert and preserves metadata/rollback',()=>{
  const db=new DatabaseSync(':memory:');
- for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql'])db.exec(readFileSync('migrations/'+file,'utf8'));
+ for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql','0004_fix_payment_trigger.sql','0005_restore_payment_window.sql'])db.exec(readFileSync('migrations/'+file,'utf8'));
  const item={id:'p',source_key:'p.html',slug:'p',title:"Product's title",thumbnail:'/thumb.webp',version:'v1',sha256:'a'.repeat(64),original_key:'original1',delivery_key:'delivery1',bytes:100};
  db.exec(importSQL(item,'2026-01-01'));db.exec("UPDATE products SET title='Edited',price_vnd=20000");
  db.exec(importSQL(item,'2026-01-02'));assert.equal(db.prepare('SELECT count(*) n FROM product_versions').get().n,1);

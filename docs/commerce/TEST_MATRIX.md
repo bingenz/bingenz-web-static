@@ -1,14 +1,14 @@
 # Verification matrix
 
-Last updated: 2026-09-18. Preview D1/R2 imported and separate Worker deployed; production deployment unchanged.
-Current run: npm test — 34 tests, 34 passed, zero failures/skips. Separate protected-simulation run: 35 products × 2 viewports, all pass.
+Last updated: 2026-09-23. Production D1/R2 and deployed Worker audited read-only; payment and Git release remediation is active.
+Current run: npm test — 36 tests, 36 passed, zero failures/skips. Production Wrangler bundle dry-run passes. Separate protected-simulation run: 35 products × 2 viewports, all pass.
 Tests use local Worker/D1/R2 for runtime behavior; mocked provider success is not live provider verification.
 
 | Area | Evidence and current result | Remaining |
 |---|---|---|
 | Unit / schema | PASS: Gmail aliases, random codes/tokens, session tampering/purpose/expiry, HMAC bytes/timestamp window, body limit, invalid calendar dates, immutable price snapshots/cart constraints | Broader edge cases |
 | D1 integration | PASS: real workerd/D1 pricing, duplicate/inactive carts, pending ownership/reuse, parallel identical checkout returns one pending order, parallel canonical-Gmail attempts enforce 5-in-10-minute limit, concurrent payment dedupe, independent entitlements, atomic repeated Start; expired activation and runtime are denied | Exact simultaneous deadline transition races |
-| Payment matcher | PASS: exact, under/over, unknown code, late, wrong account, outgoing, invalid signature; duplicate grants once; same-second order/SePay timestamp accepted and previous second rejected | Production official test |
+| Payment matcher | PASS: exact, under/over, unknown code, late, wrong account, outgoing, invalid signature; duplicate grants once; same-second order/SePay timestamp accepted and previous second rejected; delayed authenticated delivery uses provider transaction time; signed SePay test ID 0 returns success without any D1 write | Retry production official test after release |
 | Customer security | PASS: claim/exchange, hashed token persistence, wrong-device denial, no auth from Gmail, audited admin reissue with generation invalidation and optional device reset, revocation, origin rejection, private R2 permit/CSP/no-store/markers; expired activation Start and expired runtime permit/content denied | Exact-boundary transition coverage; live Access policy |
 | Imports | PASS: local and isolated preview each have 35 products/35 versions; local duplicate import and partial-write recovery tested; all 70 preview R2 objects match manifest byte lengths and SHA-256 | Production import and audit |
 | Thumbnails | PASS: 35 WebP screenshots, contact sheet reviewed; admin replacement tested locally | Live admin replacement workflow |
@@ -19,8 +19,8 @@ Tests use local Worker/D1/R2 for runtime behavior; mocked provider success is no
 | Admin | PASS: signed-gated dashboard/order search/detail with immutable snapshots and no credential hashes, guarded manual reconciliation with insufficient/wrong-bank denial and audited fulfillment, bounded manual refund request/completion with optional revocation, reasoned entitlement adjustment/reopen/revoke, audited default activation setting with future-order snapshot, paged CSV exports with formula protection, sandboxed private version preview, safe empty-draft deletion with archival boundary, draft/edit/version rollback/bulk, prepared HTML upload to private R2 with hash/size checks and idempotent duplicate, WebP replacement/current-image route, audited support notes and paid-link reissue/device reset, 390px browser render; direct admin.html denied. New desktop browser test covers draft creation → private HTML upload/preview + thumbnail → activation/catalog visibility → archival, verifying audit records. | Full end-to-end admin validation; live policy |
 | Access | PASS: signed local JWK valid/wrong email/audience/tampered denial; missing token rejects. Cloudflare One read-only check found no applications and an active-plan setup gate. | Owner activates a plan; then configure and verify live Google policy and Access application |
 | Turnstile | PASS mocked-provider wrong hostname/action/replayed response denial | Production widget/secrets, fresh real token and replay |
-| SePay | Authenticated dashboard verified; #56829 enabled HMAC, incoming JSON, retry on, TPBank selected; source and signed test use saved singular route, plural returns 404. Read-only general configuration confirms only CJ/MP active patterns, no BGZ; BinGenZ webhook prefix filter has no selection. No send-test performed. | Add BGZ + 12 alphanumeric pattern after endpoint/HMAC readiness; verify secret, alerts and official signed test/deployment |
-| Cloudflare remote | Isolated preview D1/R2 and Worker deployed; migrations 0001/0002/0003 and four triggers verified; 35 products/versions imported, all 70 private R2 objects hash/size verified. Preview live smoke passes catalog/mobile/recovery/private-path denial; two random preview-only session/abuse secrets installed. Production deployment ac96a0ba unchanged. | Access/Turnstile/SePay/bank secrets, live provider/payment/admin policy and production gates |
+| SePay | Dashboard verified: #57962 enabled HMAC, incoming JSON, retry/alerts on, TPBank selected, singular route and BGZ webhook filter. Official test reached post-HMAC validation but returned 400 because mock ID 0 was rejected; no D1 write. Account sync keyword is only CJ and active BGZ recognition is incorrectly numeric-only. | Release ID-0 health-test fix; add BGZ account keyword and change suffix to exactly 12 alphanumeric; retry official test |
+| Cloudflare remote | Production Worker bundle and headers exactly matched local pre-fix source; D1 has 35 active products/versions, 3 unpaid orders and no payments/events/entitlements; R2 has all 70 expected private objects with exact key/size parity. Production deployment `4c7d4749-975f-4dc6-97e5-fd0be33b4553` was a direct upload. Secret names exist, but bank destination must move from plain environment variable to secret. | Apply migration 0005, deploy repaired `master` through one Git-backed path, verify SHA/version, live provider test and payment flow |
 | Simulation inventory | PASS: all 35 individually enumerated, syntax checked and protected runtime/initial-interaction/expiry verified at desktop/mobile | Deeper scenario-specific interactions and live preview/production verification |
 
 ## Individual simulations
@@ -66,7 +66,7 @@ Each original passed baseline desktop/mobile loading and initial interaction. Ev
 | object-detection-tiktok-pro-v2.html | object-detection-tiktok-pro-v2 | Local yes; preview yes; production no | Yes | Protected start/play/interaction/expiry pass | Protected start/play/interaction/expiry pass | Protected runtime + expiry pass | No page errors (protected) | Initial load pass | Protected initial interaction + expiry pass |
 
 ## Evidence and commands
-- tests/schema.test.mjs, security.test.mjs, import.test.mjs, worker.test.mjs: npm test 34/34 pass. Preview Wrangler dry-run passed; it did not access remote services.
+- tests/schema.test.mjs, security.test.mjs, import.test.mjs, worker.test.mjs: npm test 36/36 pass. Production Wrangler dry-run passed; it did not mutate remote services.
 - STOREFRONT_TESTS.json: node scripts/test-storefront.mjs with local Worker on port4173.
 - REGRESSION_SITE_TESTS.json: node scripts/baseline-site.mjs http://127.0.0.1:4173. Original baseline remains separate.
 - BASELINE_SIMULATION_TESTS.json and SIMULATION_INVENTORY.json contain individual original observations.
@@ -74,7 +74,7 @@ Each original passed baseline desktop/mobile loading and initial interaction. Ev
 - Ignored .private/products/import-local-result.json: second import verified 35 products/35 versions.
 - Screenshots under ignored test-results/storefront and test-results/audit; thumbnail sheet test-results/thumbnails.png.
 - Ignored test-results/protected-simulations/results.json: 35 products, 70 primary interactions, zero browser errors/overflow, expiry denied for each. Reproduce with `node scripts/test-protected-simulations.mjs` after preparing private products.
-- No production smoke test, deployment, official SePay send-test or real payment performed.
+- Production read-only smoke passed for catalog/no-store/closed webhook GET/invalid-HMAC denial. One official SePay send-test returned 400 before the ID-0 compatibility fix and wrote no D1 row. No real payment or refund was performed.
 
 ## Next verification
 Complete remaining admin browser operations and exact expiry/deadline races next; then scenario-specific simulation interactions and live infrastructure/provider gates. All 35 protected initial-interaction cycles already pass locally at desktop/mobile. Do not advance tests from pending to pass based only on page rendering.

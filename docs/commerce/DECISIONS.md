@@ -163,3 +163,11 @@
 - Reason: a live smoke test is needed without changing production. Cloudflare Assets redirects `/commerce.html` to `/commerce`; wrapping the redirect as a shell response broke checkout/recovery routes even though local asset mocks passed. Extensionless fetches return actual HTML, and the test binding now emulates the redirect to catch regressions.
 - Consequences: preview catalog is publicly viewable but checkout/admin fail closed; private R2 remains unreachable by direct URL. Production deployment stays unchanged. Live preview smoke covers catalog, mobile layout, recovery shell and route denial, not real payment or admin authentication.
 - Affected: wrangler.preview.toml, src/worker.mjs, tests/worker.test.mjs, scripts/test-preview-smoke.mjs, docs/commerce/PROGRESS.md.
+
+## 2026-09-23 — preserve migration history and accept non-persisting SePay tests
+
+- Decision: reconstruct production-applied migration 0004 exactly from the live D1 trigger and add forward-only migration 0005 to match real payments by provider transaction time within the order window. An authenticated provider retry may arrive after UI expiry, but it cannot fulfill a transfer made outside the original payment window.
+- Decision: accept SePay's signed, schema-valid test transaction ID `0` with `{"success":true}` only after raw-body HMAC/timestamp and payload validation. Return before bank matching or D1 writes. All real transactions must have a positive integer ID and retain idempotent persistence and fulfillment rules.
+- Reason: deployed D1 history must remain reproducible without rewriting an applied migration. SePay's official `Gửi thử` contract uses mock ID 0, while treating that mock as a real payment would pollute the review ledger or risk unintended matching.
+- Consequences: delayed webhook delivery can fulfill only when the bank transaction itself was timely; provider health tests create no payment, webhook event, entitlement, or order state change. Invalid signatures still fail before JSON processing.
+- Affected: migrations/0004_fix_payment_trigger.sql, migrations/0005_restore_payment_window.sql, src/payments.mjs, tests/worker.test.mjs, schema/import/protected-simulation migration consumers.

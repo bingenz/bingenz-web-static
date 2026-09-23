@@ -1,5 +1,37 @@
 name = "bingenz-web-static"
+main = "src/worker.mjs"
 compatibility_date = "2026-09-16"
 
 [assets]
 directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bingenz-commerce"
+database_id = "43923fef-60e5-4eef-9ba4-195e11bfe9b8"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "SIMULATIONS"
+bucket_name = "bingenz-commerce"
+
+[vars]
+ACCESS_AUD = "7652cd6bf37a508f721f1686c8f4db38aa9701d8a5498068f3c05254d5362473"
+ACCESS_TEAM_DOMAIN = "lnth.cloudflareaccess.com"
+TURNSTILE_SITE_KEY = "0x4AAAAAAE7bsOwFbKLKG7vm"
+BANK_CODE = "TPBank"
+ADMIN_EMAIL = "lengocthuan09@gmail.com"
+TURNSTILE_HOSTNAMES = "bingenz.com,www.bingenz.com"
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 0.01

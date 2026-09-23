@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 export function fixture(){
- const db=new DatabaseSync(':memory:');for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql'])db.exec(readFileSync('migrations/'+file,'utf8'));
+ const db=new DatabaseSync(':memory:');for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql','0004_fix_payment_trigger.sql','0005_restore_payment_window.sql'])db.exec(readFileSync('migrations/'+file,'utf8'));
  db.exec(`INSERT INTO products(id,slug,title,created_at,updated_at) VALUES ('p','p','Demo','2026-01-01','2026-01-01');
  INSERT INTO product_versions VALUES ('v','p','${'a'.repeat(64)}','original','delivery',123,'2026-01-01');
  UPDATE products SET current_version_id='v';`);

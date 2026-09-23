@@ -16,7 +16,7 @@ const browser=await chromium.launch();
 const results=[];
 try{
  const db=await mf.getD1Database('DB'),bucket=await mf.getR2Bucket('SIMULATIONS');
- for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql']){
+ for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql','0004_fix_payment_trigger.sql','0005_restore_payment_window.sql']){
   for(const sql of unstable_splitSqlQuery(await readFile('migrations/'+file,'utf8')))await db.prepare(sql).run();
  }
  const now=new Date(),stamp=now.toISOString();

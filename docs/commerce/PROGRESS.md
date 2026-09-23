@@ -1,5 +1,55 @@
 # Commerce implementation progress
 
+## 2026-09-23 production recovery checkpoint
+
+- UTC checkpoint: 2026-09-23T10:18:09Z.
+- Current branch/commit: `codex/commerce-storefront` at `5f0f4966ed4750b6dedef0177e7c8c48ee229eb8`.
+- Verified local state: the branch contains the complete commerce Worker history and is ahead of `master`; the working tree has a modified `wrangler.toml` plus untracked handoff and two Wrangler backup files. No user changes were discarded.
+- Security finding: the uncommitted production Wrangler config contains a bank destination value. It must be preserved locally for comparison but removed from version-controlled configuration and supplied through the production secret binding before any commit or push. The value is intentionally not recorded here.
+- Intended next action: establish a timestamped local safety branch, refresh remote refs read-only, inspect the source/payment/migrations/tests, then inspect authenticated Chrome sessions for SePay and Cloudflare. No production mutation is authorized before the deployed version, failed transaction, webhook evidence, data integrity, and rollback point are identified.
+- Known non-secret target: Worker `bingenz-web-static`; D1 binding `DB` to `bingenz-commerce`; R2 binding `SIMULATIONS` to `bingenz-commerce`; assets binding `ASSETS`; production branch must become GitHub `master`.
+- External status: not yet reverified in this session. Prior documentation is stale and must not be treated as current.
+- Blockers: none yet. Stop only for authentication, a permission grant, or secure secret entry.
+- Exact resume action: inspect `git diff`, create `backup/production-before-sepay-fix-20260923`, run `git fetch --prune`, then open the existing Chrome tabs for SePay and Cloudflare read-only.
+
+### 2026-09-23T10:23:36Z read-only external audit
+
+- Created local rollback branch `backup/production-before-sepay-fix-20260923` at `5f0f4966ed4750b6dedef0177e7c8c48ee229eb8`.
+- Refreshed GitHub read-only: `origin/master` is `a8f00930a602c05f8f3f77742442300ca6453746`; it contains two remote-only website edits and still lacks the commerce Worker history. The repair branch must integrate those edits without rewriting shared history.
+- Cloudflare browser login reached the authenticator-code checkpoint. No code was entered and no Cloudflare dashboard state was changed. Continue Cloudflare inspection with already-authenticated Wrangler where possible; user 2FA is required for dashboard-only evidence.
+- SePay read-only verification: live mode; TPBank API account is marked connected; synchronization is enabled for incoming transfers and balance, but the account-level keyword allowlist contains only `CJ`. This excludes `BGZ` transfers before they enter SePay.
+- SePay read-only verification: webhook `#57962` `BinGenZ Production` is enabled, targets the singular `/api/webhook/sepay` production URL, is incoming JSON, selects the TPBank main account, uses HMAC-SHA256, retries, consecutive-failure alerts, payment verification, `only send when payment code`, and the `BGZ` webhook prefix filter.
+- SePay read-only verification: the active global `BGZ` recognition pattern requires exactly 12 numeric suffix characters, while application codes are exactly 12 uppercase alphanumeric suffix characters. This mismatch can prevent code recognition even after synchronization.
+- SePay evidence: the BinGenZ webhook has zero delivery-log rows and the transactions list contains no recent BinGenZ/BGZ transaction. This classifies the observed failure before the Worker: the payment was not synchronized/recognized and therefore no webhook was sent.
+- Intended next action: use Wrangler read-only commands to verify the current production deployment, bindings, secret names, migrations, D1 order/payment state and R2 counts without printing secrets or customer data.
+
+### 2026-09-23T10:35:02Z Cloudflare production verification
+
+- Wrangler OAuth is authenticated to the expected Cloudflare account. Latest production deployment is version `4c7d4749-975f-4dc6-97e5-fd0be33b4553`, created 2026-09-19T10:25:43Z from a direct version upload, not Git.
+- Downloaded the deployed version metadata through the official Cloudflare API and compared hashes without storing source or printing configuration values. Deployed `worker.js` SHA-256 is `2bb7400b33ff7883456d1c0ed29d5c10e1576f05959304d08f502d30afad49dd`; a fresh local Wrangler dry-run produces the exact same byte length and hash. Deployed `_headers` also exactly matches local `public/_headers`.
+- Production bindings are present: D1 `DB`, R2 `SIMULATIONS`, and static assets `ASSETS`. Secret names present are `ABUSE_HASH_KEY`, `SEPAY_WEBHOOK_SECRET`, `SESSION_SECRET`, and `TURNSTILE_SECRET_KEY`. The bank destination is currently a plain environment variable in the deployed version and must be migrated to a secret before the Git release.
+- Production D1 is intact: 35 products, all 35 active, 35 versions, 3 orders, 0 payments, 0 webhook events, and 0 entitlements. Order summary shows two expired rows and one still stored as pending but past its 2026-09-19 expiry; no order was paid by the Worker. Duplicate payment IDs, duplicate entitlements, and orders without items are all zero.
+- All three production order codes have a 12-character alphanumeric suffix containing letters; none is numeric-only. Therefore the current SePay digits-only `BGZ` recognition rule cannot recognize any existing production order code.
+- Production D1 records migrations 0001–0004. The repository lacks `0004_fix_payment_trigger.sql`; the live `match_payment` trigger was recovered read-only and differs from local migration 0003 by relying on receipt time rather than provider transaction time. Reconstruct migration history and add a forward migration restoring the required exact payment-window checks before release.
+- Production R2 is intact: exactly 70 private objects (35 originals and 35 deliveries). Every expected key and byte size matches `PREPARED_PRODUCTS.json`; there are no missing, extra, or size-mismatched objects.
+- Production smoke: `/api/catalog` returns HTTP 200 with 35 products and private/no-store caching; webhook GET returns 404; a deliberately invalid HMAC POST returns 401 `{"success":false}` in 303 ms and writes no payment/event row.
+- Intended next action: reconstruct the missing production migration safely, audit code/tests against the current official SePay contract, remove the bank value from versioned Wrangler config, rerun tests/dry-run, then correct SePay filters and run an official signed test.
+
+### Pre-operation checkpoint: official SePay signed test
+
+- Branch: `codex/sepay-payment-deploy-fix`; base commit remains `5f0f4966ed4750b6dedef0177e7c8c48ee229eb8` with the documented working changes.
+- Local outcome: reconstructed missing migration 0004, added forward migration 0005 restoring transaction-time window checks while allowing delayed authenticated delivery, updated migration consumers, removed the bank destination from versioned Wrangler configuration, and added a delayed-delivery regression. `npm test` exits successfully.
+- Intended production action: use SePay webhook `#57962` official `Gửi thử` once, without changing its configuration, to verify the existing HMAC secret pair and production endpoint. This may add one provider test event/payment-review record but cannot match a real order code by design.
+- Rollback: no code/config deployment accompanies the test. If it fails, inspect the SePay response and Worker/D1 evidence; do not weaken authentication.
+- Exact next action: invoke `Gửi thử`, record HTTP status/body and D1 count delta, then return to code/config remediation.
+
+### 2026-09-23 official SePay signed-test result
+
+- SePay webhook `#57962` official `Gửi thử` returned `HTTP 0 - 22 : The requested URL returned error: 400 Bad Request`. No BinGenZ delivery-history row was created, and production D1 remained at zero payments and zero webhook events.
+- A deliberately invalid signature against the same endpoint returns 401, whereas the official signed test reached the post-HMAC 400 validation path. Official SePay documentation states that the mock transaction ID is normally `0`; the Worker required a strictly positive ID. This is the immediate test-contract defect, separate from the account keyword and BGZ-pattern defects that prevented the real transfer from reaching the webhook.
+- Remediation in progress: accept signed, schema-valid ID `0` as a non-persisting health test that returns `{"success":true}`. It cannot create a payment, webhook event, entitlement, or order transition. Real transaction IDs remain strictly positive and follow the existing idempotent persistence path.
+- Production rollback is not needed because this failed test made no Cloudflare, database, or provider-configuration change. Exact next action: complete the regression, rerun the full local suite and bundle dry-run, then release through the Git-backed deployment path before retrying `Gửi thử`.
+
 Last updated: 2026-09-17T23:39:32Z (2026-09-18 06:39 Asia/Saigon).
 
 ## Handoff
