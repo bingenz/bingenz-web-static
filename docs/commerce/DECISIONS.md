@@ -171,3 +171,11 @@
 - Reason: deployed D1 history must remain reproducible without rewriting an applied migration. SePay's official `Gửi thử` contract uses mock ID 0, while treating that mock as a real payment would pollute the review ledger or risk unintended matching.
 - Consequences: delayed webhook delivery can fulfill only when the bank transaction itself was timely; provider health tests create no payment, webhook event, entitlement, or order state change. Invalid signatures still fail before JSON processing.
 - Affected: migrations/0004_fix_payment_trigger.sql, migrations/0005_restore_payment_window.sql, src/payments.mjs, tests/worker.test.mjs, schema/import/protected-simulation migration consumers.
+
+## 2026-09-24 — homepage-only catalog and server-sourced transfer details
+
+- Decision: sell only from the homepage catalog, render eight simplified product cards per batch, use a two-column mobile grid, and return 404 for `/shop` plus product-detail routes. Preserve `/checkout`, Gmail/Turnstile and the existing order/payment/access model.
+- Decision: add `BANK_ACCOUNT_NAME` as a Worker secret and expose bank code, account number and holder name only through an owned pending-order response. The checkout page downloads the existing authenticated QR and provides per-field copy controls.
+- Reason: removing the separate browsing/detail layer shortens the purchase path, while server-sourced transfer data avoids hard-coded banking details and keeps the destination tied to the protected checkout context.
+- Consequences: `shop.html` remains an internal checkout shell; production and preview require the new secret before payment checkout can work. There is no database migration and no provider configuration change.
+- Affected: homepage/commerce UI, order status API, Worker routing, storefront and Worker tests, deployment documentation.

@@ -55,7 +55,7 @@ async function route(request,env) {
  const order=path.match(/^\/api\/orders\/([a-f0-9-]{36})(\/qr)?$/);
  if(order&&method==='GET')return order[2]?qr(request,env,order[1]):orderStatus(request,env,order[1]);
  if(path==='/api/webhook/sepay'&&method==='POST')return webhook(request,env);
- if(method==='GET'&&(path==='/shop'||path==='/shop/'||path==='/checkout'||/^\/shop\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(path))){
+ if(method==='GET'&&path==='/checkout'){
   return assetShell('shop',path==='/checkout'?'private, no-store':undefined);
  }
  if(method==='GET'&&(path==='/access'||/^\/(play\/[a-f0-9]{32}|checkout\/[a-f0-9-]{36})$/.test(path))){

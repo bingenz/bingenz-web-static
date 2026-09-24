@@ -1,5 +1,22 @@
 # Commerce implementation progress
 
+## 2026-09-24 production release checkpoint for simplified purchase flow
+
+- UTC checkpoint before external change: `2026-09-24T11:35:38Z`.
+- Source state: `master` at `0914c6051bbcb737141c948a535d73fab7821f45`; `origin/master` was independently verified at the same SHA. The working tree contains only the reviewed storefront/checkout implementation and generated regression evidence, plus the pre-existing untracked recovery handoff file which is intentionally excluded.
+- Production pre-state: Worker `bingenz-web-static`; active deployment `53b5ae2e-e2a3-479b-8f39-3bcd94b3ef01`; D1/R2/assets bindings unchanged; five existing secret bindings are present and `BANK_ACCOUNT_NAME` is not yet present.
+- SePay read-only verification: the authenticated live TPBank account shows an authoritative account-holder name. The value and account number are intentionally omitted from Git and logs. The next production action is to add only `BANK_ACCOUNT_NAME` through Wrangler's interactive secret prompt, then verify the secret name list.
+- Release verification: `node --test --test-reporter=dot tests/*.test.mjs` exits `0` with 36 dots; production `wrangler deploy --dry-run --config wrangler.toml` reads 52 assets and bundles successfully at 116.91 KiB / 25.99 KiB gzip. The earlier sandbox-only esbuild permission error was rerun outside the restricted sandbox and is not an application failure.
+- Intended release path: commit the reviewed working tree on `master`, push to `origin/master`, allow the already-verified GitHub-to-Workers build integration to deploy exactly that commit, then verify GitHub check/deployment metadata and smoke-test `https://bingenz.com` without creating a real order or transfer.
+- Production secret outcome: after explicit owner approval, `BANK_ACCOUNT_NAME` was submitted only through Wrangler's masked interactive prompt. Cloudflare confirmed the secret and deployed secret-change version `1e770ca6-28e9-442f-8849-eaaba14840c1` at 100% traffic. A follow-up secret-name listing shows all six required bindings; no secret value was printed or committed.
+
+## 2026-09-24 homepage purchase-flow simplification
+
+- Products now sell directly from the homepage `#store` section. Cards contain only thumbnail, title, price and add-to-cart; eight render initially, then eight per load-more action. Search, five category filters and sorting still operate over all 35 products. Desktop renders four columns and 390/360px mobile renders two without horizontal overflow.
+- `/shop` and product-detail routes now fail closed with 404. `/checkout` remains a compact Gmail/Turnstile review page and the route shell links back to `/#store`. Existing cart pricing, pending reuse, payment matching, access and runtime rules are unchanged.
+- Pending owned-order responses now include a bounded `payment_destination` object sourced from Worker bindings. The payment page presents QR download, bank, account number, account holder, exact amount and payment code, with individual copy controls. `BANK_ACCOUNT_NAME` is a new required secret and must be configured before deployment.
+- Verification: `npm test` passes 36/36. Storefront Playwright passes at 1440/390/360 with 8 initial products, load-more, search, cart persistence, checkout, light/dark themes, no overflow and no page errors. No remote configuration or deployment was changed.
+
 ## 2026-09-23 production recovery checkpoint
 
 - UTC checkpoint: 2026-09-23T10:18:09Z.
@@ -141,7 +158,7 @@ Read-only SePay configuration check on 2026-09-17 confirms automatic payment-cod
 No HMAC secret revealed/copied/generated/rotated by this task. Provider-to-Worker secret matching is pending. No official send-test, real payment or refund performed. Existing BinGenZ webhook creation history is unknown; do not attribute it to this task. Edit dialog cancelled without saving. Banking values are deliberately omitted here.
 
 ## Required configuration names
-Secrets: SESSION_SECRET, ABUSE_HASH_KEY, SEPAY_WEBHOOK_SECRET, TURNSTILE_SECRET_KEY, BANK_ACCOUNT_NUMBER.
+Secrets: SESSION_SECRET, ABUSE_HASH_KEY, SEPAY_WEBHOOK_SECRET, TURNSTILE_SECRET_KEY, BANK_ACCOUNT_NUMBER, BANK_ACCOUNT_NAME.
 Non-secret: BANK_CODE, ADMIN_EMAIL, ACCESS_TEAM_DOMAIN, ACCESS_AUD, TURNSTILE_SITE_KEY, TURNSTILE_HOSTNAMES.
 Bindings: DB, SIMULATIONS, ASSETS. .dev.vars.example has placeholders; no production secrets set by task.
 

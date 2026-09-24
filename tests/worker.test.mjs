@@ -16,7 +16,7 @@ before(async()=>{
  const keys=await generateKeyPair('RS256');adminKey=keys.privateKey;adminJwk={...await exportJWK(keys.publicKey),kid:'local-admin-test',alg:'RS256',use:'sig'};
  const bundle=await build({entryPoints:['./src/worker.mjs'],bundle:true,format:'esm',platform:'browser',write:false});
  mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0].text,compatibilityDate:'2026-09-16',d1Databases:['DB'],r2Buckets:['SIMULATIONS'],
-  bindings:{TURNSTILE_SECRET_KEY:'fixture',TURNSTILE_HOSTNAMES:'shop.test',ABUSE_HASH_KEY:secret,SESSION_SECRET:secret,SEPAY_WEBHOOK_SECRET:secret,BANK_ACCOUNT_NUMBER:'test-destination',BANK_CODE:'TPBank',ACCESS_TEAM_DOMAIN:'test.cloudflareaccess.com',ACCESS_AUD:'local-admin-aud',ADMIN_EMAIL:'lengocthuan09@gmail.com'},
+  bindings:{TURNSTILE_SECRET_KEY:'fixture',TURNSTILE_HOSTNAMES:'shop.test',ABUSE_HASH_KEY:secret,SESSION_SECRET:secret,SEPAY_WEBHOOK_SECRET:secret,BANK_ACCOUNT_NUMBER:'test-destination',BANK_ACCOUNT_NAME:'BIN GEN Z TEST',BANK_CODE:'TPBank',ACCESS_TEAM_DOMAIN:'test.cloudflareaccess.com',ACCESS_AUD:'local-admin-aud',ADMIN_EMAIL:'lengocthuan09@gmail.com'},
   serviceBindings:{ASSETS:async request=>{
    const file=new URL(request.url).pathname.slice(1),types={'commerce.html':'text/html','shop.html':'text/html','commerce.mjs':'text/javascript','commerce.css':'text/css','admin.html':'text/html','admin.mjs':'text/javascript','admin.css':'text/css','styles.css':'text/css'};
    if(file==='commerce.html'||file==='shop.html'||file==='admin.html')return Response.redirect(new URL('/'+file.slice(0,-5),request.url),307);
@@ -70,8 +70,8 @@ test('real Worker preserves assets, hides protected routes and rejects unauthent
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/orders')).status,403);
  assert.equal((await mf.dispatchFetch(origin+'/admin.html')).status,404);
  assert.equal((await mf.dispatchFetch(origin+'/shop.html')).status,404);
- for(const path of ['/shop','/shop/p','/checkout']){const response=await mf.dispatchFetch(origin+path);assert.equal(response.status,200);assert.match(await response.text(),/id="shop-page"/);}
- assert.equal((await mf.dispatchFetch(origin+'/shop/not/a/slug')).status,404);
+ for(const path of ['/shop','/shop/p','/shop/not/a/slug'])assert.equal((await mf.dispatchFetch(origin+path)).status,404);
+ const checkoutShell=await mf.dispatchFetch(origin+'/checkout');assert.equal(checkoutShell.status,200);assert.match(await checkoutShell.text(),/id="shop-page"/);
  const catalog=await (await mf.dispatchFetch(origin+'/api/catalog')).json();assert.equal(catalog.products.length,2);
  assert.ok(!JSON.stringify(catalog).includes('delivery/'));
 });
@@ -256,7 +256,7 @@ test('pending reuse retains checkout ownership and server price/expiration',asyn
  assert.equal(second.body.id,first.body.id);assert.equal(second.body.claimable,true);
  const other=await checkout('buyer.name@gmail.com');assert.equal(other.body.id,first.body.id);assert.equal(other.body.claimable,false);
  assert.equal((await mf.dispatchFetch(origin+'/api/orders/'+first.body.id)).status,404);
- const own=await mf.dispatchFetch(origin+'/api/orders/'+first.body.id,{headers:{Cookie:first.cookie}});assert.equal(own.status,200);const ownedBody=await own.json();assert.equal(ownedBody.items.length,1);assert.equal(ownedBody.items[0].title,'p');assert.ok(!JSON.stringify(ownedBody).includes('gmail'));
+ const own=await mf.dispatchFetch(origin+'/api/orders/'+first.body.id,{headers:{Cookie:first.cookie}});assert.equal(own.status,200);const ownedBody=await own.json();assert.equal(ownedBody.items.length,1);assert.equal(ownedBody.items[0].title,'p');assert.deepEqual(ownedBody.payment_destination,{bank_code:'TPBank',account_number:'test-destination',account_name:'BIN GEN Z TEST'});assert.ok(!JSON.stringify(ownedBody).includes('gmail'));
 });
 test('simultaneous identical checkouts create only one pending order',async()=>{
  const email='concurrentcheckout@gmail.com';
@@ -560,8 +560,14 @@ test('browser unpaid checkout shows QR/countdown then polls into paid access',as
   await page.goto(local+'/checkout/'+o.body.id);
   await page.locator('#payment-state').waitFor();
   assert.match(await page.locator('.payment-code').innerText(),/^BGZ[A-Z0-9]{12}$/);
+  assert.equal(await page.locator('.payment-account').innerText(),'test-destination');
+  assert.equal(await page.locator('.payment-recipient').innerText(),'BIN GEN Z TEST');
+  assert.match(await page.locator('.qr-download-action').getAttribute('download'),/^bingenz-BGZ[A-Z0-9]{12}-qr$/);
+  assert.equal(await page.locator('.copy-button').count(),4);
+  const downloadEvent=page.waitForEvent('download');await page.locator('.qr-download-action').click();const download=await downloadEvent;
+  assert.match(download.suggestedFilename(),/^bingenz-BGZ[A-Z0-9]{12}-qr(?:\.[a-z0-9]+)?$/);
   assert.match(await page.locator('#pay-clock').innerText(),/^\d+:\d{2}$/);
-  assert.match(await page.locator('.payment-layout h2').innerText(),/10[.,]000/);
+  assert.match(await page.locator('.payment-field').nth(3).innerText(),/10[.,]000/);
   const qrResponse=await mf.dispatchFetch(origin+'/api/orders/'+o.body.id+'/qr',{headers:{Cookie:o.cookie}});
   assert.equal(qrResponse.status,200,await qrResponse.text());
   await page.locator('.payment-qr').evaluate(async image=>{if(!image.complete)await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;});});

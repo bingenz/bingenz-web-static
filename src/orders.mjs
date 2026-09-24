@@ -12,6 +12,13 @@ async function turnstile(token,request,env){
  requireValue(result.success===true&&result.action==='checkout'&&result.hostname===new URL(request.url).hostname,400,'turnstile_failed');
 }
 function view(o){return {id:o.id,payment_code:o.payment_code,total_vnd:o.total_vnd,status:o.status==='pending'&&o.expires_at<=iso()?'expired':o.status,expires_at:o.expires_at,server_now:iso()};}
+function paymentDestination(env){
+ const bank_code=typeof env.BANK_CODE==='string'?env.BANK_CODE.trim():'';
+ const account_number=typeof env.BANK_ACCOUNT_NUMBER==='string'?env.BANK_ACCOUNT_NUMBER.trim():'';
+ const account_name=typeof env.BANK_ACCOUNT_NAME==='string'?env.BANK_ACCOUNT_NAME.trim():'';
+ requireValue(bank_code==='TPBank'&&account_number.length>0&&account_number.length<=64&&account_name.length>0&&account_name.length<=160,503,'payment_configuration_required');
+ return {bank_code,account_number,account_name};
+}
 export async function ownedOrder(request,env,id){
  const secret=cookies(request)[CHECKOUT];requireValue(secret&&secret.length<=100,404,'order_unavailable');
  const o=await first(env.DB,'SELECT * FROM orders WHERE id=? AND checkout_hash=?',id,await hash(secret));
@@ -52,12 +59,14 @@ export async function createOrder(request,env){
 export async function orderStatus(request,env,id){
  const order=await ownedOrder(request,env,id);
  const items=await all(env.DB,'SELECT title,price_vnd,duration_seconds FROM order_items WHERE order_id=? ORDER BY title',order.id);
- return json({...view(order),items});
+ const result={...view(order),items};
+ if(result.status==='pending')result.payment_destination=paymentDestination(env);
+ return json(result);
 }
 export async function qr(request,env,id){
  const o=await ownedOrder(request,env,id);requireValue(o.status==='pending'&&o.expires_at>iso(),410,'order_expired');
- requireValue(env.BANK_ACCOUNT_NUMBER&&env.BANK_CODE==='TPBank',503,'payment_configuration_required');
- const url=new URL('https://qr.sepay.vn/img');url.search=new URLSearchParams({acc:env.BANK_ACCOUNT_NUMBER,bank:env.BANK_CODE,amount:String(o.total_vnd),des:o.payment_code}).toString();
+ const destination=paymentDestination(env);
+ const url=new URL('https://qr.sepay.vn/img');url.search=new URLSearchParams({acc:destination.account_number,bank:destination.bank_code,amount:String(o.total_vnd),des:o.payment_code}).toString();
  const res=await fetch(url,{redirect:'manual'});requireValue(res.ok&&res.headers.get('Content-Type')?.startsWith('image/'),502,'qr_unavailable');
  return new Response(res.body,{headers:{'Content-Type':res.headers.get('Content-Type'),'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff'}});
 }
