@@ -66,7 +66,16 @@
 - Because that preview was newer than the active version, legacy `wrangler secret put` correctly refused an immediate secret deployment. Recovered the existing plain bank destination in memory from active version metadata and used `wrangler versions secret put` through stdin. Undeployed version `5b38b767-10df-42be-a9fe-337aa65a5763` now has `BANK_ACCOUNT_NUMBER` as `secret_text`; the value was neither printed nor written to Git.
 - Production traffic is still 100% on `4c7d4749-975f-4dc6-97e5-fd0be33b4553`; staging the secret did not change traffic. The next `master` Git build must inherit the five secret bindings, deploy the candidate, and be verified before SePay's official test is retried.
 
-Last updated: 2026-09-17T23:39:32Z (2026-09-18 06:39 Asia/Saigon).
+### 2026-09-24 production release and provider verification
+
+- GitHub pull request #1 merged to `master` at `ff1b40bbb57f9e00c241f18650e1cfcbd3aae242`. The Cloudflare Workers Builds check completed successfully and automatically deployed version `e10263e9-2a36-4571-972f-49dcfac8d1cf` to 100% production traffic. This verifies the `master` GitHub-to-Cloudflare release path.
+- The active version contains D1/R2/assets bindings, all non-secret production variables, and five `secret_text` bindings including `BANK_ACCOUNT_NUMBER`. Production smoke passes: catalog HTTP 200 with 35 products/private no-store, webhook GET 404, and invalid-HMAC POST 401 `{"success":false}`.
+- Updated the TPBank synchronization allowlist from `CJ` to `CJ,BGZ`, preserving Cube Jump. Updated the active BGZ recognition rule from exactly 12 numeric characters to exactly 12 alphanumeric characters; SePay displayed successful-save confirmation for both changes.
+- Retried webhook #57962 official `Gửi thử`: `HTTP 200` in `321ms`. The Worker intentionally did not persist the signed mock ID 0; D1 remained 3 orders, 0 payments, 0 webhook events and 0 entitlements.
+- SePay still shows 25 historical transactions and no BGZ transaction after the configuration change, so the previously excluded transfer was not imported retroactively. Do not fabricate a payment or fulfill the expired order automatically; any historical reconciliation still requires explicit owner authorization and bank-statement verification.
+- Rollback: revert traffic to version `4c7d4749-975f-4dc6-97e5-fd0be33b4553` only for a Worker regression; preserve D1/R2 and migration history. Restore SePay's earlier filters only if deliberately disabling BinGenZ intake. Never return the bank destination to plain Git/config.
+
+Last updated: 2026-09-24 Asia/Saigon.
 
 ## Handoff
 Owner resumed implementation after the previous documentation-only handoff. Work is active on the admin milestone; production remains untouched.
