@@ -1,0 +1,212 @@
+[
+  {
+    "slug": "01-a-star-pathfinding",
+    "category": "Thuật toán & cấu trúc dữ liệu",
+    "description": "Quan sát A* đánh giá từng ô và tìm đường đi tối ưu bằng cách kết hợp chi phí đã đi với ước lượng tới đích.",
+    "display_order": 1
+  },
+  {
+    "slug": "02-quick-sort",
+    "category": "Thuật toán & cấu trúc dữ liệu",
+    "description": "Theo dõi Quick Sort chọn phần tử chốt, phân hoạch dữ liệu và sắp xếp dần từng vùng của mảng.",
+    "display_order": 2
+  },
+  {
+    "slug": "03-lru-cache",
+    "category": "Hệ điều hành & hiệu năng",
+    "description": "Khám phá cách bộ nhớ đệm LRU theo dõi lượt sử dụng và loại bỏ phần tử ít được truy cập gần đây nhất.",
+    "display_order": 3
+  },
+  {
+    "slug": "04-dns-resolution",
+    "category": "Mạng & hệ thống phân tán",
+    "description": "Đi theo hành trình một tên miền được phân giải qua bộ nhớ đệm và các tầng máy chủ DNS.",
+    "display_order": 4
+  },
+  {
+    "slug": "05-load-balancer",
+    "category": "Mạng & hệ thống phân tán",
+    "description": "Quan sát bộ cân bằng tải phân phối yêu cầu giữa nhiều máy chủ và phản ứng khi năng lực hệ thống thay đổi.",
+    "display_order": 5
+  },
+  {
+    "slug": "06-rate-limiting",
+    "category": "Mạng & hệ thống phân tán",
+    "description": "Tìm hiểu cách giới hạn tốc độ kiểm soát lưu lượng, bảo vệ dịch vụ và xử lý các yêu cầu vượt ngưỡng.",
+    "display_order": 6
+  },
+  {
+    "slug": "07-deadlock-detection",
+    "category": "Hệ điều hành & hiệu năng",
+    "description": "Theo dõi quan hệ chờ tài nguyên giữa các tiến trình và cách hệ thống phát hiện một vòng khóa chết.",
+    "display_order": 7
+  },
+  {
+    "slug": "08-jwt-authentication",
+    "category": "Bảo mật",
+    "description": "Khám phá cấu trúc JWT và quá trình một dịch vụ kiểm tra chữ ký, thông tin định danh và thời hạn token.",
+    "display_order": 8
+  },
+  {
+    "slug": "09-k-means-clustering",
+    "category": "AI & công nghệ ứng dụng",
+    "description": "Quan sát K-Means dịch chuyển các tâm cụm qua từng vòng lặp để nhóm những điểm dữ liệu tương đồng.",
+    "display_order": 9
+  },
+  {
+    "slug": "10-blockchain-mining",
+    "category": "Mạng & hệ thống phân tán",
+    "description": "Theo dõi quá trình thử nonce, tạo hàm băm và xác nhận một khối mới trong chuỗi khối mô phỏng.",
+    "display_order": 10
+  },
+  {
+    "slug": "11-binary-search",
+    "category": "Thuật toán & cấu trúc dữ liệu",
+    "description": "Xem Binary Search liên tục thu hẹp một mảng đã sắp xếp để tìm giá trị với số bước tối thiểu.",
+    "display_order": 11
+  },
+  {
+    "slug": "12-merge-sort",
+    "category": "Thuật toán & cấu trúc dữ liệu",
+    "description": "Quan sát Merge Sort chia nhỏ dữ liệu rồi hợp nhất các phần đã sắp xếp thành kết quả hoàn chỉnh.",
+    "display_order": 12
+  },
+  {
+    "slug": "13-breadth-first-search",
+    "category": "Thuật toán & cấu trúc dữ liệu",
+    "description": "Theo dõi BFS mở rộng đồ thị theo từng lớp và sử dụng hàng đợi để quản lý các đỉnh cần duyệt.",
+    "display_order": 13
+  },
+  {
+    "slug": "14-depth-first-search",
+    "category": "Thuật toán & cấu trúc dữ liệu",
+    "description": "Theo dõi DFS đi sâu qua từng nhánh của đồ thị trước khi quay lui để khám phá hướng tiếp theo.",
+    "display_order": 14
+  },
+  {
+    "slug": "15-dijkstra-shortest-path",
+    "category": "Thuật toán & cấu trúc dữ liệu",
+    "description": "Quan sát Dijkstra cập nhật khoảng cách và chọn đỉnh gần nhất để xây dựng đường đi ngắn nhất.",
+    "display_order": 15
+  },
+  {
+    "slug": "16-hash-table-collision",
+    "category": "Thuật toán & cấu trúc dữ liệu",
+    "description": "Khám phá cách bảng băm đặt dữ liệu, phát sinh va chạm và xử lý nhiều khóa cùng vị trí.",
+    "display_order": 16
+  },
+  {
+    "slug": "17-bloom-filter",
+    "category": "Thuật toán & cấu trúc dữ liệu",
+    "description": "Tìm hiểu cách Bloom Filter dùng nhiều hàm băm để kiểm tra nhanh khả năng một phần tử đã xuất hiện.",
+    "display_order": 17
+  },
+  {
+    "slug": "18-trie-autocomplete",
+    "category": "Thuật toán & cấu trúc dữ liệu",
+    "description": "Quan sát cây Trie lưu tiền tố và tạo gợi ý tự động khi người dùng nhập từng ký tự.",
+    "display_order": 18
+  },
+  {
+    "slug": "19-producer-consumer",
+    "category": "Hệ điều hành & hiệu năng",
+    "description": "Theo dõi producer, consumer và bộ đệm phối hợp để xử lý dữ liệu đồng thời mà không ghi đè lẫn nhau.",
+    "display_order": 19
+  },
+  {
+    "slug": "20-message-queue-retry",
+    "category": "Mạng & hệ thống phân tán",
+    "description": "Khám phá cách hàng đợi thông điệp thử lại công việc thất bại và kiểm soát số lần xử lý.",
+    "display_order": 20
+  },
+  {
+    "slug": "21-tcp-handshake",
+    "category": "Mạng & hệ thống phân tán",
+    "description": "Quan sát ba bước SYN, SYN-ACK và ACK thiết lập một kết nối TCP giữa client và server.",
+    "display_order": 21
+  },
+  {
+    "slug": "22-cdn-cache",
+    "category": "Mạng & hệ thống phân tán",
+    "description": "Theo dõi CDN phục vụ nội dung từ điểm gần người dùng, phân biệt cache hit, cache miss và thời gian phản hồi.",
+    "display_order": 22
+  },
+  {
+    "slug": "23-sql-transaction-locking",
+    "category": "Hệ điều hành & hiệu năng",
+    "description": "Quan sát nhiều giao dịch SQL cạnh tranh dữ liệu và cách khóa giúp duy trì tính nhất quán.",
+    "display_order": 23
+  },
+  {
+    "slug": "24-garbage-collection-mark-sweep",
+    "category": "Hệ điều hành & hiệu năng",
+    "description": "Theo dõi bộ thu gom rác đánh dấu đối tượng còn được tham chiếu và giải phóng vùng nhớ không còn sử dụng.",
+    "display_order": 24
+  },
+  {
+    "slug": "25-memory-paging-lru",
+    "category": "Hệ điều hành & hiệu năng",
+    "description": "Khám phá cách phân trang quản lý bộ nhớ và chọn trang bị thay thế theo chiến lược LRU.",
+    "display_order": 25
+  },
+  {
+    "slug": "26-cpu-round-robin",
+    "category": "Hệ điều hành & hiệu năng",
+    "description": "Quan sát CPU chia thời gian theo vòng cho nhiều tiến trình và ảnh hưởng của độ dài time quantum.",
+    "display_order": 26
+  },
+  {
+    "slug": "27-union-find",
+    "category": "Thuật toán & cấu trúc dữ liệu",
+    "description": "Theo dõi Union-Find hợp nhất các tập hợp và tìm đại diện với tối ưu nén đường đi.",
+    "display_order": 27
+  },
+  {
+    "slug": "28-topological-sort",
+    "category": "Thuật toán & cấu trúc dữ liệu",
+    "description": "Quan sát sắp xếp topo tạo thứ tự thực hiện hợp lệ cho các công việc có quan hệ phụ thuộc.",
+    "display_order": 28
+  },
+  {
+    "slug": "29-consistent-hashing",
+    "category": "Mạng & hệ thống phân tán",
+    "description": "Khám phá vòng băm nhất quán và cách dữ liệu được phân phối lại khi thêm hoặc gỡ máy chủ.",
+    "display_order": 29
+  },
+  {
+    "slug": "30-raft-leader-election",
+    "category": "Mạng & hệ thống phân tán",
+    "description": "Theo dõi các node Raft chuyển trạng thái, bỏ phiếu và bầu leader khi hệ thống phân tán thay đổi.",
+    "display_order": 30
+  },
+  {
+    "slug": "battery-charge-animation-tiktok-9x16-v4",
+    "category": "AI & công nghệ ứng dụng",
+    "description": "Khám phá trực quan quá trình sạc pin qua chuyển động, mức năng lượng và các trạng thái hiển thị theo thời gian.",
+    "display_order": 31
+  },
+  {
+    "slug": "database-index-tiktok-pro",
+    "category": "Hệ điều hành & hiệu năng",
+    "description": "So sánh trực quan full scan và chỉ mục B-Tree để thấy cách cấu trúc dữ liệu ảnh hưởng tốc độ truy vấn.",
+    "display_order": 32
+  },
+  {
+    "slug": "ddos-simulation-tiktok-pro",
+    "category": "Bảo mật",
+    "description": "Quan sát lưu lượng tấn công DDoS và cách các lớp bảo vệ nhận diện, giới hạn rồi giảm tải yêu cầu xấu.",
+    "display_order": 33
+  },
+  {
+    "slug": "fingerprint-sim-tiktok-pro",
+    "category": "Bảo mật",
+    "description": "Theo dõi các bước quét, đối chiếu đặc trưng và đưa ra kết quả trong một quy trình xác thực vân tay mô phỏng.",
+    "display_order": 34
+  },
+  {
+    "slug": "object-detection-tiktok-pro-v2",
+    "category": "AI & công nghệ ứng dụng",
+    "description": "Khám phá cách hệ thống thị giác máy tính nhận diện, đóng khung và gắn nhãn các đối tượng trong khung hình.",
+    "display_order": 35
+  }
+]

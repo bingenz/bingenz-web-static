@@ -49,7 +49,11 @@ export async function createOrder(request,env){
  o=await first(env.DB,'SELECT * FROM orders WHERE id=?',id);
  return json({...view(o),claimable:true},201,{'Set-Cookie':cookie(CHECKOUT,secret)});
 }
-export async function orderStatus(request,env,id){return json(view(await ownedOrder(request,env,id)));}
+export async function orderStatus(request,env,id){
+ const order=await ownedOrder(request,env,id);
+ const items=await all(env.DB,'SELECT title,price_vnd,duration_seconds FROM order_items WHERE order_id=? ORDER BY title',order.id);
+ return json({...view(order),items});
+}
 export async function qr(request,env,id){
  const o=await ownedOrder(request,env,id);requireValue(o.status==='pending'&&o.expires_at>iso(),410,'order_expired');
  requireValue(env.BANK_ACCOUNT_NUMBER&&env.BANK_CODE==='TPBank',503,'payment_configuration_required');

@@ -7,6 +7,14 @@ import { adminRoute } from './admin.mjs';
 async function route(request,env) {
  const url=new URL(request.url),path=url.pathname,method=request.method;
  const recoveryRedirect=()=>new Response(null,{status:303,headers:{Location:'/access/recovery','Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}});
+ const assetShell=async(name,cache='public, max-age=0, must-revalidate')=>{
+  const shell=await env.ASSETS.fetch(new Request(new URL('/'+name,url),request));
+  const response=new Response(shell.body,shell);
+  response.headers.set('Cache-Control',cache);
+  response.headers.set('Referrer-Policy','strict-origin-when-cross-origin');
+  response.headers.set('Content-Security-Policy',"frame-ancestors 'self'");
+  return response;
+ };
  if(path==='/admin'||path.startsWith('/admin/')) {
   const actor=await adminIdentity(request,env);
   if(!['GET','HEAD'].includes(method))originGuard(request);
@@ -47,6 +55,9 @@ async function route(request,env) {
  const order=path.match(/^\/api\/orders\/([a-f0-9-]{36})(\/qr)?$/);
  if(order&&method==='GET')return order[2]?qr(request,env,order[1]):orderStatus(request,env,order[1]);
  if(path==='/api/webhook/sepay'&&method==='POST')return webhook(request,env);
+ if(method==='GET'&&(path==='/shop'||path==='/shop/'||path==='/checkout'||/^\/shop\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(path))){
+  return assetShell('shop',path==='/checkout'?'private, no-store':undefined);
+ }
  if(method==='GET'&&(path==='/access'||/^\/(play\/[a-f0-9]{32}|checkout\/[a-f0-9-]{36})$/.test(path))){
   if(path==='/access'||path.startsWith('/play/')){
    try{await customer(request,env);}catch(error){if(path==='/access'&&error instanceof HttpError&&error.status===401)return recoveryRedirect();throw error;}
@@ -55,8 +66,8 @@ async function route(request,env) {
   const response=new Response(shell.body,shell);response.headers.set('Cache-Control','private, no-store');response.headers.set('Referrer-Policy','no-referrer');response.headers.set('Content-Security-Policy',"frame-ancestors 'self'");return response;
  }
  // Reserved routes must never fall through to an asset or SPA fallback.
- if(path==='/admin.html')throw new HttpError(404,'not_found');
- if(/^\/(api|access|play|runtime)(\/|$)/.test(path))throw new HttpError(404,'not_found');
+ if(['/admin.html','/commerce.html','/shop.html'].includes(path))throw new HttpError(404,'not_found');
+ if(/^\/(api|access|play|runtime|shop|checkout)(\/|$)/.test(path))throw new HttpError(404,'not_found');
  if(!['GET','HEAD'].includes(method))throw new HttpError(405,'method_not_allowed');
  return env.ASSETS.fetch(request);
 }

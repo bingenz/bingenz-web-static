@@ -2,27 +2,36 @@
   {
     "width": 1440,
     "products": 35,
-    "columns": 4,
+    "columns": 3,
     "cart": "pass",
+    "detail": "pass",
+    "checkout": "pass",
     "keyboard": "pass",
+    "theme": "pass",
     "overflow": false,
     "errors": []
   },
   {
     "width": 390,
     "products": 35,
-    "columns": 2,
+    "columns": 1,
     "cart": "pass",
+    "detail": "pass",
+    "checkout": "pass",
     "keyboard": "pass",
+    "theme": "pass",
     "overflow": false,
     "errors": []
   },
   {
     "width": 360,
     "products": 35,
-    "columns": 2,
+    "columns": 1,
     "cart": "pass",
+    "detail": "pass",
+    "checkout": "pass",
     "keyboard": "pass",
+    "theme": "pass",
     "overflow": false,
     "errors": []
   }

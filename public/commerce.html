@@ -1,1 +1,37 @@
-<!doctype html><html lang="vi" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Mô phỏng • BinGenZ</title><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/commerce.css"></head><body><main id="commerce-page" class="commerce commerce-shell"><header><a href="/#store">← BinGenZ / Mô phỏng</a><button id="commerce-theme" type="button">Đổi giao diện</button></header><div id="commerce-content" aria-live="polite"><p>Đang tải…</p></div></main><script type="module" src="/commerce.mjs"></script></body></html>
+<!doctype html>
+<html lang="vi" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta id="metaThemeColor" name="theme-color" content="#09090c">
+  <title>Mô phỏng • BinGenZ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/commerce.css">
+</head>
+<body class="commerce-body">
+  <header class="shop-site-header commerce-route-header">
+    <div class="shop-header-inner">
+      <a class="shop-brand" href="/shop" aria-label="BinGenZ - Cửa hàng">
+        <span class="shop-brand-mark" aria-hidden="true">B</span>
+        <span>BinGenZ</span>
+      </a>
+      <a class="route-back-link" href="/shop">← Cửa hàng mô phỏng</a>
+      <button class="icon-button" id="commerce-theme" type="button" aria-label="Đổi giao diện">
+        <span class="theme-dark-icon" aria-hidden="true">☾</span>
+        <span class="theme-light-icon" aria-hidden="true">☀</span>
+      </button>
+    </div>
+  </header>
+  <main id="commerce-page" class="commerce commerce-shell">
+    <div id="commerce-content" aria-live="polite">
+      <div class="shop-page-loading" role="status"><span class="loading-orb" aria-hidden="true"></span><p>Đang tải…</p></div>
+    </div>
+  </main>
+  <div class="commerce-toast" id="shop-announcement" role="status" aria-live="polite" aria-atomic="true"></div>
+  <script type="module" src="/commerce.mjs"></script>
+</body>
+</html>

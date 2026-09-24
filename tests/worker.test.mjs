@@ -14,13 +14,13 @@ const origin='https://shop.test',secret='test-only-webhook-signing-secret-for-lo
 const consumed=new Set();
 before(async()=>{
  const keys=await generateKeyPair('RS256');adminKey=keys.privateKey;adminJwk={...await exportJWK(keys.publicKey),kid:'local-admin-test',alg:'RS256',use:'sig'};
- const bundle=await build({entryPoints:['src/worker.mjs'],bundle:true,format:'esm',platform:'browser',write:false});
+ const bundle=await build({entryPoints:['./src/worker.mjs'],bundle:true,format:'esm',platform:'browser',write:false});
  mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0].text,compatibilityDate:'2026-09-16',d1Databases:['DB'],r2Buckets:['SIMULATIONS'],
   bindings:{TURNSTILE_SECRET_KEY:'fixture',TURNSTILE_HOSTNAMES:'shop.test',ABUSE_HASH_KEY:secret,SESSION_SECRET:secret,SEPAY_WEBHOOK_SECRET:secret,BANK_ACCOUNT_NUMBER:'test-destination',BANK_CODE:'TPBank',ACCESS_TEAM_DOMAIN:'test.cloudflareaccess.com',ACCESS_AUD:'local-admin-aud',ADMIN_EMAIL:'lengocthuan09@gmail.com'},
   serviceBindings:{ASSETS:async request=>{
-   const file=new URL(request.url).pathname.slice(1),types={'commerce.html':'text/html','commerce.mjs':'text/javascript','commerce.css':'text/css','admin.html':'text/html','admin.mjs':'text/javascript','admin.css':'text/css','styles.css':'text/css'};
-   if(file==='commerce.html'||file==='admin.html')return Response.redirect(new URL('/'+file.slice(0,-5),request.url),307);
-   const source=file==='commerce'||file==='admin'?file+'.html':file;
+   const file=new URL(request.url).pathname.slice(1),types={'commerce.html':'text/html','shop.html':'text/html','commerce.mjs':'text/javascript','commerce.css':'text/css','admin.html':'text/html','admin.mjs':'text/javascript','admin.css':'text/css','styles.css':'text/css'};
+   if(file==='commerce.html'||file==='shop.html'||file==='admin.html')return Response.redirect(new URL('/'+file.slice(0,-5),request.url),307);
+   const source=['commerce','shop','admin'].includes(file)?file+'.html':file;
    return types[source]?new Response(await readFile('public/'+source),{headers:{'Content-Type':types[source]}}):new Response('static asset');
   }},
   outboundService:async req=>{
@@ -69,6 +69,9 @@ test('real Worker preserves assets, hides protected routes and rejects unauthent
  assert.equal((await mf.dispatchFetch(origin+'/runtime/secret')).status,404);
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/orders')).status,403);
  assert.equal((await mf.dispatchFetch(origin+'/admin.html')).status,404);
+ assert.equal((await mf.dispatchFetch(origin+'/shop.html')).status,404);
+ for(const path of ['/shop','/shop/p','/checkout']){const response=await mf.dispatchFetch(origin+path);assert.equal(response.status,200);assert.match(await response.text(),/id="shop-page"/);}
+ assert.equal((await mf.dispatchFetch(origin+'/shop/not/a/slug')).status,404);
  const catalog=await (await mf.dispatchFetch(origin+'/api/catalog')).json();assert.equal(catalog.products.length,2);
  assert.ok(!JSON.stringify(catalog).includes('delivery/'));
 });
@@ -163,6 +166,7 @@ test('admin dashboard and product editor render in a browser with signed Access 
  try{
   const token=await adminToken(),page=await browser.newPage({extraHTTPHeaders:{'Cf-Access-Jwt-Assertion':token},viewport:{width:390,height:844}}),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
+  page.on('dialog',dialog=>dialog.accept());
   const local=(await mf.ready).origin;
   await page.goto(local+'/admin');await page.locator('#product-list option').first().waitFor({state:'attached'});
   assert.ok(await page.locator('#metrics article').count()>=8);
@@ -180,6 +184,13 @@ test('admin dashboard and product editor render in a browser with signed Access 
   await page.locator('#preview-version').click();await page.locator('#preview-dialog').waitFor({state:'visible'});
   assert.equal(await page.frameLocator('#preview-frame').locator('h1').textContent(),'Private test');
   await page.locator('#close-preview').click();await page.locator('#preview-dialog').waitFor({state:'hidden'});await page.waitForFunction(()=>!document.querySelector('#preview-frame').hasAttribute('src'));
+  const metadata=[{slug:'p',category:'Thuật toán kiểm thử',description:'Mô tả sản phẩm được nhập qua công cụ metadata có kiểm tra.',display_order:777}];
+  await page.locator('#metadata-import-form input[type=file]').setInputFiles({name:'metadata.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(metadata))});
+  await page.locator('#metadata-import-form button').click();
+  await page.getByText('Đã cập nhật và ghi audit cho 1 sản phẩm.').waitFor();
+  const imported=await db.prepare('SELECT category,description,display_order FROM products WHERE id=?').bind('p').first();
+  assert.deepEqual(imported,{category:metadata[0].category,description:metadata[0].description,display_order:metadata[0].display_order});
+  assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE object_id='p' AND action='product.update'").first()).n>=2,true);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
@@ -245,7 +256,7 @@ test('pending reuse retains checkout ownership and server price/expiration',asyn
  assert.equal(second.body.id,first.body.id);assert.equal(second.body.claimable,true);
  const other=await checkout('buyer.name@gmail.com');assert.equal(other.body.id,first.body.id);assert.equal(other.body.claimable,false);
  assert.equal((await mf.dispatchFetch(origin+'/api/orders/'+first.body.id)).status,404);
- const own=await mf.dispatchFetch(origin+'/api/orders/'+first.body.id,{headers:{Cookie:first.cookie}});assert.equal(own.status,200);assert.ok(!(await own.text()).includes('gmail'));
+ const own=await mf.dispatchFetch(origin+'/api/orders/'+first.body.id,{headers:{Cookie:first.cookie}});assert.equal(own.status,200);const ownedBody=await own.json();assert.equal(ownedBody.items.length,1);assert.equal(ownedBody.items[0].title,'p');assert.ok(!JSON.stringify(ownedBody).includes('gmail'));
 });
 test('simultaneous identical checkouts create only one pending order',async()=>{
  const email='concurrentcheckout@gmail.com';
