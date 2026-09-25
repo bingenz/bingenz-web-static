@@ -36,22 +36,23 @@ try {
 
     await page.locator('[data-add]').first().click();
     assert.equal(await page.locator('[data-add]').first().isDisabled(), true);
-    assert.equal(await page.locator('[data-cart-count]').textContent(), '1');
-    await page.locator('.home-section-cart').click();
+    assert.match(await page.locator('.floating-cart-button').innerText(), /^1 mô phỏng/);
+    assert.equal(await page.locator('.home-section-cart').count(), 0);
+    await page.locator('.floating-cart-button').click();
     await page.locator('dialog').waitFor();
     assert.equal(await page.locator('.cart-line').count(), 1);
     await page.keyboard.press('Escape');
     await page.locator('dialog').waitFor({ state: 'detached' });
-    assert.equal(await page.locator('.home-section-cart').evaluate(node => node === document.activeElement), true);
+    assert.equal(await page.locator('.floating-cart-button').evaluate(node => node === document.activeElement), true);
 
     await page.reload();
     await page.locator('[data-add]').first().waitFor();
-    assert.equal(await page.locator('[data-cart-count]').textContent(), '1');
-    await page.locator('.home-section-cart').click();
-    await page.locator('.cart-summary .gold').click();
+    assert.match(await page.locator('.floating-cart-button').innerText(), /^1 mô phỏng/);
+    await page.locator('.floating-cart-button').click();
+    await page.locator('.cart-summary .cart-checkout-action').click();
     await page.locator('#checkout-form').waitFor();
     assert.equal(new URL(page.url()).pathname, '/checkout');
-    assert.equal(await page.locator('.checkout-summary-line').count(), 1);
+    assert.equal(await page.locator('.checkout-entry-panel').count(), 1);
     assert.equal(await page.locator('input[type=email]').count(), 1);
 
     await page.goto(`${base}/`);

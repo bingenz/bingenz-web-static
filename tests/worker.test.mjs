@@ -39,7 +39,7 @@ before(async()=>{
  }));
  db=await mf.getD1Database('DB');
  // D1 exec is line-oriented; prepare accepts each complete trigger statement.
- for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql','0004_fix_payment_trigger.sql','0005_restore_payment_window.sql']){
+ for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql','0004_fix_payment_trigger.sql','0005_restore_payment_window.sql','0006_standardize_product_price.sql']){
   const statements=unstable_splitSqlQuery(await readFile('migrations/'+file,'utf8'));
   for(const q of statements)await db.prepare(q).run();
  }
@@ -84,12 +84,12 @@ test('admin requires a signed exact-identity Access JWT and audits product edits
  const dashboard=await mf.dispatchFetch(origin+'/admin/api/dashboard',{headers});assert.equal(dashboard.status,200);
  const page=await mf.dispatchFetch(origin+'/admin',{headers});assert.equal(page.status,200);assert.match(await page.text(),/Quản trị mô phỏng/);
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/products',{headers})).status,200);
- const draft={method:'POST',headers:{...headers,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({title:'Draft',slug:'new-draft',price_vnd:10000})};
+ const draft={method:'POST',headers:{...headers,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({title:'Draft',slug:'new-draft',price_vnd:9000})};
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/products',{...draft,headers:{...draft.headers,Origin:'https://evil.test'}})).status,403);
  const created=await mf.dispatchFetch(origin+'/admin/api/products',draft);assert.equal(created.status,201);
  const draftBody=await created.json();assert.equal(draftBody.product.active,0);assert.equal(draftBody.product.current_version_id,null);
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/products',draft)).status,409);
- const emptyDraft=await mf.dispatchFetch(origin+'/admin/api/products',{...draft,body:JSON.stringify({title:'Disposable draft',slug:'disposable-draft',price_vnd:10000})});assert.equal(emptyDraft.status,201);
+ const emptyDraft=await mf.dispatchFetch(origin+'/admin/api/products',{...draft,body:JSON.stringify({title:'Disposable draft',slug:'disposable-draft',price_vnd:9000})});assert.equal(emptyDraft.status,201);
  const emptyId=(await emptyDraft.json()).product.id;
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/'+emptyId,{method:'DELETE',headers:{...headers,Origin:origin}})).status,200);
  assert.equal((await db.prepare('SELECT count(*) n FROM products WHERE id=?').bind(emptyId).first()).n,0);
@@ -104,7 +104,7 @@ test('admin requires a signed exact-identity Access JWT and audits product edits
  assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='product.bulk_update'").first()).n,3);
  const noVersion=await (await mf.dispatchFetch(origin+'/admin/api/products/bulk',{...bulk,body:JSON.stringify({ids:[draftBody.product.id],changes:{active:1}})})).json();assert.deepEqual(noVersion.skipped,[draftBody.product.id]);
  assert.equal((await db.prepare('SELECT active FROM products WHERE id=?').bind(draftBody.product.id).first()).active,0);
- assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/bulk',{...bulk,body:JSON.stringify({ids:['p','q',draftBody.product.id],changes:{price_vnd:10000}})})).status,200);
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/bulk',{...bulk,body:JSON.stringify({ids:['p','q',draftBody.product.id],changes:{price_vnd:9000}})})).status,200);
  const original=Buffer.from('<!doctype html><html><body><!--development--><h1>Private test</h1><script>const value = 2 + 2; document.body.dataset.value = value;</script></body></html>');
  const delivery=Buffer.from(await transform(original.toString('utf8')));
  assert.ok(!delivery.toString().includes('development'));
@@ -144,7 +144,7 @@ test('admin requires a signed exact-identity Access JWT and audits product edits
  const audit=await db.prepare("SELECT actor,action,metadata FROM admin_audit_logs WHERE object_id='p' AND action='product.update'").first();
  assert.equal(audit.actor,'lengocthuan09@gmail.com');assert.equal(audit.action,'product.update');assert.equal(JSON.parse(audit.metadata).after.price_vnd,12000);
  assert.equal((await mf.dispatchFetch(url,{...patch,body:JSON.stringify({current_version_id:'vp'})})).status,400);
- assert.equal((await mf.dispatchFetch(url,{...patch,body:JSON.stringify({price_vnd:10000,title:'p'})})).status,200);
+ assert.equal((await mf.dispatchFetch(url,{...patch,body:JSON.stringify({price_vnd:9000,title:'p'})})).status,200);
  await db.prepare('INSERT INTO product_versions VALUES (?,?,?,?,?,?,?)').bind('vp2','p','b'.repeat(64),'original/p2','delivery/p2',120,new Date().toISOString()).run();
  const versions=await (await mf.dispatchFetch(url+'/versions',{headers})).json();assert.equal(versions.versions.length,2);
  const rollback={method:'POST',headers:{...headers,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({version_id:'vp2'})};
@@ -250,7 +250,7 @@ test('checkout rejects tampering, inactive products, duplicate carts and wrong o
  assert.equal((await post('/api/orders',b,'',{Origin:'https://evil.test'})).status,403);
 });
 test('pending reuse retains checkout ownership and server price/expiration',async()=>{
- const first=await checkout('Buyer.Name+one@gmail.com');assert.equal(first.response.status,201);assert.equal(first.body.total_vnd,10000);
+ const first=await checkout('Buyer.Name+one@gmail.com');assert.equal(first.response.status,201);assert.equal(first.body.total_vnd,9000);
  assert.ok(Math.abs(Date.parse(first.body.expires_at)-Date.parse(first.body.server_now)-900000)<2000);
  const second=await checkout('buyername+two@gmail.com',['p'],first.cookie);
  assert.equal(second.body.id,first.body.id);assert.equal(second.body.claimable,true);
@@ -294,7 +294,7 @@ test('signed payment is atomic, immutable and idempotent in real D1',async()=>{
  assert.equal((await db.prepare("SELECT count(*) n FROM payments WHERE external_id='7001'").first()).n,1);
  const adminHeaders={'Cf-Access-Jwt-Assertion':await adminToken()};
  const detail=await (await mf.dispatchFetch(origin+'/admin/api/orders/'+o.body.id,{headers:adminHeaders})).json();
- assert.equal(detail.order.status,'paid');assert.equal(detail.items.length,2);assert.equal(detail.items[0].price_vnd,10000);assert.equal(detail.payments[0].external_id,'7001');
+ assert.equal(detail.order.status,'paid');assert.equal(detail.items.length,2);assert.equal(detail.items[0].price_vnd,9000);assert.equal(detail.payments[0].external_id,'7001');
  assert.ok(!JSON.stringify(detail).includes('checkout_hash'));assert.ok(!JSON.stringify(detail).includes('access_hash'));assert.ok(!JSON.stringify(detail).includes('device_hash'));
  const found=await (await mf.dispatchFetch(origin+'/admin/api/orders?q='+encodeURIComponent(o.body.payment_code),{headers:adminHeaders})).json();assert.ok(found.orders.some(row=>row.id===o.body.id));
  for(const query of ['ref-7001',detail.order.created_at.slice(0,10),'paid@gmail.com']){
@@ -424,7 +424,7 @@ test('expired unpaid checkout cannot serve QR or become paid from a late transfe
  assert.equal((await post('/api/orders/'+o.body.id+'/claim',{},o.cookie)).status,409);
 });
 test('payment mismatch cases remain unfulfilled; provider test and invalid HMAC do not persist',async()=>{
- const cases=[['underpaid',{transferAmount:9999}],['overpaid',{transferAmount:10001}],['wrong_bank',{accountNumber:'other'}],['outgoing',{transferType:'out'}],['unknown_code',{code:'BGZ222222222222'}],['late',{transactionDate:'2020-01-01 00:00:00'}]];
+ const cases=[['underpaid',{transferAmount:8999}],['overpaid',{transferAmount:9001}],['wrong_bank',{accountNumber:'other'}],['outgoing',{transferType:'out'}],['unknown_code',{code:'BGZ222222222222'}],['late',{transactionDate:'2020-01-01 00:00:00'}]];
  for(let i=0;i<cases.length;i++){
   const [status,override]=cases[i],o=await checkout('case'+i+'@gmail.com');
   await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();
@@ -559,6 +559,9 @@ test('browser unpaid checkout shows QR/countdown then polls into paid access',as
   await page.context().addCookies([{name,value,domain:new URL(local).hostname,path:'/',secure:true,httpOnly:true,sameSite:'Strict'}]);
   await page.goto(local+'/checkout/'+o.body.id);
   await page.locator('#payment-state').waitFor();
+  assert.equal(await page.locator('.payment-qr-card h2').innerText(),'Quét QR để thanh toán');
+  assert.ok((await page.locator('.payment-qr-card').boundingBox()).y < (await page.locator('.payment-detail-card').boundingBox()).y);
+  assert.equal(await page.locator('.payment-detail-row').count(),5);
   assert.match(await page.locator('.payment-code').innerText(),/^BGZ[A-Z0-9]{12}$/);
   assert.equal(await page.locator('.payment-account').innerText(),'test-destination');
   assert.equal(await page.locator('.payment-recipient').innerText(),'BIN GEN Z TEST');
@@ -567,7 +570,7 @@ test('browser unpaid checkout shows QR/countdown then polls into paid access',as
   const downloadEvent=page.waitForEvent('download');await page.locator('.qr-download-action').click();const download=await downloadEvent;
   assert.match(download.suggestedFilename(),/^bingenz-BGZ[A-Z0-9]{12}-qr(?:\.[a-z0-9]+)?$/);
   assert.match(await page.locator('#pay-clock').innerText(),/^\d+:\d{2}$/);
-  assert.match(await page.locator('.payment-field').nth(3).innerText(),/10[.,]000/);
+  assert.match(await page.locator('.payment-detail-row').nth(3).innerText(),/9[.,]000/);
   const qrResponse=await mf.dispatchFetch(origin+'/api/orders/'+o.body.id+'/qr',{headers:{Cookie:o.cookie}});
   assert.equal(qrResponse.status,200,await qrResponse.text());
   await page.locator('.payment-qr').evaluate(async image=>{if(!image.complete)await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;});});

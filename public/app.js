@@ -10,6 +10,8 @@ function applyTheme(theme) {
   localStorage.setItem('theme', theme);
   const meta = document.getElementById('metaThemeColor');
   if (meta) meta.content = theme === 'dark' ? '#09090c' : '#f8fafc';
+  const toggle = document.getElementById('themeToggleBtn');
+  if (toggle) toggle.setAttribute('aria-label', theme === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối');
 }
 
 function toggleTheme() {
@@ -52,10 +54,6 @@ function scrollToSection(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function toggleContactFab() {
-  document.getElementById('contactFabPopup')?.classList.toggle('is-open');
-}
-
 async function copyText(text, buttonId, successText = '✓ Copied') {
   try {
     await navigator.clipboard.writeText(text);
@@ -78,7 +76,6 @@ async function copyText(text, buttonId, successText = '✓ Copied') {
 
 function copyContactZalo() { copyText(ZALO_NUMBER, 'zaloCopyBtn'); }
 function copyDevZalo() { copyText(ZALO_NUMBER, 'devZaloCopyBtn'); }
-function copyFabZalo() { copyText(ZALO_NUMBER, 'contactFabCopyBtn'); }
 function copyCommLink(type) { copyText(COMMUNITY_LINKS[type] || '', `copyLink${type}Btn`, 'Đã sao chép'); }
 
 function setCommPanelOpen(type, open) {
@@ -132,7 +129,7 @@ function applyRequestedBrandIcons() {
   document.querySelectorAll('a[aria-label="GitHub"] svg').forEach((svg) => {
     svg.setAttribute('viewBox', '0 0 1024 1024');
     svg.setAttribute('fill', 'none');
-    svg.innerHTML = `<path fill-rule="evenodd" clip-rule="evenodd" d="${githubPath}" transform="scale(64)" fill="#181717"></path>`;
+    svg.innerHTML = `<path fill-rule="evenodd" clip-rule="evenodd" d="${githubPath}" transform="scale(64)" fill="currentColor"></path>`;
   });
   document.querySelectorAll('a[aria-label="Instagram"] svg').forEach((svg) => {
     svg.setAttribute('viewBox', '0 0 512 146');
@@ -144,7 +141,8 @@ function applyRequestedBrandIcons() {
   const bottomIcons = [
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12l1 12H5L6 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/></svg>',
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h16"/><circle cx="17" cy="12" r="2"/><circle cx="8" cy="6" r="2"/><circle cx="12" cy="18" r="2"/></svg>',
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M18 19c0 1.1-.9 2-2 2h-3"/><rect x="3" y="13" width="4" height="6" rx="2"/><rect x="17" y="13" width="4" height="6" rx="2"/></svg>'
   ];
   document.querySelectorAll('#bottomBar .bottom-bar-btn').forEach((button, index) => {
     const label = button.querySelector('span:last-child');
@@ -152,6 +150,25 @@ function applyRequestedBrandIcons() {
     icon.setAttribute('aria-hidden', 'true');
     icon.innerHTML = bottomIcons[index] || '';
     button.replaceChildren(icon, label || document.createTextNode(''));
+  });
+}
+
+function normalizeInterfaceIcons() {
+  const arrow = '<svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>';
+  document.querySelectorAll('span').forEach(node => {
+    if (node.children.length === 0 && node.textContent.trim() === '→') node.outerHTML = arrow;
+  });
+  const popupIcons = {
+    commToggleGame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8h8a5 5 0 0 1 4.8 6.4l-1 3.2a2 2 0 0 1-3.3.9L14 16h-4l-2.5 2.5a2 2 0 0 1-3.3-.9l-1-3.2A5 5 0 0 1 8 8Z"/><path d="M8 11v4m-2-2h4m6-.5h.01m2 2h.01"/></svg>',
+    commToggleGiaoLuu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3 1.6-4.8A8 8 0 1 1 21 15Z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></svg>'
+  };
+  Object.entries(popupIcons).forEach(([id, svg]) => {
+    const toggle = document.getElementById(id);
+    const icon = toggle?.querySelector('.quick-transfer-icon');
+    if (icon) icon.innerHTML = svg;
+  });
+  document.querySelectorAll('.quick-transfer-chevron').forEach(node => {
+    node.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
   });
 }
 
@@ -179,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
   applyTheme(localStorage.getItem('theme') || 'light');
   restoreSocialIcons();
   applyRequestedBrandIcons();
+  normalizeInterfaceIcons();
   applyInstagram24Icon();
   initScrollReveal();
   document.addEventListener('keydown', (event) => {
@@ -198,11 +216,5 @@ document.addEventListener('DOMContentLoaded', () => {
     closeDevModal();
     closeCommunityPopup();
     zaloClosePopup();
-    document.getElementById('contactFabPopup')?.classList.remove('is-open');
-  });
-  document.addEventListener('click', (event) => {
-    const popup = document.getElementById('contactFabPopup');
-    const button = document.getElementById('contactFab');
-    if (popup?.classList.contains('is-open') && !popup.contains(event.target) && !button?.contains(event.target)) popup.classList.remove('is-open');
   });
 });

@@ -16,7 +16,7 @@ const browser=await chromium.launch();
 const results=[];
 try{
  const db=await mf.getD1Database('DB'),bucket=await mf.getR2Bucket('SIMULATIONS');
- for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql','0004_fix_payment_trigger.sql','0005_restore_payment_window.sql']){
+ for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql','0004_fix_payment_trigger.sql','0005_restore_payment_window.sql','0006_standardize_product_price.sql']){
   for(const sql of unstable_splitSqlQuery(await readFile('migrations/'+file,'utf8')))await db.prepare(sql).run();
  }
  const now=new Date(),stamp=now.toISOString();
@@ -25,7 +25,7 @@ try{
   await bucket.put(item.delivery_key,await readFile(item.delivery_file));
  }
  const orderId=crypto.randomUUID(),items=manifest.items.map(item=>item.id),expires=new Date(now.getTime()+900000).toISOString();
- await db.prepare('INSERT INTO orders(id,gmail,gmail_key,cart_key,cart_json,checkout_hash,payment_code,total_vnd,created_at,expires_at) VALUES (?,?,?,?,?,?,?,?,?,?)').bind(orderId,'protectedtest@gmail.com','protectedtest','all35',JSON.stringify(items),'test-checkout','BGZ123456789ABC',items.length*10000,stamp,expires).run();
+ await db.prepare('INSERT INTO orders(id,gmail,gmail_key,cart_key,cart_json,checkout_hash,payment_code,total_vnd,created_at,expires_at) VALUES (?,?,?,?,?,?,?,?,?,?)').bind(orderId,'protectedtest@gmail.com','protectedtest','all35',JSON.stringify(items),'test-checkout','BGZ123456789ABC',items.length*9000,stamp,expires).run();
  await db.prepare("UPDATE orders SET status='paid',paid_at=? WHERE id=?").bind(stamp,orderId).run();
  const device=randomToken();await db.prepare('UPDATE orders SET device_hash=? WHERE id=?').bind(await hash(device),orderId).run();
  const session=await sign({purpose:'session',order:orderId,generation:0,exp:Date.now()+3600000},secret);

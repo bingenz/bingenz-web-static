@@ -6,7 +6,7 @@ INSERT INTO settings VALUES ('activation_days','7');
 CREATE TABLE products (
  id TEXT PRIMARY KEY, source_key TEXT UNIQUE, slug TEXT NOT NULL UNIQUE,
  title TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', category TEXT NOT NULL DEFAULT '',
- price_vnd INTEGER NOT NULL DEFAULT 10000 CHECK(typeof(price_vnd)='integer' AND price_vnd BETWEEN 1 AND 100000000),
+ price_vnd INTEGER NOT NULL DEFAULT 9000 CHECK(typeof(price_vnd)='integer' AND price_vnd BETWEEN 1 AND 100000000),
  duration_seconds INTEGER NOT NULL DEFAULT 900 CHECK(duration_seconds BETWEEN 60 AND 86400),
  activation_days INTEGER CHECK(activation_days BETWEEN 1 AND 365),
  active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)), archived INTEGER NOT NULL DEFAULT 0 CHECK(archived IN (0,1)),

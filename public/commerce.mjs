@@ -6,6 +6,21 @@ const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({
 const money = value => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 const dateTime = value => new Date(value).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 
+const iconPaths = {
+  arrowLeft: '<path d="M19 12H5m6 6-6-6 6-6"/>',
+  arrowRight: '<path d="M5 12h14m-6-6 6 6-6 6"/>',
+  cart: '<path d="M6 7h15l-1.5 8.5H8L6 4H3"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/>',
+  check: '<path d="m5 12 4 4L19 6"/>',
+  close: '<path d="m6 6 12 12M18 6 6 18"/>',
+  copy: '<rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+  download: '<path d="M12 3v12m-5-5 5 5 5-5"/><path d="M5 21h14"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+  trash: '<path d="M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7"/><path d="M10 11v6m4-6v6"/>',
+  warning: '<path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5m0 3h.01"/>',
+  empty: '<path d="M6 8h12l1 12H5L6 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/>'
+};
+const icon = (name, className = '') => `<svg class="ui-icon${className ? ` ${className}` : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconPaths[name] || ''}</svg>`;
+
 const errors = {
   gmail_required: 'Vui lòng nhập địa chỉ @gmail.com hợp lệ.',
   turnstile_required: 'Vui lòng hoàn tất bước xác minh.',
@@ -57,32 +72,52 @@ function initTheme() {
   if (meta) meta.content = theme === 'dark' ? '#09090c' : '#f8fafc';
   const button = $('#commerce-theme');
   if (!button) return;
+  const syncLabel = () => button.setAttribute('aria-label', document.documentElement.dataset.theme === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối');
+  syncLabel();
   button.onclick = () => {
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.dataset.theme = next;
     if (meta) meta.content = next === 'dark' ? '#09090c' : '#f8fafc';
     try { localStorage.setItem('theme', next); } catch {}
+    syncLabel();
   };
 }
 
 function createDialog(title, body, className = 'shop-dialog') {
+  const returnFocus = document.activeElement;
   const modal = document.createElement('dialog');
+  const titleId = `dialog-title-${crypto.randomUUID()}`;
   modal.className = `commerce-dialog ${className}`;
-  modal.setAttribute('aria-label', title);
-  modal.innerHTML = `<header class="dialog-header"><h2>${esc(title)}</h2><button class="dialog-close" type="button" aria-label="Đóng">×</button></header>${body}`;
+  modal.setAttribute('aria-labelledby', titleId);
+  modal.innerHTML = `<header class="dialog-header"><h2 id="${titleId}">${esc(title)}</h2><button class="dialog-close icon-action" type="button" aria-label="Đóng">${icon('close')}</button></header>${body}`;
   document.body.append(modal);
   $('.dialog-close', modal).onclick = () => modal.close();
-  modal.addEventListener('close', () => modal.remove());
+  modal.addEventListener('click', event => { if (event.target === modal) modal.close(); });
+  modal.addEventListener('close', () => {
+    modal.remove();
+    if (!$('dialog[open]')) document.body.classList.remove('scroll-locked');
+    if (returnFocus?.isConnected) returnFocus.focus();
+  });
+  document.body.classList.add('scroll-locked');
   modal.showModal();
   return modal;
 }
 
 async function copy(value, button) {
-  const original = button.textContent;
+  const original = button.innerHTML;
+  const originalLabel = button.getAttribute('aria-label');
   try {
     await navigator.clipboard.writeText(String(value));
-    button.textContent = 'Đã sao chép';
-    setTimeout(() => { if (button.isConnected) button.textContent = original; }, 1600);
+    button.innerHTML = icon('check');
+    button.classList.add('is-copied');
+    button.setAttribute('aria-label', 'Đã sao chép');
+    announce('Đã sao chép thông tin chuyển khoản.');
+    setTimeout(() => {
+      if (!button.isConnected) return;
+      button.innerHTML = original;
+      button.classList.remove('is-copied');
+      if (originalLabel) button.setAttribute('aria-label', originalLabel);
+    }, 1600);
   } catch {
     const modal = createDialog('Sao chép nội dung', `<label class="sr-only" for="copy-fallback">Nội dung cần sao chép</label><input id="copy-fallback" readonly value="${esc(value)}">`);
     $('#copy-fallback', modal).select();
@@ -148,10 +183,12 @@ function saveCart() {
   $$('[data-cart-count]').forEach(node => { node.textContent = String(cart.size); });
   $$('[data-add]').forEach(button => {
     const selected = cart.has(button.dataset.add);
-    button.textContent = selected ? 'Đã thêm ✓' : 'Thêm vào giỏ';
+    const product = products.find(item => item.id === button.dataset.add);
+    button.innerHTML = selected ? `${icon('check')}<span>Đã thêm</span>` : `<span>Thêm vào giỏ</span>`;
     button.disabled = selected;
     button.classList.toggle('is-added', selected);
     button.setAttribute('aria-pressed', String(selected));
+    button.setAttribute('aria-label', selected ? `Đã thêm ${product?.title || 'sản phẩm'} vào giỏ` : `Thêm ${product?.title || 'sản phẩm'} vào giỏ`);
   });
   updateFloatingCart();
 }
@@ -202,6 +239,7 @@ function updateFloatingCart() {
   let floating = $('#floating-cart');
   if (!canFloat || !cart.size) {
     floating?.remove();
+    document.body.classList.remove('has-floating-cart');
     return;
   }
   if (!floating) {
@@ -212,8 +250,9 @@ function updateFloatingCart() {
   }
   floating.innerHTML = `<button class="floating-cart-button" type="button" data-open-cart>
     <span>${cart.size} mô phỏng<small>${money(cartTotal())}</small></span>
-    <strong>Xem giỏ →</strong>
+    <strong>Xem giỏ ${icon('arrowRight')}</strong>
   </button>`;
+  document.body.classList.add('has-floating-cart');
   $('[data-open-cart]', floating).onclick = openCart;
 }
 
@@ -226,7 +265,7 @@ function openCart() {
     const content = $('.cart-content', modal);
     const summary = $('.cart-summary', modal);
     if (!items.length) {
-      content.innerHTML = `<div class="cart-empty"><span class="cart-empty-icon" aria-hidden="true">◇</span><h3>Giỏ hàng đang trống</h3><p>Chọn sản phẩm bạn muốn khám phá rồi thêm vào giỏ.</p><a class="shop-button gold" href="/#store">Xem sản phẩm</a></div>`;
+      content.innerHTML = `<div class="cart-empty"><span class="cart-empty-icon" aria-hidden="true">${icon('empty')}</span><h3>Giỏ hàng đang trống</h3><p>Chọn sản phẩm bạn muốn khám phá rồi thêm vào giỏ.</p><a class="shop-button gold" href="/#store">Xem sản phẩm</a></div>`;
       summary.hidden = true;
       return;
     }
@@ -234,17 +273,17 @@ function openCart() {
     content.innerHTML = items.map(product => `<article class="cart-line">
       <img src="${esc(product.thumbnail)}" alt="" width="82" height="62">
       <div class="cart-line-copy"><strong>${esc(product.title)}</strong><span>${money(product.price_vnd)}</span></div>
-      <button class="cart-remove" type="button" data-remove="${esc(product.id)}" aria-label="Bỏ ${esc(product.title)} khỏi giỏ">Bỏ</button>
+      <button class="cart-remove icon-action" type="button" data-remove="${esc(product.id)}" aria-label="Xóa ${esc(product.title)} khỏi giỏ">${icon('trash')}</button>
     </article>`).join('');
     summary.innerHTML = `<div class="cart-total"><span>Tổng cộng</span><span>${money(cartTotal())}</span></div>
       <p>Không cần tài khoản. Mỗi mô phỏng bắt đầu riêng trong ${Math.max(...items.map(item => item.activation_days || 7))} ngày sau thanh toán.</p>
-      <div class="cart-summary-actions"><button class="text-button" id="clear-cart" type="button">Xóa giỏ</button><a class="shop-button gold" href="/checkout">Tiếp tục thanh toán →</a></div>`;
+      <div class="cart-summary-actions"><button class="text-button" id="clear-cart" type="button">Xóa giỏ</button><a class="shop-button cart-checkout-action" href="/checkout"><span>Tiếp tục thanh toán</span>${icon('arrowRight')}</a></div>`;
     $$('[data-remove]', modal).forEach(button => {
       button.onclick = () => {
         cart.delete(button.dataset.remove);
         saveCart();
         paint();
-        announce('Đã bỏ sản phẩm khỏi giỏ hàng.');
+    announce('Đã xóa sản phẩm khỏi giỏ hàng.');
       };
     });
     $('#clear-cart', modal).onclick = () => {
@@ -271,10 +310,10 @@ async function renderHomeCatalog() {
     return;
   }
   const categories = [...new Set(products.map(product => product.category?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
-  container.innerHTML = `<div class="shop-heading home-store-heading"><div><span class="section-label">Sản phẩm số</span><h2 class="section-title" id="catalog-title">Chọn mô phỏng bạn muốn khám phá</h2><p>Thêm sản phẩm vào giỏ, thanh toán QR và nhận quyền truy cập tự động.</p></div><button class="home-section-cart" type="button" data-open-cart>Giỏ hàng <strong data-cart-count>0</strong></button></div>
+  container.innerHTML = `<div class="shop-heading home-store-heading"><div><span class="section-label">Sản phẩm số</span><h2 class="section-title" id="catalog-title">Chọn mô phỏng bạn muốn khám phá</h2><p>Thêm sản phẩm vào giỏ, thanh toán QR và nhận quyền truy cập tự động.</p></div></div>
     <section class="shop-catalog home-catalog" aria-labelledby="catalog-title">
       <div class="shop-controls">
-        <label class="shop-search-wrap"><span aria-hidden="true">⌕</span><span class="sr-only">Tìm mô phỏng</span><input id="shop-search" type="search" placeholder="Tìm sản phẩm…" autocomplete="off"></label>
+        <label class="shop-search-wrap"><span aria-hidden="true">${icon('search')}</span><span class="sr-only">Tìm mô phỏng</span><input id="shop-search" type="search" placeholder="Tìm sản phẩm…" autocomplete="off"></label>
         <label><span class="sr-only">Sắp xếp sản phẩm</span><select class="shop-sort" id="shop-sort"><option value="featured">Nổi bật</option><option value="name">Tên A–Z</option><option value="price-asc">Giá tăng dần</option><option value="price-desc">Giá giảm dần</option></select></label>
         <div class="category-filters" id="category-filters" aria-label="Lọc theo danh mục">
           <button class="filter-chip is-active" type="button" data-category="">Tất cả</button>
@@ -318,11 +357,6 @@ async function renderHomeCatalog() {
   bindCartOpeners();
 }
 
-function checkoutSummary(items) {
-  return `<div class="checkout-summary-list">${items.map(product => `<div class="checkout-summary-line"><img src="${esc(product.thumbnail)}" alt="" width="58" height="44"><strong>${esc(product.title)}</strong><span>${money(product.price_vnd)}</span></div>`).join('')}</div>
-    <div class="checkout-total-line"><span>Tổng cộng</span><span>${money(items.reduce((sum, item) => sum + item.price_vnd, 0))}</span></div>`;
-}
-
 function mountTurnstile(container, submit, onToken) {
   let widget;
   const mount = () => {
@@ -358,29 +392,28 @@ function mountTurnstile(container, submit, onToken) {
 
 async function renderCheckout() {
   const page = $('#shop-page');
+  document.body.classList.add('checkout-mode');
   await loadCatalog();
   const items = cartItems();
   document.title = 'Thanh toán • BinGenZ';
   if (!items.length) {
-    page.innerHTML = `<section class="recovery-state"><div class="state-icon" aria-hidden="true">◇</div><h1>Giỏ hàng đang trống</h1><p>Hãy chọn ít nhất một mô phỏng trước khi thanh toán.</p><div class="shop-actions"><a class="shop-button gold" href="/#store">Xem sản phẩm</a></div></section>`;
+    page.innerHTML = `<section class="recovery-state"><div class="state-icon" aria-hidden="true">${icon('empty')}</div><h1>Giỏ hàng đang trống</h1><p>Hãy chọn ít nhất một mô phỏng trước khi thanh toán.</p><div class="shop-actions"><a class="shop-button gold" href="/#store">Xem sản phẩm</a></div></section>`;
     return;
   }
-  page.innerHTML = `<section class="checkout-page">
-    <div class="checkout-heading"><span class="shop-kicker">Thanh toán an toàn</span><h1>Thanh toán đơn hàng</h1><p>Kiểm tra sản phẩm và nhập Gmail để nhận mã QR.</p></div>
-    <div class="checkout-layout">
-      <section class="commerce-panel">
-        <h2>Thông tin nhận quyền truy cập</h2>
+  page.innerHTML = `<section class="checkout-page checkout-single">
+      <section class="commerce-panel checkout-entry-panel">
+        <span class="shop-kicker">Thanh toán an toàn</span>
+        <h1>Nhập Gmail để thanh toán</h1>
+        <p class="checkout-entry-intro">Nhập Gmail để nhận quyền truy cập sau khi thanh toán thành công.</p>
         <form class="checkout-form" id="checkout-form">
           <label for="buyer-gmail">Địa chỉ Gmail</label>
           <input id="buyer-gmail" name="gmail" type="email" inputmode="email" autocomplete="email" maxlength="254" placeholder="ban@gmail.com" pattern="[^@\\s]+@gmail\\.com" required>
           <p class="field-help">BinGenZ chỉ dùng Gmail để tra cứu đơn khi bạn cần hỗ trợ. Website không tạo tài khoản và không yêu cầu mật khẩu.</p>
           <div id="checkout-challenge"></div>
-          <button class="primary-action" type="submit" disabled>Tạo mã QR thanh toán →</button>
+          <button class="primary-action" type="submit" disabled><span>Tạo mã QR thanh toán</span>${icon('arrowRight')}</button>
         </form>
         <p class="checkout-note">Mã QR có hiệu lực 15 phút. Quyền truy cập được cấp tự động sau khi ngân hàng xác nhận.</p>
       </section>
-      <aside class="commerce-panel checkout-summary-panel"><h2>Đơn hàng của bạn</h2>${checkoutSummary(items)}<a class="shop-button" href="/#store" style="margin-top:18px;width:100%">← Tiếp tục chọn sản phẩm</a></aside>
-    </div>
   </section>`;
   const form = $('#checkout-form');
   const submit = $('button[type="submit"]', form);
@@ -389,7 +422,8 @@ async function renderCheckout() {
   form.onsubmit = async event => {
     event.preventDefault();
     submit.disabled = true;
-    submit.textContent = 'Đang tạo mã thanh toán…';
+    submit.setAttribute('aria-busy', 'true');
+    submit.innerHTML = '<span class="button-spinner" aria-hidden="true"></span><span>Đang tạo mã thanh toán…</span>';
     try {
       const order = await api('/api/orders', { gmail: $('#buyer-gmail').value, product_ids: [...cart], turnstile_token: token });
       if (!order.claimable) throw new Error('Đơn này đang chờ ở trình duyệt đã tạo đơn. Hãy quay lại trình duyệt đó hoặc đợi đơn hết hạn.');
@@ -397,7 +431,8 @@ async function renderCheckout() {
     } catch (error) {
       showError($('.commerce-panel', page), error);
       token = '';
-      submit.textContent = 'Tạo mã QR thanh toán →';
+      submit.removeAttribute('aria-busy');
+      submit.innerHTML = `<span>Tạo mã QR thanh toán</span>${icon('arrowRight')}`;
       resetTurnstile();
     }
   };
@@ -405,7 +440,7 @@ async function renderCheckout() {
 
 function recovery() {
   document.title = 'Khôi phục quyền truy cập • BinGenZ';
-  $('#commerce-content').innerHTML = `<section class="recovery-state"><div class="state-icon" aria-hidden="true">!</div><h1>Không thể mở liên kết truy cập</h1><p>Liên kết có thể đã hết hiệu lực, bị thay thế hoặc đang được mở trên thiết bị khác. BinGenZ không tạo tài khoản hay tự động gửi lại liên kết.</p><p>Nếu đã thanh toán, hãy cung cấp mã BGZ hoặc thông tin giao dịch cho bộ phận hỗ trợ; không gửi mật khẩu hay mã xác thực.</p><div class="shop-actions"><a class="shop-button gold" href="/#contact">Liên hệ hỗ trợ</a><a class="shop-button" href="/#store">Xem sản phẩm</a></div></section>`;
+  $('#commerce-content').innerHTML = `<section class="recovery-state"><div class="state-icon" aria-hidden="true">${icon('warning')}</div><h1>Không thể mở liên kết truy cập</h1><p>Liên kết có thể đã hết hiệu lực, bị thay thế hoặc đang được mở trên thiết bị khác. BinGenZ không tạo tài khoản hay tự động gửi lại liên kết.</p><p>Nếu đã thanh toán, hãy cung cấp mã BGZ hoặc thông tin giao dịch cho bộ phận hỗ trợ; không gửi mật khẩu hay mã xác thực.</p><div class="shop-actions"><a class="shop-button gold" href="/#contact">Liên hệ hỗ trợ</a><a class="shop-button" href="/#store">Xem sản phẩm</a></div></section>`;
 }
 
 async function paidAccess(link) {
@@ -451,7 +486,7 @@ async function payment(id) {
   const content = $('#commerce-content');
   const order = await api(`/api/orders/${id}`);
   if (order.status === 'paid') {
-    content.innerHTML = `<section class="success-state"><div class="state-icon" aria-hidden="true">✓</div><h1>Thanh toán thành công</h1><p>Ngân hàng đã xác nhận giao dịch. BinGenZ đang chuẩn bị quyền truy cập cho bạn…</p></section>`;
+    content.innerHTML = `<section class="success-state"><div class="state-icon" aria-hidden="true">${icon('check')}</div><h1>Thanh toán thành công</h1><p>Ngân hàng đã xác nhận giao dịch. BinGenZ đang chuẩn bị quyền truy cập cho bạn…</p></section>`;
     const claimed = await api(`/api/orders/${id}/claim`, {});
     cart.clear();
     saveCart();
@@ -461,29 +496,31 @@ async function payment(id) {
     return;
   }
   if (order.status !== 'pending') {
-    content.innerHTML = `<section class="expired-state"><div class="state-icon" aria-hidden="true">!</div><h1>Mã thanh toán đã hết hạn</h1><p>Không chuyển khoản theo mã cũ. Nếu bạn đã chuyển tiền, hãy liên hệ BinGenZ để được kiểm tra thủ công.</p><div class="shop-actions"><a class="shop-button gold" href="/checkout">Tạo mã thanh toán mới</a><a class="shop-button" href="/#contact">Liên hệ hỗ trợ</a></div></section>`;
+    content.innerHTML = `<section class="expired-state"><div class="state-icon" aria-hidden="true">${icon('warning')}</div><h1>Mã thanh toán đã hết hạn</h1><p>Không chuyển khoản theo mã cũ. Nếu bạn đã chuyển tiền, hãy liên hệ BinGenZ để được kiểm tra thủ công.</p><div class="shop-actions"><a class="shop-button gold" href="/checkout">Tạo mã thanh toán mới</a><a class="shop-button" href="/#contact">Liên hệ hỗ trợ</a></div></section>`;
     return;
   }
   document.title = 'Quét QR thanh toán • BinGenZ';
   const destination = order.payment_destination;
-  content.innerHTML = `<header class="payment-header"><span class="commerce-kicker">Thanh toán qua SePay</span><h1>Quét QR để thanh toán</h1><p class="intro">Giữ trang này mở. Quyền truy cập sẽ được cấp tự động sau khi ngân hàng xác nhận.</p></header>
+  content.innerHTML = `<header class="payment-header"><span class="commerce-kicker">Thanh toán qua SePay</span><h1>Hoàn tất thanh toán</h1><p class="intro">Giữ trang này mở để hệ thống tự động xác nhận giao dịch.</p></header>
     <div class="payment-layout">
       <section class="commerce-panel payment-qr-card">
-        <div class="payment-status-bar"><div class="payment-status-copy"><strong>Đang chờ thanh toán</strong><span>Mã QR còn hiệu lực</span></div><span class="commerce-clock" id="pay-clock"></span></div>
+        <div class="payment-card-heading"><div><span class="payment-eyebrow">Thanh toán ngân hàng</span><h2>Quét QR để thanh toán</h2></div><div class="payment-timer"><span>Còn lại</span><strong class="commerce-clock" id="pay-clock"></strong></div></div>
         <div class="payment-qr-wrap"><img class="payment-qr" src="/api/orders/${id}/qr" alt="QR chuyển khoản đúng số tiền và mã đơn"></div>
-        <a class="shop-button qr-download-action" href="/api/orders/${id}/qr" download="bingenz-${esc(order.payment_code)}-qr">Tải mã QR</a>
-        <p>QR đã bao gồm đúng số tiền và nội dung chuyển khoản.</p>
+        <p class="payment-qr-help">Mở ứng dụng ngân hàng và quét mã. Số tiền cùng nội dung chuyển khoản đã được điền sẵn.</p>
+        <a class="shop-button qr-download-action" href="/api/orders/${id}/qr" download="bingenz-${esc(order.payment_code)}-qr">${icon('download')}<span>Tải mã QR</span></a>
+        <ol class="payment-instructions"><li>Quét mã bằng ứng dụng ngân hàng.</li><li>Kiểm tra đúng số tiền rồi xác nhận.</li><li>Giữ trang mở và không chuyển khoản lần hai.</li></ol>
+        <p id="payment-state" role="status">Đang kết nối với hệ thống thanh toán…</p>
       </section>
       <section class="commerce-panel payment-detail-card">
-        <h2>Thông tin chuyển khoản</h2>
-        <div class="payment-field"><div class="payment-field-label">Ngân hàng nhận</div><div class="payment-field-row"><p class="payment-field-value">${esc(destination.bank_code)}</p></div></div>
-        <div class="payment-field"><div class="payment-field-label">Số tài khoản</div><div class="payment-field-row"><p class="payment-field-value payment-account">${esc(destination.account_number)}</p><button class="copy-button" id="copy-account" type="button">Sao chép</button></div></div>
-        <div class="payment-field"><div class="payment-field-label">Tên người nhận</div><div class="payment-field-row"><p class="payment-field-value payment-recipient">${esc(destination.account_name)}</p><button class="copy-button" id="copy-recipient" type="button">Sao chép</button></div></div>
-        <div class="payment-field"><div class="payment-field-label">Số tiền chính xác</div><div class="payment-field-row"><p class="payment-field-value">${money(order.total_vnd)}</p><button class="copy-button" id="copy-amount" type="button">Sao chép</button></div></div>
-        <div class="payment-field"><div class="payment-field-label">Nội dung chuyển khoản</div><div class="payment-field-row"><p class="payment-field-value payment-code">${esc(order.payment_code)}</p><button class="copy-button" id="copy-code" type="button">Sao chép</button></div></div>
-        <ol class="payment-instructions"><li>Quét mã bằng ứng dụng ngân hàng.</li><li>Kiểm tra đúng số tiền và giữ nguyên nội dung BGZ.</li><li>Chờ trang tự động xác nhận; không chuyển khoản lần thứ hai.</li></ol>
+        <div class="payment-detail-heading"><div><h2>Thông tin chuyển khoản</h2><p>Dùng khi bạn cần nhập thủ công.</p></div></div>
+        <div class="payment-detail-list">
+          <div class="payment-detail-row"><span class="payment-field-label">Ngân hàng</span><strong class="payment-field-value">${esc(destination.bank_code)}</strong></div>
+          <div class="payment-detail-row"><span class="payment-field-label">Số tài khoản</span><strong class="payment-field-value payment-account">${esc(destination.account_number)}</strong><button class="copy-button icon-action" id="copy-account" type="button" aria-label="Sao chép số tài khoản">${icon('copy')}</button></div>
+          <div class="payment-detail-row"><span class="payment-field-label">Tên người nhận</span><strong class="payment-field-value payment-recipient">${esc(destination.account_name)}</strong><button class="copy-button icon-action" id="copy-recipient" type="button" aria-label="Sao chép tên người nhận">${icon('copy')}</button></div>
+          <div class="payment-detail-row payment-detail-emphasis"><span class="payment-field-label">Số tiền</span><strong class="payment-field-value">${money(order.total_vnd)}</strong><button class="copy-button icon-action" id="copy-amount" type="button" aria-label="Sao chép số tiền">${icon('copy')}</button></div>
+          <div class="payment-detail-row payment-detail-emphasis"><span class="payment-field-label">Nội dung</span><strong class="payment-field-value payment-code">${esc(order.payment_code)}</strong><button class="copy-button icon-action" id="copy-code" type="button" aria-label="Sao chép nội dung chuyển khoản">${icon('copy')}</button></div>
+        </div>
         ${paymentOrderSummary(order)}
-        <p id="payment-state" role="status">Đang kết nối với hệ thống thanh toán…</p>
       </section>
     </div>`;
   $('#copy-account').onclick = event => copy(destination.account_number, event.currentTarget);
@@ -522,7 +559,7 @@ async function play(id) {
   $('.commerce-route-header')?.remove();
   const main = $('#commerce-page');
   main.className = 'commerce play-layout';
-  main.innerHTML = `<header><a href="/access">← Mô phỏng của bạn</a><strong class="commerce-clock" id="runtime-clock"></strong></header><iframe title="${esc(item.title)}" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>`;
+  main.innerHTML = `<header><a href="/access">${icon('arrowLeft')}<span>Mô phỏng của bạn</span></a><strong class="commerce-clock" id="runtime-clock"></strong></header><iframe title="${esc(item.title)}" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe>`;
   const frame = $('iframe', main);
   frame.src = permit.url;
   let stopped = false;
