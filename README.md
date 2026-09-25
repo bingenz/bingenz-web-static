@@ -30,9 +30,11 @@ Giữ domain `bingenz.com` và `www.bingenz.com`. Không đưa HTML mô phỏng 
 ## Quy trình chỉnh sửa
 
 1. Sửa file trong `public/`.
-2. Chạy local server và kiểm tra desktop/mobile.
-3. Kiểm tra các link, popup, theme và ảnh local.
-4. Commit và push sau khi đã duyệt preview.
+2. Nếu thay đổi `styles.css`, `commerce.css`, `app.js` hoặc `commerce.mjs`, **bắt buộc tăng cùng một cache-busting token** trong mọi thẻ `<link>`/`<script>` liên quan (ví dụ `?v=YYYYMMDD-N`). Không phát hành nội dung asset mới dưới URL cũ vì trình duyệt mobile có thể tiếp tục dùng giao diện đã cache.
+3. Chạy local server và kiểm tra desktop/mobile, gồm CTA, SVG/icon, theme sáng/tối và tràn ngang.
+4. Chạy test UI có kiểm tra token asset, kích thước CTA và màu icon. Khi sửa lỗi cache, phải kiểm tra lại bằng cùng một browser context đã từng mở bản cũ; không chỉ dựa vào cửa sổ ẩn danh hoặc browser sạch.
+5. Kiểm tra các link, popup, theme và ảnh local.
+6. Commit và push sau khi đã duyệt preview; smoke-test production và xác nhận HTML mới đang tham chiếu đúng token asset vừa phát hành.
 
 ## Commerce local development
 

@@ -50,4 +50,38 @@ test('home uses one mobile cart entry and keeps action SVGs bounded', async () =
   assert.match(html, /Biến ý tưởng thành/);
   assert.match(styles, /\.action-arrow[^}]*width:18px!important[^}]*height:18px!important/);
   assert.match(commerceStyles, /\.floating-cart\s*\{/);
+  assert.match(html, /styles\.css\?v=20260925-2/);
+});
+
+test('mobile hero and game CTAs stay compact and GitHub follows the dark theme', async () => {
+  const [html, styles] = await Promise.all([
+    readFile('public/index.html', 'utf8'),
+    readFile('public/styles.css', 'utf8')
+  ]);
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await page.setContent(html);
+    await page.addStyleTag({ content: styles });
+    await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
+
+    const dimensions = await page.evaluate(() => {
+      const measure = (selector) => {
+        const rect = document.querySelector(selector).getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      };
+      const githubPath = document.querySelector('.hero-social-stat[aria-label="GitHub"] path');
+      return {
+        hero: measure('.hero-cta-button'),
+        game: measure('.game-web-button'),
+        githubFill: getComputedStyle(githubPath).fill
+      };
+    });
+
+    assert.ok(dimensions.hero.width <= 220 && dimensions.hero.height <= 44);
+    assert.ok(dimensions.game.width <= 220 && dimensions.game.height <= 44);
+    assert.notEqual(dimensions.githubFill, 'rgb(0, 0, 0)');
+  } finally {
+    await browser.close();
+  }
 });

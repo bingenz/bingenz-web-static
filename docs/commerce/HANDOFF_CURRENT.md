@@ -1,10 +1,11 @@
 # Current commerce release handoff
 
-- Checkpoint: `2026-09-24T11:35:38Z` on the local `master` release HEAD whose parent is `0914c6051bbcb737141c948a535d73fab7821f45`; independently verified `origin/master` was that parent before this release.
-- Pending source: reviewed homepage-only product cards, 8-item incremental loading, simplified cart/checkout, authenticated QR download, server-sourced transfer details and copy controls. `/shop` and product-detail routes intentionally return 404; `/checkout` remains active.
-- Verification: 36/36 Node tests pass, production Wrangler dry-run passes with 52 assets, and local desktop/mobile storefront plus existing-site regression runs pass at 1440/390/360.
-- Production state: Worker `bingenz-web-static`, secret-change version `1e770ca6-28e9-442f-8849-eaaba14840c1`, D1/R2/assets unchanged, and all six required secrets are present including `BANK_ACCOUNT_NAME`. Its value was supplied through Wrangler's masked prompt and is absent from Git/logs.
-- SePay read-only evidence: the live linked TPBank account displays the exact account-holder name. It was added through Wrangler's masked interactive secret prompt; the account name and number remain absent from Git/logs.
-- Release path: commit the reviewed files while excluding the pre-existing untracked `CODEX_BINGENZ_SEPAY_GITHUB_HANDOFF.md`; push `master`; wait for the Workers Builds GitHub check; verify the deployed commit/version; smoke-test `https://bingenz.com`, `/api/catalog`, `/shop` 404 and static checkout rendering without making a real payment.
-- Existing payment recovery remains complete: SePay TPBank synchronization includes `CJ,BGZ`, BGZ recognition is 12 alphanumeric characters, webhook #57962 official test returns success, migration 0005 is applied, and current production data/resources must not be recreated.
-- Rollback source point before this release is Git commit `0914c6051bbcb737141c948a535d73fab7821f45`; use Cloudflare's previous deployment/version rather than modifying D1/R2 if rollback is required.
+- Checkpoint: `2026-09-25`, production source commit `b6f9fb3` on `master`, Cloudflare version `96183fb8-f182-4fcf-9226-98486a7fdf07` receiving 100% traffic.
+- Current patch: make the mobile hero CTA and Cube Jump web CTA compact, force the GitHub SVG to follow the active theme, and version public CSS/JS URLs with `?v=20260925-2` so existing mobile browsers cannot retain the broken cached UI.
+- Verification: 40/40 Node tests pass. Local visual checks at 360/390/430 px measure the hero CTA at 44 px high, the game CTA at 210 × 44 px, the dark-theme GitHub fill as `rgb(241, 245, 249)`, and no horizontal overflow.
+- Release path: commit reviewed files, excluding `.codex-remote-attachments/`, `.wrangler-dry-run/` and the pre-existing root handoff file; push `master`; wait for the Git-triggered Cloudflare version; then verify the production asset token and rerun mobile smoke tests.
+- Rollback target before this patch: Git commit `b6f9fb3` / Cloudflare version `96183fb8-f182-4fcf-9226-98486a7fdf07`. Do not modify D1/R2 to roll back a presentation-only patch.
+
+## Mandatory UI cache rule
+
+Never deploy changed `styles.css`, `commerce.css`, `app.js` or `commerce.mjs` while keeping their previous public URL. Increment one release token such as `?v=YYYYMMDD-N` in every HTML reference, keep the token consistent across that release, and add or update a test that asserts the new token. A clean Playwright/incognito session is not sufficient evidence: also validate the reload path for a browser that opened the previous release. This rule exists because stale mobile assets previously kept an oversized CTA and a black GitHub icon visible after the source had already been fixed.

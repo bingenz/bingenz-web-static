@@ -347,6 +347,9 @@ html[data-theme="dark"] .hero-stat-value{background:var(--grad-brand);-webkit-ba
 .hero-social-stat:hover{transform:translateY(-2px);color:var(--y1)}
 .hero-social-stat .hero-stat-value{display:flex;justify-content:center;align-items:center;color:currentColor}
 .hero-social-stat svg{width:30px;height:30px}
+.hero-social-stat[aria-label="GitHub"],
+.hero-social-stat[aria-label="GitHub"] svg{color:var(--text)}
+.hero-social-stat[aria-label="GitHub"] path{fill:currentColor!important}
 html[data-theme="dark"] .hero-social-stat .hero-stat-value{background:none;-webkit-text-fill-color:currentColor}
 
 /* Social */
@@ -389,8 +392,8 @@ html[data-theme="light"] .game-web-button{background:var(--grad-brand);color:#11
   .game-hero{width:min(100%,240px);border-radius:24px}
   .game-content{gap:9px}
   .game-content h2{font-size:1.72em}
-  .game-actions{width:100%;flex-direction:column;align-items:stretch}
-  .game-web-button{width:100%;min-height:48px;padding:12px 18px;justify-content:center}
+  .game-actions{width:100%;justify-content:center;align-items:center}
+  .game-web-button{width:auto;min-width:min(210px,100%);min-height:44px;padding:10px 16px;justify-content:center;font-size:.82em}
   .hero-social-icons{gap:12px}
 }
 
@@ -577,7 +580,7 @@ html[data-theme="light"] .notice-item-sub{color:#92400e}
   .hero-cta-row{flex-direction:row;justify-content:center;gap:10px;flex-wrap:nowrap}
   .title{font-size:clamp(2rem,10.5vw,2.8rem);line-height:1.06;margin-bottom:18px}
   .hero-desc{font-size:.9em;line-height:1.65;margin-bottom:26px}
-  .hero-cta-button,.hero-contact-button{min-width:0;max-width:100%;min-height:48px;padding:12px 18px;font-size:0.84em}
+  .hero-cta-button,.hero-contact-button{width:auto;min-width:0;max-width:220px;min-height:44px;padding:10px 16px;font-size:0.82em}
   .hero-stat{padding:0 16px}
   .hero-stat-value{font-size:1.3em}
   .modal{align-items:flex-start;padding:78px 12px 14px}
