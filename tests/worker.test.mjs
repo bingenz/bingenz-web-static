@@ -1,6 +1,6 @@
 import { test,before,after } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdir } from 'node:fs/promises';
 import { createHmac,createHash } from 'node:crypto';
 import { build } from 'esbuild';
 import { Miniflare,convertV4MiniflareOptions } from 'miniflare';
@@ -82,7 +82,7 @@ test('admin requires a signed exact-identity Access JWT and audits product edits
  }
  const token=await adminToken(),headers={'Cf-Access-Jwt-Assertion':token};
  const dashboard=await mf.dispatchFetch(origin+'/admin/api/dashboard',{headers});assert.equal(dashboard.status,200);
- const page=await mf.dispatchFetch(origin+'/admin',{headers});assert.equal(page.status,200);assert.match(await page.text(),/Quản trị mô phỏng/);
+ const page=await mf.dispatchFetch(origin+'/admin',{headers});assert.equal(page.status,200);assert.match(await page.text(),/Quản lý cửa hàng/);
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/products',{headers})).status,200);
  const draft={method:'POST',headers:{...headers,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({title:'Draft',slug:'new-draft',price_vnd:9000})};
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/products',{...draft,headers:{...draft.headers,Origin:'https://evil.test'}})).status,403);
@@ -171,6 +171,7 @@ test('admin dashboard and product editor render in a browser with signed Access 
   await page.goto(local+'/admin');await page.locator('#product-list option').first().waitFor({state:'attached'});
   assert.ok(await page.locator('#metrics article').count()>=8);
   assert.equal(await page.locator('#settings-form input[name=activation_days]').inputValue(),'7');
+  await page.locator('.admin-nav a[href="#tools-section"]').click();
   await page.locator('#settings-form input[name=activation_days]').fill('8');await page.locator('#settings-form button').click();
   await page.getByText('Đã lưu hạn kích hoạt mặc định cho đơn mới và ghi nhật ký.').waitFor();
   assert.equal((await db.prepare("SELECT value FROM settings WHERE key='activation_days'").first()).value,'8');
@@ -179,12 +180,14 @@ test('admin dashboard and product editor render in a browser with signed Access 
   await page.locator('#settings-form button').click();await resetResponse;
   assert.equal((await db.prepare("SELECT value FROM settings WHERE key='activation_days'").first()).value,'7');
   const previewProduct=await db.prepare("SELECT id FROM products WHERE slug='new-draft'").first();
+  await page.locator('.admin-nav a[href="#products-section"]').click();
   await page.locator('#product-list').selectOption(previewProduct.id);
   await page.locator('#versions option').first().waitFor({state:'attached'});
   await page.locator('#preview-version').click();await page.locator('#preview-dialog').waitFor({state:'visible'});
   assert.equal(await page.frameLocator('#preview-frame').locator('h1').textContent(),'Private test');
   await page.locator('#close-preview').click();await page.locator('#preview-dialog').waitFor({state:'hidden'});await page.waitForFunction(()=>!document.querySelector('#preview-frame').hasAttribute('src'));
   const metadata=[{slug:'p',category:'Thuật toán kiểm thử',description:'Mô tả sản phẩm được nhập qua công cụ metadata có kiểm tra.',display_order:777}];
+  await page.locator('.admin-nav a[href="#tools-section"]').click();
   await page.locator('#metadata-import-form input[type=file]').setInputFiles({name:'metadata.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(metadata))});
   await page.locator('#metadata-import-form button').click();
   await page.getByText('Đã cập nhật và ghi audit cho 1 sản phẩm.').waitFor();
@@ -203,6 +206,8 @@ test('admin browser creates a private product, uploads assets, activates and arc
   page.on('dialog',dialog=>dialog.accept());
   const local=(await mf.ready).origin,slug='browser-admin-draft';
   await page.goto(local+'/admin');await page.locator('#product-list option').first().waitFor({state:'attached'});
+  await page.locator('.admin-nav a[href="#products-section"]').click();
+  await page.locator('#new-product').click();
   await page.locator('#create-product [name=title]').fill('Browser admin draft');
   await page.locator('#create-product [name=slug]').fill(slug);
   await page.locator('#create-product button').click();
@@ -214,6 +219,7 @@ test('admin browser creates a private product, uploads assets, activates and arc
   const original=Buffer.from('<!doctype html><html><body><h1>Browser private version</h1><script>document.body.dataset.ready="yes"</script></body></html>');
   const delivery=Buffer.from(await transform(original.toString('utf8'))),digest=b=>createHash('sha256').update(b).digest('hex');
   const pkg={format:'bingenz-admin-html-v1',sha256:digest(original),delivery_sha256:digest(delivery),original_base64:original.toString('base64'),delivery_base64:delivery.toString('base64')};
+  await page.locator('.admin-disclosure:has(.product-tools) > summary').click();
   await page.locator('#upload-form input[type=file]').setInputFiles({name:'prepared.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(pkg))});
   await page.locator('#upload-form button').click();
   await page.getByText('Đã lưu riêng tư phiên bản mới và ghi nhật ký.').waitFor();
@@ -232,6 +238,7 @@ test('admin browser creates a private product, uploads assets, activates and arc
   await page.locator('#product-form button').click();
   await page.getByText('Đã lưu sản phẩm và ghi nhật ký.').waitFor();
   assert.ok((await (await mf.dispatchFetch(origin+'/api/catalog')).text()).includes(slug));
+  await page.locator('#product-advanced > summary').click();
   await page.locator('#product-form [name=archived]').check();
   await page.locator('#product-form button').click();
   await page.getByText('Đã lưu sản phẩm và ghi nhật ký.').waitFor();
@@ -576,6 +583,8 @@ test('browser unpaid checkout shows QR/countdown then polls into paid access',as
   await page.locator('.payment-qr').evaluate(async image=>{if(!image.complete)await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;});});
   assert.ok(await page.locator('.payment-qr').evaluate(image=>image.naturalWidth>0));
   assert.equal((await mf.dispatchFetch(origin+'/api/orders/'+o.body.id+'/qr')).status,404);
+  await mkdir('test-results/redesign',{recursive:true});
+  await page.screenshot({path:'test-results/redesign/payment-390.png',fullPage:true});
   await db.prepare('UPDATE orders SET created_at=? WHERE id=?').bind(new Date(Date.now()-2000).toISOString(),o.body.id).run();
   assert.equal((await sendPayment(o.body,{},9105)).status,200);
   await page.locator('[data-start]').waitFor({timeoutMs:10000});
@@ -593,7 +602,8 @@ test('admin browser searches a paid order and records audited support actions',a
   const page=await browser.newPage({extraHTTPHeaders:{'Cf-Access-Jwt-Assertion':await adminToken()},viewport:{width:1280,height:900}}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto((await mf.ready).origin+'/admin');
-  await page.locator('#orders tr').first().waitFor();
+  await page.locator('#orders tr').first().waitFor({state:'attached'});
+  await page.locator('.admin-nav a[href="#orders-section"]').click();
   await page.locator('#search input[name=q]').fill('adminbrowserfixture@gmail.com');
   await page.locator('#search button').click();
   await page.locator('#orders button[data-order]').first().click();
@@ -607,6 +617,7 @@ test('admin browser searches a paid order and records audited support actions',a
   await page.locator('#entitlement-form textarea').fill('Customer requested extra activation day.');
   await page.locator('#entitlement-form button').click();
   await page.getByText('Đã cập nhật quyền và ghi nhật ký.').waitFor();
+  await page.locator('#order-detail > .admin-disclosure > summary').click();
   await page.locator('#refund-request-form input[name=amount_vnd]').fill('1000');
   await page.locator('#refund-request-form textarea').fill('Customer requested partial refund.');
   await page.locator('#refund-request-form button').click();

@@ -2,6 +2,10 @@
 
 Website và commerce Worker của `bingenz.com`, với giao diện HTML/CSS/JS trong `public/`, API trong `src/`, D1 và R2 riêng tư. Theo [đặc tả](docs/commerce/IMPLEMENTATION_SPEC.md) và xem [tiến độ](docs/commerce/PROGRESS.md) trước khi chỉnh sửa. Production đã chạy commerce; mọi release tiếp theo phải đi từ `master` qua đường triển khai Git đã xác minh.
 
+## Giao diện cửa hàng và admin mới
+
+Bản thiết kế, ảnh xem trước, cách dùng và kết quả kiểm tra nằm trong [UI_REDESIGN.md](docs/commerce/UI_REDESIGN.md). Admin chia thành từng màn hình; công cụ metadata nằm trong **Thiết lập → Chỉnh sửa hàng loạt**.
+
 ## Kiến trúc và trạng thái
 
 Worker `src/worker.mjs` phục vụ API/HTML của cửa hàng; D1 giữ sản phẩm, đơn, giao dịch, quyền sử dụng và audit; R2 riêng tư giữ bản gốc, bản giao cho người mua và ảnh quản trị tải lên. `public/` chỉ chứa giao diện và thumbnail công khai. Checkout cần Turnstile server-side; SePay webhook HMAC đối chiếu tiền vào, tài khoản, mã `BGZ`, số tiền và hạn 15 phút trước khi cấp quyền. Trang admin cần Cloudflare Access + kiểm tra JWT/email ở Worker. Quyền truy cập khách dùng token băm, cookie HttpOnly gắn thiết bị, Start độc lập và permit ngắn hạn. HTML gửi tới trình duyệt không thể là DRM tuyệt đối.
