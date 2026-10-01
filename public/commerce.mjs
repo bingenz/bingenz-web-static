@@ -145,6 +145,7 @@ let sitekey = null;
 let catalogPromise;
 let toastHandle;
 let cart = new Set();
+let disposeCheckoutChallenge;
 try {
   const saved = JSON.parse(localStorage.getItem('bgz-cart') || '[]');
   if (Array.isArray(saved)) cart = new Set(saved.filter(value => typeof value === 'string'));
@@ -210,9 +211,12 @@ function productCard(product) {
   return `<article class="product-card">
     <div class="product-media">
       <img src="${esc(product.thumbnail)}" alt="Mô phỏng ${esc(product.title)}" loading="lazy" width="600" height="375">
+      <button class="product-inspect" type="button" data-detail="${esc(product.id)}" aria-label="Xem chi tiết ${esc(product.title)}">Chi tiết ${icon('arrowRight')}</button>
     </div>
     <div class="product-body">
+      <span class="product-category">${esc(productCategory(product))}</span>
       <h3>${esc(product.title)}</h3>
+      <p class="product-runtime">${Math.round(product.duration_seconds / 60)} phút trải nghiệm</p>
       <div class="product-price">${money(product.price_vnd)}</div>
       <div class="product-actions">
         <button class="gold" type="button" data-add="${esc(product.id)}" aria-label="Thêm ${esc(product.title)} vào giỏ">Thêm vào giỏ</button>
@@ -222,6 +226,9 @@ function productCard(product) {
 }
 
 function bindAddButtons(root = document) {
+  $$('[data-detail]', root).forEach(button => {
+    button.onclick = () => openProduct(button.dataset.detail);
+  });
   $$('[data-add]', root).forEach(button => {
     button.onclick = () => {
       const product = products.find(item => item.id === button.dataset.add);
@@ -232,6 +239,24 @@ function bindAddButtons(root = document) {
     };
   });
   saveCart();
+}
+
+function openProduct(id) {
+  const product = products.find(item => item.id === id);
+  if (!product) return;
+  const modal = createDialog(product.title, `<div class="product-detail-content">
+    <img src="${esc(product.thumbnail)}" alt="Mô phỏng ${esc(product.title)}">
+    <span class="product-category">${esc(productCategory(product))}</span>
+    <p class="detail-description">${esc(product.description || 'Khám phá cách hoạt động qua mô phỏng tương tác trực tiếp trên trình duyệt.')}</p>
+    <div class="detail-facts"><span><strong>${Math.round(product.duration_seconds / 60)} phút</strong>Thời gian sử dụng</span><span><strong>${product.activation_days || 7} ngày</strong>Hạn bắt đầu sau thanh toán</span></div>
+    <p class="shop-note">Thời gian tính liên tục từ lúc bấm Bắt đầu, kể cả khi đóng tab. Mỗi mô phỏng bắt đầu riêng.</p>
+    <div class="detail-purchase"><strong>${money(product.price_vnd)}</strong><button class="gold" type="button" data-add="${esc(product.id)}">Thêm vào giỏ</button></div>
+  </div>`, 'product-detail-dialog');
+  bindAddButtons(modal);
+}
+
+function purchaseSteps(current) {
+  return `<ol class="purchase-steps" aria-label="Tiến trình mua hàng">${['Giỏ hàng', 'Thanh toán QR', 'Sử dụng'].map((label, index) => `<li class="${index + 1 === current ? 'is-current' : index + 1 < current ? 'is-complete' : ''}"${index + 1 === current ? ' aria-current="step"' : ''}><span>${index + 1 < current ? icon('check') : index + 1}</span>${label}</li>`).join('')}</ol>`;
 }
 
 function updateFloatingCart() {
@@ -275,8 +300,8 @@ function openCart() {
       <div class="cart-line-copy"><strong>${esc(product.title)}</strong><span>${money(product.price_vnd)}</span></div>
       <button class="cart-remove icon-action" type="button" data-remove="${esc(product.id)}" aria-label="Xóa ${esc(product.title)} khỏi giỏ">${icon('trash')}</button>
     </article>`).join('');
-    summary.innerHTML = `<div class="cart-total"><span>Tổng cộng</span><span>${money(cartTotal())}</span></div>
-      <p>Không cần tài khoản. Mỗi mô phỏng bắt đầu riêng trong ${Math.max(...items.map(item => item.activation_days || 7))} ngày sau thanh toán.</p>
+    summary.innerHTML = `<div class="cart-total"><span>Tổng cộng · ${items.length} mô phỏng</span><span>${money(cartTotal())}</span></div>
+      <p>Thanh toán QR · Không cần tài khoản. Hạn bắt đầu và thời lượng được ghi riêng trong chi tiết từng sản phẩm.</p>
       <div class="cart-summary-actions"><button class="text-button" id="clear-cart" type="button">Xóa giỏ</button><a class="shop-button cart-checkout-action" href="/checkout"><span>Tiếp tục thanh toán</span>${icon('arrowRight')}</a></div>`;
     $$('[data-remove]', modal).forEach(button => {
       button.onclick = () => {
@@ -310,19 +335,21 @@ async function renderHomeCatalog() {
     return;
   }
   const categories = [...new Set(products.map(product => product.category?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'vi'));
-  container.innerHTML = `<div class="shop-heading home-store-heading"><div><span class="section-label">Sản phẩm số</span><h2 class="section-title" id="catalog-title">Chọn mô phỏng bạn muốn khám phá</h2><p>Thêm sản phẩm vào giỏ, thanh toán QR và nhận quyền truy cập tự động.</p></div></div>
+  container.innerHTML = `<div class="shop-heading home-store-heading"><div><span class="section-label">BINGENZ / SIMULATION LAB</span><h2 class="section-title" id="catalog-title">Hiểu công nghệ.<br>Qua từng trải nghiệm.</h2><p>Khám phá thuật toán và hệ thống bằng mô phỏng tương tác. Chọn chủ đề bạn thích, bắt đầu khi sẵn sàng.</p></div><div class="catalog-signature"><strong>${products.length}</strong><span>mô phỏng<br>để khám phá</span></div></div>
+    <div class="store-benefits"><span>${icon('check')} Chạy trên trình duyệt</span><span>${icon('check')} Thanh toán QR tự động</span><span>${icon('check')} Bắt đầu từng sản phẩm riêng</span></div>
     <section class="shop-catalog home-catalog" aria-labelledby="catalog-title">
       <div class="shop-controls">
         <label class="shop-search-wrap"><span aria-hidden="true">${icon('search')}</span><span class="sr-only">Tìm mô phỏng</span><input id="shop-search" type="search" placeholder="Tìm sản phẩm…" autocomplete="off"></label>
         <label><span class="sr-only">Sắp xếp sản phẩm</span><select class="shop-sort" id="shop-sort"><option value="featured">Nổi bật</option><option value="name">Tên A–Z</option><option value="price-asc">Giá tăng dần</option><option value="price-desc">Giá giảm dần</option></select></label>
         <div class="category-filters" id="category-filters" aria-label="Lọc theo danh mục">
-          <button class="filter-chip is-active" type="button" data-category="">Tất cả</button>
-          ${categories.map(category => `<button class="filter-chip" type="button" data-category="${esc(category)}">${esc(category)}</button>`).join('')}
+          <button class="filter-chip is-active" type="button" data-category="" aria-pressed="true">Tất cả</button>
+          ${categories.map(category => `<button class="filter-chip" type="button" data-category="${esc(category)}" aria-pressed="false">${esc(category)}</button>`).join('')}
         </div>
       </div>
       <div class="catalog-meta"><span class="catalog-result-count" id="catalog-count"></span></div>
       <div class="product-grid" id="product-grid"></div>
-      <div class="catalog-more"><button class="shop-button" id="catalog-more" type="button">Xem thêm sản phẩm</button></div>
+      <div class="catalog-more"><button class="shop-button" id="catalog-more" type="button">Xem thêm sản phẩm ${icon('arrowRight')}</button></div>
+      <p class="store-help">Chưa biết chọn mô phỏng nào? <a href="/#contact">Liên hệ BinGenZ để được tư vấn</a></p>
     </section>`;
   let category = '';
   let visibleCount = 8;
@@ -349,7 +376,7 @@ async function renderHomeCatalog() {
   $$('[data-category]', store).forEach(button => {
     button.onclick = () => {
       category = button.dataset.category;
-      $$('[data-category]', store).forEach(item => item.classList.toggle('is-active', item === button));
+      $$('[data-category]', store).forEach(item => { item.classList.toggle('is-active', item === button); item.setAttribute('aria-pressed', String(item === button)); });
       resetAndPaint();
     };
   });
@@ -387,10 +414,13 @@ function mountTurnstile(container, submit, onToken) {
       document.head.append(script);
     }
   }
-  return () => { if (widget !== undefined && window.turnstile) window.turnstile.reset(widget); };
+  const reset = () => { if (widget !== undefined && window.turnstile) window.turnstile.reset(widget); };
+  reset.dispose = () => { if (widget !== undefined && window.turnstile) window.turnstile.remove(widget); };
+  return reset;
 }
 
 async function renderCheckout() {
+  disposeCheckoutChallenge?.();
   const page = $('#shop-page');
   document.body.classList.add('checkout-mode');
   await loadCatalog();
@@ -400,11 +430,11 @@ async function renderCheckout() {
     page.innerHTML = `<section class="recovery-state"><div class="state-icon" aria-hidden="true">${icon('empty')}</div><h1>Giỏ hàng đang trống</h1><p>Hãy chọn ít nhất một mô phỏng trước khi thanh toán.</p><div class="shop-actions"><a class="shop-button gold" href="/#store">Xem sản phẩm</a></div></section>`;
     return;
   }
-  page.innerHTML = `<section class="checkout-page checkout-single">
+  page.innerHTML = `${purchaseSteps(1)}<section class="checkout-page checkout-single">
       <section class="commerce-panel checkout-entry-panel">
         <span class="shop-kicker">Thanh toán an toàn</span>
-        <h1>Nhập Gmail để thanh toán</h1>
-        <p class="checkout-entry-intro">Nhập Gmail để nhận quyền truy cập sau khi thanh toán thành công.</p>
+        <h1>Chỉ còn một bước nhỏ.</h1>
+        <p class="checkout-entry-intro">Nhập Gmail để tra cứu đơn và hỗ trợ khi cần. Liên kết sử dụng sẽ xuất hiện ngay tại đây sau thanh toán.</p>
         <form class="checkout-form" id="checkout-form">
           <label for="buyer-gmail">Địa chỉ Gmail</label>
           <input id="buyer-gmail" name="gmail" type="email" inputmode="email" autocomplete="email" maxlength="254" placeholder="ban@gmail.com" pattern="[^@\\s]+@gmail\\.com" required>
@@ -414,11 +444,18 @@ async function renderCheckout() {
         </form>
         <p class="checkout-note">Mã QR có hiệu lực 15 phút. Quyền truy cập được cấp tự động sau khi ngân hàng xác nhận.</p>
       </section>
+      <aside class="commerce-panel checkout-review" aria-label="Kiểm tra giỏ hàng"><span class="shop-kicker">Bạn đã chọn</span><h2>${items.length} mô phỏng</h2><div class="checkout-review-items">${items.map(item => `<div class="checkout-review-line"><img src="${esc(item.thumbnail)}" alt="" width="64" height="48"><div><strong>${esc(item.title)}</strong><small>${Math.round(item.duration_seconds / 60)} phút · bắt đầu trong ${item.activation_days || 7} ngày</small></div><span>${money(item.price_vnd)}</span></div>`).join('')}</div><div class="cart-total"><span>Tổng thanh toán</span><strong>${money(cartTotal())}</strong></div><button type="button" id="checkout-edit-cart" class="text-button">Chỉnh sửa giỏ hàng</button></aside>
   </section>`;
+  $('#checkout-edit-cart').onclick = () => {
+    openCart();
+    const modal = $('dialog.cart-drawer');
+    modal.addEventListener('close', () => renderCheckout().catch(error => showError(page, error)), { once: true });
+  };
   const form = $('#checkout-form');
   const submit = $('button[type="submit"]', form);
   let token = '';
   const resetTurnstile = mountTurnstile($('#checkout-challenge'), submit, value => { token = value; });
+  disposeCheckoutChallenge = resetTurnstile.dispose;
   form.onsubmit = async event => {
     event.preventDefault();
     submit.disabled = true;
@@ -447,7 +484,7 @@ async function paidAccess(link) {
   const data = await api('/api/access');
   document.title = 'Mô phỏng của bạn • BinGenZ';
   const content = $('#commerce-content');
-  content.innerHTML = `<section class="access-hero"><span class="commerce-kicker">Đơn ${esc(data.order_code)}</span><h1>Mô phỏng của bạn</h1><p class="intro">Bắt đầu từng mô phỏng khi bạn sẵn sàng. Đồng hồ không tạm dừng sau khi đã bắt đầu.</p></section>
+  content.innerHTML = `${purchaseSteps(3)}<section class="access-hero"><span class="commerce-kicker">Đơn ${esc(data.order_code)}</span><h1>Mô phỏng của bạn</h1><p class="intro">Bắt đầu từng mô phỏng khi bạn sẵn sàng. Đồng hồ không tạm dừng sau khi đã bắt đầu.</p></section>
     ${link ? `<div class="license-link"><strong>Lưu liên kết truy cập này</strong><p>Không có tài khoản đăng nhập. Liên kết chỉ dùng trên thiết bị đã gắn với đơn hàng.</p><p>${esc(link)}</p><button id="copy-access" type="button">Sao chép liên kết</button></div>` : '<p class="shop-note">Giữ liên kết truy cập đã được cấp. Nếu mất liên kết hoặc cần đổi thiết bị, hãy liên hệ BinGenZ và cung cấp mã đơn.</p>'}
     <div class="access-grid"></div>`;
   if (link) $('#copy-access').onclick = event => copy(link, event.currentTarget);
@@ -501,7 +538,7 @@ async function payment(id) {
   }
   document.title = 'Quét QR thanh toán • BinGenZ';
   const destination = order.payment_destination;
-  content.innerHTML = `<header class="payment-header"><span class="commerce-kicker">Thanh toán qua SePay</span><h1>Hoàn tất thanh toán</h1><p class="intro">Giữ trang này mở để hệ thống tự động xác nhận giao dịch.</p></header>
+  content.innerHTML = `${purchaseSteps(2)}<header class="payment-header"><span class="commerce-kicker">Thanh toán qua SePay</span><h1>Quét mã. Bắt đầu khám phá.</h1><p class="intro">Chuyển đúng số tiền và nội dung. Trang sẽ tự cập nhật khi ngân hàng xác nhận.</p></header>
     <div class="payment-layout">
       <section class="commerce-panel payment-qr-card">
         <div class="payment-card-heading"><div><span class="payment-eyebrow">Thanh toán ngân hàng</span><h2>Quét QR để thanh toán</h2></div><div class="payment-timer"><span>Còn lại</span><strong class="commerce-clock" id="pay-clock"></strong></div></div>
@@ -521,6 +558,8 @@ async function payment(id) {
           <div class="payment-detail-row payment-detail-emphasis"><span class="payment-field-label">Nội dung</span><strong class="payment-field-value payment-code">${esc(order.payment_code)}</strong><button class="copy-button icon-action" id="copy-code" type="button" aria-label="Sao chép nội dung chuyển khoản">${icon('copy')}</button></div>
         </div>
         ${paymentOrderSummary(order)}
+        <p class="checkout-note">Cần trợ giúp? <a href="/#contact">Liên hệ BinGenZ</a> và cung cấp mã ${esc(order.payment_code)}.</p>
+        <a class="text-button payment-back" href="/#store">${icon('arrowLeft')} Quay lại cửa hàng</a><p class="field-help">Đơn này vẫn chờ đến khi hết hạn. Quay lại giỏ không hủy giao dịch đã chuyển.</p>
       </section>
     </div>`;
   $('#copy-account').onclick = event => copy(destination.account_number, event.currentTarget);
