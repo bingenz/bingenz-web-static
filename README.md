@@ -4,7 +4,7 @@ Website và commerce Worker của `bingenz.com`, với giao diện HTML/CSS/JS t
 
 ## Giao diện cửa hàng và admin mới
 
-Bản thiết kế, ảnh xem trước, cách dùng và kết quả kiểm tra nằm trong [UI_REDESIGN.md](docs/commerce/UI_REDESIGN.md). Admin chia thành từng màn hình; công cụ metadata nằm trong **Thiết lập → Chỉnh sửa hàng loạt**.
+Cửa hàng hiển thị toàn bộ sản phẩm. Admin có hai mục Đơn hàng và Sản phẩm; nhập vị trí hoặc dùng Lên/Xuống rồi Lưu thứ tự. Xem [cách dùng và kiểm tra](docs/commerce/ADMIN_SIMPLIFICATION.md).
 
 ## Kiến trúc và trạng thái
 
@@ -71,4 +71,4 @@ Tra đơn/giao dịch bằng Gmail, ID, mã BGZ, SePay reference hoặc sản ph
 
 The `/admin` UI requires a valid Cloudflare Access JWT for the configured owner; a live Access application is still pending. New products start inactive. To add or replace paid HTML, run `npm run prepare:admin-upload -- <trusted-simulation.html>` locally. Review the simulation and select the resulting ignored `.private/admin-upload/*.json` package in the admin UI for the chosen product. The Worker verifies package hashes, writes original/delivery objects to private R2, then records a version and audit entry in D1. Uploading does not activate a draft; turn it on deliberately after checking its version and thumbnail. Do not send the package to a public asset directory or commit it. A WebP thumbnail (maximum 1 MiB) can be replaced separately from the admin UI.
 
-Products are sold directly from the `#store` section on the homepage; `/shop` and `/shop/<slug>` intentionally return 404, while checkout remains at `/checkout`. The homepage shows eight products at a time with client-side search, category filters, sorting, and incremental loading. Seller copy for the current 35 products lives in `docs/commerce/PRODUCT_METADATA.json`. Import it through **Admin → Chỉnh sửa hàng loạt → Nhập nội dung cửa hàng** after reviewing the target environment; the UI validates every slug and field, then uses the existing audited product API for each update. This is an intentional operational step and does not run automatically during deployment.
+Products are sold directly from the `#store` section on the homepage; `/shop` and `/shop/<slug>` intentionally return 404, while checkout remains at `/checkout`. The homepage shows every matching product with lazy-loaded images, client-side search, category filters and sorting. The default order is maintained in Admin → Sản phẩm using positions and Up/Down controls, then saved atomically. Seller copy in `docs/commerce/PRODUCT_METADATA.json` remains reference data; the removed metadata import UI is no longer an operational step.

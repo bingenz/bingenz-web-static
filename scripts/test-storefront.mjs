@@ -21,14 +21,13 @@ try {
     await page.locator('[data-add]').first().waitFor();
     assert.equal(await page.locator('html').getAttribute('data-theme'), 'light');
 
-    assert.equal(await page.locator('.product-card').count(), 8);
+    assert.equal(await page.locator('.product-card').count(), 35);
     const columns = await page.locator('#product-grid').evaluate(node => getComputedStyle(node).gridTemplateColumns.split(' ').length);
     assert.equal(columns, width <= 620 ? 2 : width <= 900 ? 3 : 4);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     assert.equal(await page.locator('.product-description').count(), 0);
     assert.equal(await page.locator('.product-card h3 a').count(), 0);
-    await page.locator('#catalog-more').click();
-    assert.equal(await page.locator('.product-card').count(), 16);
+    assert.equal(await page.locator('[data-detail], #catalog-more').count(), 0);
     await page.locator('#shop-search').fill('Quick Sort');
     assert.equal(await page.locator('.product-card').count(), 1);
     await page.locator('#shop-search').fill('');
@@ -70,7 +69,7 @@ try {
     await page.screenshot({ path: `test-results/storefront/${width}-dark.png`, fullPage: true });
 
     assert.deepEqual(errors, []);
-    results.push({ width, products: 35, initialProducts: 8, columns, cart: 'pass', loadMore: 'pass', checkout: 'pass', keyboard: 'pass', theme: 'pass', overflow: false, errors });
+    results.push({ width, products: 35, initialProducts: 35, columns, cart: 'pass', allProducts: 'pass', checkout: 'pass', keyboard: 'pass', theme: 'pass', overflow: false, errors });
     await page.close();
   }
 } finally {

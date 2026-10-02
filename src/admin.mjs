@@ -1,5 +1,6 @@
 import { HttpError, json, jsonBody, objectShape, requireValue, iso, hash, randomToken } from './security.mjs';
 import { stmt } from './db.mjs';
+import { orderSnapshotSql, reorderProducts } from './product-order.mjs';
 
 const editable=['slug','title','description','category','price_vnd','duration_seconds','activation_days','active','archived','display_order'];
 const integer=(v,min,max)=>Number.isInteger(v)&&v>=min&&v<=max;
@@ -63,21 +64,11 @@ export async function adminRoute(request,env,actor,path){
  }
  const exportRoute=path.match(/^\/admin\/api\/export\/(orders|payments|products)$/);
  if(exportRoute&&method==='GET')return csvExport(env,exportRoute[1]);
- if(path==='/admin/api/dashboard'&&method==='GET'){
-  const [revenue,orders,payments,entitlements,recent,best]=await env.DB.batch([
-   stmt(env.DB,`SELECT coalesce(sum(CASE WHEN paid_at>=strftime('%Y-%m-%dT%H:%M:%fZ','now','-1 day') THEN total_vnd END),0) today_vnd,coalesce(sum(CASE WHEN paid_at>=strftime('%Y-%m-%dT%H:%M:%fZ','now','-7 days') THEN total_vnd END),0) week_vnd,coalesce(sum(CASE WHEN paid_at>=strftime('%Y-%m-%dT%H:%M:%fZ','now','-30 days') THEN total_vnd END),0) month_vnd FROM orders WHERE status='paid'`),
-   stmt(env.DB,`SELECT sum(CASE WHEN status='paid' THEN 1 ELSE 0 END) paid,sum(CASE WHEN status='pending' AND expires_at>strftime('%Y-%m-%dT%H:%M:%fZ','now') THEN 1 ELSE 0 END) pending,sum(CASE WHEN status='pending' AND expires_at<=strftime('%Y-%m-%dT%H:%M:%fZ','now') THEN 1 ELSE 0 END) expired_pending FROM orders`),
-   stmt(env.DB,`SELECT count(*) n FROM payments WHERE status NOT IN ('matched','reconciled')`),
-   stmt(env.DB,`SELECT count(*) n FROM entitlements WHERE status='active' AND expires_at>strftime('%Y-%m-%dT%H:%M:%fZ','now')`),
-   stmt(env.DB,`SELECT id,gmail,total_vnd,paid_at FROM orders WHERE status='paid' ORDER BY paid_at DESC LIMIT 10`),
-   stmt(env.DB,`SELECT i.product_id,i.title,count(*) sold FROM order_items i JOIN orders o ON o.id=i.order_id WHERE o.status='paid' GROUP BY i.product_id ORDER BY sold DESC LIMIT 10`)
-  ]);
-  return json({revenue:revenue.results[0],orders:orders.results[0],manual_review_payments:payments.results[0].n,active_entitlements:entitlements.results[0].n,recent_orders:recent.results,best_sellers:best.results});
- }
  if(path==='/admin/api/products'&&method==='GET'){
-  const products=await env.DB.prepare(`SELECT ${productFields} FROM products ORDER BY display_order,title LIMIT 250`).all();
-  return json({products:products.results});
+  const [products,snapshot]=await env.DB.batch([stmt(env.DB,`SELECT ${productFields},CASE WHEN source_key IS NULL AND current_version_id IS NULL AND active=0 AND NOT EXISTS(SELECT 1 FROM product_versions v WHERE v.product_id=products.id) AND NOT EXISTS(SELECT 1 FROM order_items i WHERE i.product_id=products.id) THEN 1 ELSE 0 END can_delete FROM products ORDER BY archived,display_order,title,id`),stmt(env.DB,orderSnapshotSql)]);
+  return json({products:products.results,snapshot:snapshot.results[0].snapshot});
  }
+ if(path==='/admin/api/products/reorder'&&method==='PATCH')return reorderProducts(request,env,actor);
  if(path==='/admin/api/products'&&method==='POST'){
   const input=await jsonBody(request,8192);objectShape(input,['slug','title','description','category','price_vnd','duration_seconds','activation_days','display_order']);
   requireValue(typeof input.slug==='string'&&typeof input.title==='string',400,'invalid_product');validateProduct(input);
@@ -86,28 +77,11 @@ export async function adminRoute(request,env,actor,path){
   const now=iso(),id='prod_'+crypto.randomUUID().replaceAll('-','');
   const created={id,slug:input.slug,title:input.title.trim(),description:input.description??'',category:input.category??'',price_vnd:input.price_vnd??9000,duration_seconds:input.duration_seconds??900,activation_days:input.activation_days??null,active:0,archived:0,display_order:input.display_order??0,thumbnail:'',current_version_id:null,updated_at:now};
   await env.DB.batch([
-   stmt(env.DB,`INSERT INTO products(id,slug,title,description,category,price_vnd,duration_seconds,activation_days,active,archived,display_order,thumbnail,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,'',?,?)`,id,created.slug,created.title,created.description,created.category,created.price_vnd,created.duration_seconds,created.activation_days,created.display_order,now,now),
-   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) VALUES (?,?,?,?,?,?,?)`,crypto.randomUUID(),actor,'product.create','product',id,now,JSON.stringify({after:created}))
+   stmt(env.DB,`INSERT INTO products(id,slug,title,description,category,price_vnd,duration_seconds,activation_days,active,archived,display_order,thumbnail,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,coalesce(?,(SELECT coalesce(max(display_order),0)+1 FROM products WHERE archived=0)),'',?,?)`,id,created.slug,created.title,created.description,created.category,created.price_vnd,created.duration_seconds,created.activation_days,input.display_order??null,now,now),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) SELECT ?,?,'product.create','product',?,?,json_set(?, '$.after.display_order', display_order) FROM products WHERE id=?`,crypto.randomUUID(),actor,id,now,JSON.stringify({after:created}),id)
   ]);
+  created.display_order=(await env.DB.prepare('SELECT display_order FROM products WHERE id=?').bind(id).first()).display_order;
   return json({product:created},201);
- }
- if(path==='/admin/api/products/bulk'&&method==='PATCH'){
-  const input=await jsonBody(request,8192);objectShape(input,['ids','changes']);
-  requireValue(Array.isArray(input.ids)&&input.ids.length>=1&&input.ids.length<=25&&new Set(input.ids).size===input.ids.length&&input.ids.every(id=>typeof id==='string'&&/^[a-z0-9_-]{1,64}$/.test(id)),400,'invalid_selection');
-  objectShape(input.changes,['active','price_vnd','duration_seconds','activation_days','display_order','category']);
-  const fields=Object.keys(input.changes);requireValue(fields.length>=1);validateProduct(input.changes);
-  const placeholders=input.ids.map(()=>'?').join(',');
-  const rows=await env.DB.prepare(`SELECT ${productFields} FROM products WHERE id IN (${placeholders})`).bind(...input.ids).all();
-  requireValue(rows.results.length===input.ids.length,404,'not_found');
-  const byId=new Map(rows.results.map(row=>[row.id,row])),now=iso(),batch=[];
-  for(const id of input.ids){
-   const before=byId.get(id),after={...before,...input.changes,updated_at:now};
-   batch.push(stmt(env.DB,`UPDATE products SET ${fields.map(k=>k+'=?').join(',')},updated_at=? WHERE id=? AND updated_at=?${input.changes.active===1?' AND current_version_id IS NOT NULL':''}`,...fields.map(k=>input.changes[k]),now,id,before.updated_at));
-   batch.push(stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) SELECT ?,?,'product.bulk_update','product',?,?,? WHERE changes()=1`,crypto.randomUUID(),actor,id,now,JSON.stringify({before,after})));
-  }
-  const result=await env.DB.batch(batch);
-  const updated=input.ids.filter((_,i)=>result[2*i].meta.changes===1);
-  return json({updated,skipped:input.ids.filter(id=>!updated.includes(id))});
  }
  if(path==='/admin/api/orders'&&method==='GET'){
   const q=(url.searchParams.get('q')||'').trim();requireValue(q.length<=254);
@@ -358,14 +332,17 @@ export async function adminRoute(request,env,actor,path){
   validateProduct(input);
   const before=await env.DB.prepare(`SELECT ${productFields} FROM products WHERE id=?`).bind(id).first();
   if(!before)throw new HttpError(404,'not_found');
+  if(input.archived===1)input.active=0;
+  const restoring=before.archived===1&&input.archived===0;
+  if(restoring)input.active=0;
+  requireValue((input.active??before.active)!==1||!!before.current_version_id,400,'product_unavailable');
   const updated=iso(),fields=Object.keys(input);
-  const after={...before,...input,updated_at:updated};
   // D1 batch is one transaction: a successful edit cannot exist without its audit row.
-  await env.DB.batch([
-   stmt(env.DB,`UPDATE products SET ${fields.map(k=>k+'=?').join(',')},updated_at=? WHERE id=?`,...fields.map(k=>input[k]),updated,id),
-   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) VALUES (?,?,?,?,?,?,?)`,crypto.randomUUID(),actor,'product.update','product',id,updated,JSON.stringify({before,after}))
+  const result=await env.DB.batch([
+   stmt(env.DB,`UPDATE products SET ${fields.map(k=>k+'=?').join(',')}${restoring?',display_order=(SELECT coalesce(max(display_order),0)+1 FROM products WHERE archived=0)':''},updated_at=? WHERE id=? RETURNING ${productFields}`,...fields.map(k=>input[k]),updated,id),
+   stmt(env.DB,`INSERT INTO admin_audit_logs(id,actor,action,object_type,object_id,created_at,metadata) SELECT ?,?,'product.update','product',?,?,json_set(?,'$.after.display_order',display_order) FROM products WHERE id=?`,crypto.randomUUID(),actor,id,updated,JSON.stringify({before,after:{...before,...input,updated_at:updated}}),id)
   ]);
-  return json({product:after});
+  return json({product:result[0].results[0]});
  }
  throw new HttpError(404,'not_found');
 }

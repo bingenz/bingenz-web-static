@@ -211,12 +211,11 @@ function productCard(product) {
   return `<article class="product-card">
     <div class="product-media">
       <img src="${esc(product.thumbnail)}" alt="Mô phỏng ${esc(product.title)}" loading="lazy" width="600" height="375">
-      <button class="product-inspect" type="button" data-detail="${esc(product.id)}" aria-label="Xem chi tiết ${esc(product.title)}">Chi tiết ${icon('arrowRight')}</button>
     </div>
     <div class="product-body">
       <span class="product-category">${esc(productCategory(product))}</span>
       <h3>${esc(product.title)}</h3>
-      <p class="product-runtime">${Math.round(product.duration_seconds / 60)} phút trải nghiệm</p>
+      <p class="product-runtime">${Math.round(product.duration_seconds / 60)} phút · Bắt đầu trong ${product.activation_days || 7} ngày</p>
       <div class="product-price">${money(product.price_vnd)}</div>
       <div class="product-actions">
         <button class="gold" type="button" data-add="${esc(product.id)}" aria-label="Thêm ${esc(product.title)} vào giỏ">Thêm vào giỏ</button>
@@ -226,9 +225,6 @@ function productCard(product) {
 }
 
 function bindAddButtons(root = document) {
-  $$('[data-detail]', root).forEach(button => {
-    button.onclick = () => openProduct(button.dataset.detail);
-  });
   $$('[data-add]', root).forEach(button => {
     button.onclick = () => {
       const product = products.find(item => item.id === button.dataset.add);
@@ -239,20 +235,6 @@ function bindAddButtons(root = document) {
     };
   });
   saveCart();
-}
-
-function openProduct(id) {
-  const product = products.find(item => item.id === id);
-  if (!product) return;
-  const modal = createDialog(product.title, `<div class="product-detail-content">
-    <img src="${esc(product.thumbnail)}" alt="Mô phỏng ${esc(product.title)}">
-    <span class="product-category">${esc(productCategory(product))}</span>
-    <p class="detail-description">${esc(product.description || 'Khám phá cách hoạt động qua mô phỏng tương tác trực tiếp trên trình duyệt.')}</p>
-    <div class="detail-facts"><span><strong>${Math.round(product.duration_seconds / 60)} phút</strong>Thời gian sử dụng</span><span><strong>${product.activation_days || 7} ngày</strong>Hạn bắt đầu sau thanh toán</span></div>
-    <p class="shop-note">Thời gian tính liên tục từ lúc bấm Bắt đầu, kể cả khi đóng tab. Mỗi mô phỏng bắt đầu riêng.</p>
-    <div class="detail-purchase"><strong>${money(product.price_vnd)}</strong><button class="gold" type="button" data-add="${esc(product.id)}">Thêm vào giỏ</button></div>
-  </div>`, 'product-detail-dialog');
-  bindAddButtons(modal);
 }
 
 function purchaseSteps(current) {
@@ -301,7 +283,7 @@ function openCart() {
       <button class="cart-remove icon-action" type="button" data-remove="${esc(product.id)}" aria-label="Xóa ${esc(product.title)} khỏi giỏ">${icon('trash')}</button>
     </article>`).join('');
     summary.innerHTML = `<div class="cart-total"><span>Tổng cộng · ${items.length} mô phỏng</span><span>${money(cartTotal())}</span></div>
-      <p>Thanh toán QR · Không cần tài khoản. Hạn bắt đầu và thời lượng được ghi riêng trong chi tiết từng sản phẩm.</p>
+      <p>Thanh toán QR · Không cần tài khoản. Hạn bắt đầu và thời lượng được ghi trên từng thẻ sản phẩm.</p>
       <div class="cart-summary-actions"><button class="text-button" id="clear-cart" type="button">Xóa giỏ</button><a class="shop-button cart-checkout-action" href="/checkout"><span>Tiếp tục thanh toán</span>${icon('arrowRight')}</a></div>`;
     $$('[data-remove]', modal).forEach(button => {
       button.onclick = () => {
@@ -348,11 +330,9 @@ async function renderHomeCatalog() {
       </div>
       <div class="catalog-meta"><span class="catalog-result-count" id="catalog-count"></span></div>
       <div class="product-grid" id="product-grid"></div>
-      <div class="catalog-more"><button class="shop-button" id="catalog-more" type="button">Xem thêm sản phẩm ${icon('arrowRight')}</button></div>
       <p class="store-help">Chưa biết chọn mô phỏng nào? <a href="/#contact">Liên hệ BinGenZ để được tư vấn</a></p>
     </section>`;
   let category = '';
-  let visibleCount = 8;
   const paint = () => {
     const query = $('#shop-search').value.trim().toLocaleLowerCase('vi');
     const sort = $('#shop-sort').value;
@@ -363,21 +343,18 @@ async function renderHomeCatalog() {
     if (sort === 'name') list = [...list].sort((a, b) => a.title.localeCompare(b.title, 'vi'));
     if (sort === 'price-asc') list = [...list].sort((a, b) => a.price_vnd - b.price_vnd || a.title.localeCompare(b.title, 'vi'));
     if (sort === 'price-desc') list = [...list].sort((a, b) => b.price_vnd - a.price_vnd || a.title.localeCompare(b.title, 'vi'));
-    const visible = list.slice(0, visibleCount);
-    $('#catalog-count').textContent = list.length ? `Đang hiển thị ${visible.length}/${list.length} sản phẩm` : '0 sản phẩm';
+    const visible = list;
+    $('#catalog-count').textContent = list.length ? `${list.length} sản phẩm` : '0 sản phẩm';
     $('#product-grid').innerHTML = visible.length ? visible.map(product => productCard(product)).join('') : '<div class="catalog-empty"><strong>Không tìm thấy sản phẩm phù hợp.</strong><p>Thử từ khóa hoặc danh mục khác.</p></div>';
-    $('#catalog-more').hidden = visible.length >= list.length;
     bindAddButtons($('#product-grid'));
   };
-  const resetAndPaint = () => { visibleCount = 8; paint(); };
-  $('#shop-search').oninput = resetAndPaint;
-  $('#shop-sort').onchange = resetAndPaint;
-  $('#catalog-more').onclick = () => { visibleCount += 8; paint(); };
+  $('#shop-search').oninput = paint;
+  $('#shop-sort').onchange = paint;
   $$('[data-category]', store).forEach(button => {
     button.onclick = () => {
       category = button.dataset.category;
       $$('[data-category]', store).forEach(item => { item.classList.toggle('is-active', item === button); item.setAttribute('aria-pressed', String(item === button)); });
-      resetAndPaint();
+      paint();
     };
   });
   paint();

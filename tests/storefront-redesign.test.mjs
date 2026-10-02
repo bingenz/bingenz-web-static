@@ -16,7 +16,7 @@ const products = prepared.map((p) => ({
   duration_seconds: 900,
   activation_days: 7,
 }));
-const release = "20261001-1";
+const release = "20261002-1";
 
 async function storefront(page) {
   await page.route("**/*", async (route) => {
@@ -52,18 +52,18 @@ async function storefront(page) {
   });
 }
 
-test("redesigned storefront keeps two mobile columns, details, cart edits and accurate checkout totals", async () => {
+test("redesigned storefront keeps two mobile columns, all products, cart edits and accurate checkout totals", async () => {
   const browser = await chromium.launch();
   await mkdir("test-results/redesign", { recursive: true });
   try {
-    for (const width of [1440, 390, 360]) {
+    for (const width of [1440, 430, 390, 360]) {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
       const errors = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await storefront(page);
       await page.goto("http://localhost/");
       await page.locator("[data-add]").first().waitFor();
-      assert.equal(await page.locator(".product-card").count(), 8);
+      assert.equal(await page.locator(".product-card").count(), products.length);
       assert.equal(
         await page
           .locator("#product-grid")
@@ -90,11 +90,12 @@ test("redesigned storefront keeps two mobile columns, details, cart edits and ac
             path: `test-results/redesign/store-${width}-${theme}.png`,
             style: ".topbar, .bottom-bar { visibility: hidden; }",
           });
+        await page.evaluate(()=>scrollTo(0,document.querySelector('#store').offsetTop));
+        await page.screenshot({path:`test-results/redesign/store-viewport-${width}-${theme}.png`});
       }
-      await page.locator("[data-detail]").first().click();
-      assert.match(await page.locator(".detail-facts").innerText(), /15 phút/);
-      await page.locator("dialog [data-add]").click();
-      await page.keyboard.press("Escape");
+      assert.equal(await page.locator("[data-detail], #catalog-more").count(), 0);
+      assert.match(await page.locator(".product-runtime").first().innerText(), /15 phút.*7 ngày/);
+      await page.locator("[data-add]").first().click();
       await page.locator("[data-add]").nth(1).click();
       await page.locator(".floating-cart-button").click();
       assert.equal(await page.locator(".cart-line").count(), 2);
@@ -142,7 +143,7 @@ test("a returning browser switches every public and admin asset to the new relea
     await storefront(page);
     const old = (await readFile("public/index.html", "utf8")).replaceAll(
       release,
-      "20260925-2",
+      "20261001-1",
     );
     await page.route(
       "http://localhost/",
@@ -155,7 +156,7 @@ test("a returning browser switches every public and admin asset to the new relea
       await page
         .locator('script[src*="commerce.mjs"]')
         .getAttribute("src")
-        .then((src) => src.includes("20260925-2")),
+        .then((src) => src.includes("20261001-1")),
     );
     await page.reload();
     await page.locator("[data-add]").first().waitFor();
@@ -166,7 +167,7 @@ test("a returning browser switches every public and admin asset to the new relea
       "admin.html",
     ]) {
       const html = await readFile("public/" + file, "utf8");
-      assert.doesNotMatch(html, /20260925-2/);
+      assert.doesNotMatch(html, /20261001-1/);
       const refs = [
         ...html.matchAll(
           /(?:src|href)="\/?(?:styles\.css|commerce\.css|app\.js|commerce\.mjs|admin\.css|admin\.mjs)\?v=([^"]+)"/g,
@@ -177,7 +178,7 @@ test("a returning browser switches every public and admin asset to the new relea
     }
     assert.match(
       await page.locator('script[src*="commerce.mjs"]').getAttribute("src"),
-      /20261001-1/,
+      /20261002-1/,
     );
   } finally {
     await browser.close();

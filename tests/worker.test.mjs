@@ -8,6 +8,7 @@ import { unstable_splitSqlQuery } from 'wrangler';
 import { chromium } from 'playwright';
 import { transform } from '../scripts/prepare-products.mjs';
 import { runtime } from '../src/access.mjs';
+import { reorderProducts } from '../src/product-order.mjs';
 import { generateKeyPair, exportJWK, SignJWT } from 'jose';
 let mf,db,adminKey,adminJwk;
 const origin='https://shop.test',secret='test-only-webhook-signing-secret-for-local-fixtures';
@@ -81,13 +82,14 @@ test('admin requires a signed exact-identity Access JWT and audits product edits
   assert.equal((await mf.dispatchFetch(url,{headers:{'Cf-Access-Jwt-Assertion':token}})).status,403);
  }
  const token=await adminToken(),headers={'Cf-Access-Jwt-Assertion':token};
- const dashboard=await mf.dispatchFetch(origin+'/admin/api/dashboard',{headers});assert.equal(dashboard.status,200);
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/dashboard',{headers})).status,404);
  const page=await mf.dispatchFetch(origin+'/admin',{headers});assert.equal(page.status,200);assert.match(await page.text(),/Quản lý cửa hàng/);
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/products',{headers})).status,200);
  const draft={method:'POST',headers:{...headers,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({title:'Draft',slug:'new-draft',price_vnd:9000})};
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/products',{...draft,headers:{...draft.headers,Origin:'https://evil.test'}})).status,403);
  const created=await mf.dispatchFetch(origin+'/admin/api/products',draft);assert.equal(created.status,201);
  const draftBody=await created.json();assert.equal(draftBody.product.active,0);assert.equal(draftBody.product.current_version_id,null);
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/'+draftBody.product.id,{method:'PATCH',headers:{...headers,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({active:1})})).status,400);
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/products',draft)).status,409);
  const emptyDraft=await mf.dispatchFetch(origin+'/admin/api/products',{...draft,body:JSON.stringify({title:'Disposable draft',slug:'disposable-draft',price_vnd:9000})});assert.equal(emptyDraft.status,201);
  const emptyId=(await emptyDraft.json()).product.id;
@@ -98,13 +100,9 @@ test('admin requires a signed exact-identity Access JWT and audits product edits
  assert.equal((await db.prepare('SELECT count(*) n FROM admin_audit_logs WHERE action=? AND object_id=?').bind('product.create',draftBody.product.id).first()).n,1);
  assert.equal((await mf.dispatchFetch(origin+'/api/catalog')).status,200);
  assert.ok(!(await (await mf.dispatchFetch(origin+'/api/catalog')).text()).includes('new-draft'));
- const bulk={method:'PATCH',headers:{...headers,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({ids:['p','q',draftBody.product.id],changes:{price_vnd:12000}})};
- assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/bulk',{...bulk,body:JSON.stringify({ids:['p','p'],changes:{price_vnd:1}})})).status,400);
- const bulkResult=await (await mf.dispatchFetch(origin+'/admin/api/products/bulk',bulk)).json();assert.deepEqual(bulkResult.updated,['p','q',draftBody.product.id]);
- assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='product.bulk_update'").first()).n,3);
- const noVersion=await (await mf.dispatchFetch(origin+'/admin/api/products/bulk',{...bulk,body:JSON.stringify({ids:[draftBody.product.id],changes:{active:1}})})).json();assert.deepEqual(noVersion.skipped,[draftBody.product.id]);
- assert.equal((await db.prepare('SELECT active FROM products WHERE id=?').bind(draftBody.product.id).first()).active,0);
- assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/bulk',{...bulk,body:JSON.stringify({ids:['p','q',draftBody.product.id],changes:{price_vnd:9000}})})).status,200);
+ const editProduct={method:'PATCH',headers:{...headers,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({price_vnd:12000})};
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/p',editProduct)).status,200);
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/bulk',editProduct)).status,404);
  const original=Buffer.from('<!doctype html><html><body><!--development--><h1>Private test</h1><script>const value = 2 + 2; document.body.dataset.value = value;</script></body></html>');
  const delivery=Buffer.from(await transform(original.toString('utf8')));
  assert.ok(!delivery.toString().includes('development'));
@@ -161,7 +159,7 @@ test('admin requires a signed exact-identity Access JWT and audits product edits
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/sim_test/versions',{headers})).status,200);
  assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/sim_test/versions',{...rollback,body:JSON.stringify({version_id:'ver_test'})})).status,200);
 });
-test('admin dashboard and product editor render in a browser with signed Access identity',async()=>{
+test('admin orders and product editor render in a browser with signed Access identity',async()=>{
  const browser=await chromium.launch();
  try{
   const token=await adminToken(),page=await browser.newPage({extraHTTPHeaders:{'Cf-Access-Jwt-Assertion':token},viewport:{width:390,height:844}}),errors=[];
@@ -169,9 +167,10 @@ test('admin dashboard and product editor render in a browser with signed Access 
   page.on('dialog',dialog=>dialog.accept());
   const local=(await mf.ready).origin;
   await page.goto(local+'/admin');await page.locator('#product-list option').first().waitFor({state:'attached'});
-  assert.ok(await page.locator('#metrics article').count()>=8);
+  assert.equal(await page.locator('.admin-nav a').count(),2);
   assert.equal(await page.locator('#settings-form input[name=activation_days]').inputValue(),'7');
-  await page.locator('.admin-nav a[href="#tools-section"]').click();
+  await page.locator('.admin-nav a[href="#products-section"]').click();
+  await page.locator('#admin-settings').evaluate(node=>node.open=true);
   await page.locator('#settings-form input[name=activation_days]').fill('8');await page.locator('#settings-form button').click();
   await page.getByText('Đã lưu hạn kích hoạt mặc định cho đơn mới và ghi nhật ký.').waitFor();
   assert.equal((await db.prepare("SELECT value FROM settings WHERE key='activation_days'").first()).value,'8');
@@ -186,14 +185,6 @@ test('admin dashboard and product editor render in a browser with signed Access 
   await page.locator('#preview-version').click();await page.locator('#preview-dialog').waitFor({state:'visible'});
   assert.equal(await page.frameLocator('#preview-frame').locator('h1').textContent(),'Private test');
   await page.locator('#close-preview').click();await page.locator('#preview-dialog').waitFor({state:'hidden'});await page.waitForFunction(()=>!document.querySelector('#preview-frame').hasAttribute('src'));
-  const metadata=[{slug:'p',category:'Thuật toán kiểm thử',description:'Mô tả sản phẩm được nhập qua công cụ metadata có kiểm tra.',display_order:777}];
-  await page.locator('.admin-nav a[href="#tools-section"]').click();
-  await page.locator('#metadata-import-form input[type=file]').setInputFiles({name:'metadata.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(metadata))});
-  await page.locator('#metadata-import-form button').click();
-  await page.getByText('Đã cập nhật và ghi audit cho 1 sản phẩm.').waitFor();
-  const imported=await db.prepare('SELECT category,description,display_order FROM products WHERE id=?').bind('p').first();
-  assert.deepEqual(imported,{category:metadata[0].category,description:metadata[0].description,display_order:metadata[0].display_order});
-  assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE object_id='p' AND action='product.update'").first()).n>=2,true);
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
@@ -609,6 +600,7 @@ test('admin browser searches a paid order and records audited support actions',a
   await page.locator('#orders button[data-order]').first().click();
   await page.locator('#order-detail').waitFor({state:'visible'});
   assert.match(await page.locator('#order-summary').innerText(),/adminbrowserfixture@gmail\.com/);
+  await page.locator('#order-support').evaluate(node=>node.open=true);
   await page.locator('#support-note-form textarea').fill('Verified browser support note.');
   await page.locator('#support-note-form button').click();
   await page.getByText('Verified browser support note.').waitFor();
@@ -617,7 +609,7 @@ test('admin browser searches a paid order and records audited support actions',a
   await page.locator('#entitlement-form textarea').fill('Customer requested extra activation day.');
   await page.locator('#entitlement-form button').click();
   await page.getByText('Đã cập nhật quyền và ghi nhật ký.').waitFor();
-  await page.locator('#order-detail > .admin-disclosure > summary').click();
+  await page.locator('#order-detail > .admin-disclosure:has(#refund-request-form) > summary').click();
   await page.locator('#refund-request-form input[name=amount_vnd]').fill('1000');
   await page.locator('#refund-request-form textarea').fill('Customer requested partial refund.');
   await page.locator('#refund-request-form button').click();
@@ -642,3 +634,58 @@ test('admin default activation days is validated, audited and snapshotted only f
  assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='settings.activation_days'").first()).n,auditBefore+2);
 });
 
+test('product ordering validates the complete list, rejects conflicts and commits one audit atomically',async()=>{
+ const headers={'Cf-Access-Jwt-Assertion':await adminToken(),Origin:origin,'Content-Type':'application/json'};
+ const list=()=>mf.dispatchFetch(origin+'/admin/api/products',{headers}).then(r=>r.json());
+ const set=body=>mf.dispatchFetch(origin+'/admin/api/products/reorder',{method:'PATCH',headers,body:JSON.stringify(body)});
+ const initial=await list(),ids=initial.products.filter(p=>!p.archived).map(p=>p.id).reverse();
+ const before=await db.prepare('SELECT id,display_order,updated_at FROM products ORDER BY id').all();
+ for(const invalid of [[...ids,ids[0]],ids.slice(1),[...ids.slice(1),'missing']])assert.equal((await set({ids:invalid,snapshot:initial.snapshot})).status,400);
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/reorder',{method:'PATCH',headers:{...headers,Origin:'https://evil.test'},body:JSON.stringify({ids,snapshot:initial.snapshot})})).status,403);
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/reorder',{method:'PATCH',body:'{}'})).status,403);
+ assert.deepEqual((await db.prepare('SELECT id,display_order,updated_at FROM products ORDER BY id').all()).results,before.results);
+ const auditBefore=(await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='product.reorder'").first()).n;
+ const parallel=await Promise.all([set({ids,snapshot:initial.snapshot}),set({ids,snapshot:initial.snapshot})]);
+ assert.deepEqual(parallel.map(r=>r.status).sort(),[200,409]);
+ const saved=await list();
+ assert.deepEqual(saved.products.filter(p=>!p.archived).map(p=>p.id),ids);
+ assert.deepEqual(saved.products.filter(p=>!p.archived).map(p=>p.display_order),ids.map((_,i)=>i+1));
+ assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='product.reorder'").first()).n,auditBefore+1);
+ const catalog=(await (await mf.dispatchFetch(origin+'/api/catalog')).json()).products;
+ assert.deepEqual(catalog.map(p=>p.id),saved.products.filter(p=>p.active&&!p.archived&&p.current_version_id).map(p=>p.id));
+ // Force a real edit between validation and UPDATE to exercise the SQL guard.
+ const target=ids[0];
+ const guardedDb={prepare:sql=>db.prepare(sql),batch:async statements=>{
+  await db.prepare("UPDATE products SET updated_at='concurrent-edit' WHERE id=?").bind(target).run();
+  return db.batch(statements);
+ }};
+ await assert.rejects(reorderProducts(new Request(origin+'/admin/api/products/reorder',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:[...ids].reverse(),snapshot:saved.snapshot})}),{DB:guardedDb},'fixture'),e=>e.code==='product_changed');
+ assert.deepEqual((await list()).products.filter(p=>!p.archived).map(p=>p.id),ids);
+ assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='product.reorder'").first()).n,auditBefore+1);
+ // An audit failure must roll back the UPDATE as well.
+ const fresh=await list();
+ await db.exec("CREATE TRIGGER reject_order_audit BEFORE INSERT ON admin_audit_logs WHEN NEW.action='product.reorder' BEGIN SELECT RAISE(ABORT,'fixture audit failure'); END;");
+ try {
+  assert.equal((await set({ids:[...ids].reverse(),snapshot:fresh.snapshot})).status,503);
+  assert.equal((await list()).snapshot,fresh.snapshot);
+ } finally { await db.exec('DROP TRIGGER reject_order_audit;'); }
+});
+
+test('archive preserves paid entitlements and restoring or creating products places them last',async()=>{
+ const headers={'Cf-Access-Jwt-Assertion':await adminToken(),Origin:origin,'Content-Type':'application/json'};
+ const patch=body=>mf.dispatchFetch(origin+'/admin/api/products/p',{method:'PATCH',headers,body:JSON.stringify(body)});
+ const itemsBefore=await db.prepare("SELECT e.id,i.version_id,e.status FROM entitlements e JOIN order_items i ON i.id=e.order_item_id WHERE i.product_id='p' ORDER BY e.id").all();
+ assert.ok(itemsBefore.results.length);
+ assert.equal((await patch({archived:1})).status,200);
+ assert.equal((await db.prepare("SELECT active FROM products WHERE id='p'").first()).active,0);
+ assert.ok(!(await (await mf.dispatchFetch(origin+'/api/catalog')).json()).products.some(p=>p.id==='p'));
+ assert.deepEqual((await db.prepare("SELECT e.id,i.version_id,e.status FROM entitlements e JOIN order_items i ON i.id=e.order_item_id WHERE i.product_id='p' ORDER BY e.id").all()).results,itemsBefore.results);
+ assert.equal((await mf.dispatchFetch(origin+'/admin/api/products/p',{method:'DELETE',headers})).status,409);
+ const max=(await db.prepare('SELECT max(display_order) n FROM products WHERE archived=0').first()).n;
+ const restored=await patch({archived:0,active:1});assert.equal(restored.status,200);
+ const p=(await restored.json()).product;assert.equal(p.active,0);assert.equal(p.display_order,max+1);
+ const created=await mf.dispatchFetch(origin+'/admin/api/products',{method:'POST',headers,body:JSON.stringify({title:'Last product',slug:'last-product'})});
+ assert.equal(created.status,201);assert.equal((await created.json()).product.display_order,p.display_order+1);
+ const log=await db.prepare("SELECT metadata FROM admin_audit_logs WHERE action='product.create' AND object_id=(SELECT id FROM products WHERE slug='last-product')").first();
+ assert.equal(JSON.parse(log.metadata).after.display_order,p.display_order+1);
+});

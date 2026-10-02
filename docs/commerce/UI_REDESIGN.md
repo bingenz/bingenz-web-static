@@ -1,6 +1,6 @@
 # Giao diện cửa hàng và quản trị mới — 01/10/2026
 
-Bản thiết kế đã triển khai trên nhánh `codex/storefront-admin-redesign`, dựa trên commit `83c4684` của `master`. Chưa triển khai lên production.
+Tài liệu và ảnh dưới đây ghi lại bản thiết kế ngày 01/10/2026. Giao diện hiện tại được cập nhật theo [ADMIN_SIMPLIFICATION.md](ADMIN_SIMPLIFICATION.md): hiện tất cả sản phẩm, bỏ popup chi tiết và chỉ giữ hai mục admin. Các bước có Tổng quan, Đối soát riêng hoặc công cụ hàng loạt bên dưới là lịch sử, không còn áp dụng.
 
 ## Định hướng
 

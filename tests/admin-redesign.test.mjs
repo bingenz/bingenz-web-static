@@ -14,7 +14,7 @@ test("admin navigation, product search/filter, minute conversion and dirty selec
   const browser = await chromium.launch();
   await mkdir("test-results/redesign", { recursive: true });
   try {
-    for (const width of [1440, 390, 360]) {
+    for (const width of [1440, 430, 390, 360]) {
       const products = prepared.map((p, i) => ({
         ...p,
         ...metadata.find((m) => m.slug === p.slug),
@@ -47,7 +47,7 @@ test("admin navigation, product search/filter, minute conversion and dirty selec
               active_entitlements: 6,
               best_sellers: [{ title: "Quick Sort", sold: 85 }],
             };
-          else if (path === "products") json = { products };
+          else if (path === "products") json = { products, snapshot:JSON.stringify(products.filter(p=>!p.archived).map(p=>({id:p.id,display_order:p.display_order}))) };
           else if (path === "orders") json = { orders: [] };
           else if (path === "payments") json = { payments: [] };
           else if (path === "settings") json = { activation_days: 7 };
@@ -64,6 +64,12 @@ test("admin navigation, product search/filter, minute conversion and dirty selec
                 },
               ],
             };
+          } else if (path === "products/reorder") {
+            const body=route.request().postDataJSON();
+            mutations.push(body);
+            for(const [i,id] of body.ids.entries())products.find(p=>p.id===id).display_order=i+1;
+            products.sort((a,b)=>a.archived-b.archived||a.display_order-b.display_order);
+            json={updated:body.ids};
           } else if (route.request().method() === "PATCH") {
             const changes = route.request().postDataJSON(),
               p = products.find((p) => path === "products/" + p.id);
@@ -94,16 +100,17 @@ test("admin navigation, product search/filter, minute conversion and dirty selec
           document.querySelector("#message").textContent === "Đã tải dữ liệu.",
       );
       assert.equal(await page.locator("[data-admin-panel]:visible").count(), 1);
-      assert.equal(await page.locator("#overview").isVisible(), true);
+      assert.equal(await page.locator("#orders-section").isVisible(), true);
+      assert.equal(await page.locator(".admin-nav a").count(), 2);
       await page.screenshot({
-        path: `test-results/redesign/admin-overview-${width}.png`,
+        path: `test-results/redesign/admin-orders-${width}.png`,
         fullPage: true,
       });
       await page.locator('.admin-nav a[href="#products-section"]').click();
       assert.equal(await page.locator("[data-admin-panel]:visible").count(), 1);
       await page.locator("#admin-product-search").fill("Quick Sort");
-      assert.equal(await page.locator(".admin-product-card").count(), 1);
-      await page.locator(".admin-product-card").click();
+      assert.equal(await page.locator("#admin-product-rows tr[data-product-id]").count(), 1);
+      await page.locator("#admin-product-rows [data-action=edit]").click();
       await page.locator("#product-form [name=duration_minutes]").fill("20");
       await page.locator("#product-form button").click();
       await page.waitForFunction(
@@ -114,7 +121,7 @@ test("admin navigation, product search/filter, minute conversion and dirty selec
       assert.equal(mutations.at(-1).duration_seconds, 1200);
       await page.locator("#admin-product-search").fill("");
       await page.locator("#admin-product-filter").selectOption("draft");
-      assert.equal(await page.locator(".admin-product-card").count(), 3);
+      assert.equal(await page.locator("#admin-product-rows tr[data-product-id]").count(), 3);
       await page.locator("#admin-product-filter").selectOption("all");
       const selected = await page.locator("#product-list").inputValue();
       await page
@@ -132,6 +139,28 @@ test("admin navigation, product search/filter, minute conversion and dirty selec
       await page.waitForFunction(
         () => !document.querySelector("#product-form button").disabled,
       );
+      await page.waitForFunction(()=>document.querySelector('#message').textContent==='Đã lưu sản phẩm và ghi nhật ký.');
+      const row=page.locator('#admin-product-rows tr[data-product-id]').first();
+      const firstId=await row.getAttribute('data-product-id');
+      await row.locator('[data-action=down]').click();
+      assert.equal(await page.locator('#admin-product-rows tr[data-product-id]').nth(1).getAttribute('data-product-id'),firstId);
+      await page.locator('#cancel-order').click();
+      assert.equal(await page.locator('#admin-product-rows tr[data-product-id]').first().getAttribute('data-product-id'),firstId);
+      const position=page.locator(`#admin-product-rows tr[data-product-id="${firstId}"] [data-action=position]`);
+      await position.fill('4');await position.press('Tab');
+      assert.equal(await page.locator('#admin-product-rows tr[data-product-id]').nth(3).getAttribute('data-product-id'),firstId);
+      await page.locator('#save-order').click();
+      await page.waitForFunction(()=>document.querySelector('#message').textContent==='Đã lưu thứ tự sản phẩm và ghi nhật ký.');
+      assert.equal(mutations.at(-1).ids[3],firstId);
+      await page.locator('.admin-nav a[href="#orders-section"]').click();
+      await page.locator('#products-section').waitFor({state:'hidden'});
+      assert.equal(await page.locator('#products-section').isVisible(),false);
+      await page.locator('.admin-nav a[href="#products-section"]').click();
+      await page.locator('#products-section').waitFor({state:'visible'});
+      assert.equal(await page.locator('#admin-product-rows tr[data-product-id]').nth(3).getAttribute('data-product-id'),firstId);
+      await page.locator('[data-action=position]').first().focus();
+      assert.ok(await page.locator('[data-action=position]').first().evaluate(node=>node===document.activeElement));
+      await page.screenshot({path:`test-results/redesign/admin-viewport-${width}.png`});
       await page.screenshot({
         path: `test-results/redesign/admin-products-${width}.png`,
         fullPage: true,

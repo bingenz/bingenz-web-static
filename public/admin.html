@@ -1,75 +1,36 @@
 <!doctype html>
 <html lang="vi">
   <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width,initial-scale=1,interactive-widget=resizes-content"
-    />
-    <meta name="theme-color" content="#f5f6f8" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content">
+    <meta name="theme-color" content="#f5f6f8">
     <title>BinGenZ · Quản trị</title>
-    <link rel="stylesheet" href="/admin.css?v=20261001-1" />
+    <link rel="stylesheet" href="/admin.css?v=20261002-1">
   </head>
   <body>
     <header class="admin-header">
       <div class="admin-header-inner">
-        <a class="admin-brand" href="/" aria-label="Về trang chủ BinGenZ"
-          ><span class="admin-brand-mark" aria-hidden="true">B</span
-          ><span>BinGenZ</span></a
-        >
+        <a class="admin-brand" href="/" aria-label="Về trang chủ BinGenZ"><span class="admin-brand-mark" aria-hidden="true">B</span><span>BinGenZ</span></a>
         <div class="admin-heading">
           <span class="admin-eyebrow">Bảng điều khiển</span>
           <h1>Quản lý cửa hàng</h1>
           <p>Mọi thứ bạn cần, trong một không gian gọn gàng.</p>
         </div>
       </div>
-      <a class="admin-store-link" href="/#store" target="_blank" rel="noopener"
-        >Mở cửa hàng ↗</a
-      >
+      <a class="admin-store-link" href="/#store" target="_blank" rel="noopener">Mở cửa hàng ↗</a>
       <nav class="admin-nav" aria-label="Điều hướng quản trị">
-        <a href="#overview"
-          ><svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"
-            /></svg
-          ><span>Tổng quan</span></a
-        >
-        <a href="#orders-section"
-          ><svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6M9 12h6" /></svg
-          ><span>Đơn hàng</span></a
-        >
-        <a href="#payments-section"
-          ><svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3 7h18v12H3V7Zm0 4h18M7 15h4" /></svg
-          ><span>Đối soát</span></a
-        >
-        <a href="#products-section"
-          ><svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm-8 4.5 8 4.5 8-4.5M12 12v9"
-            /></svg
-          ><span>Sản phẩm</span></a
-        >
-        <a href="#tools-section"
-          ><svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="12" cy="12" r="3.5" />
-            <path
-              d="M19 13.8a7 7 0 0 0 0-3.6l2-1.2-2-3.5-2.1 1.2A8 8 0 0 0 14 5V2h-4v3a8 8 0 0 0-2.9 1.7L5 5.5 3 9l2 1.2a7 7 0 0 0 0 3.6L3 15l2 3.5 2.1-1.2A8 8 0 0 0 10 19v3h4v-3a8 8 0 0 0 2.9-1.7l2.1 1.2 2-3.5-2-1.2Z"
-            /></svg
-          ><span>Thiết lập</span></a
-        >
+        <a href="#orders-section"><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6M9 12h6" /></svg><span>Đơn hàng</span></a>
+        <a href="#products-section"><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Zm-8 4.5 8 4.5 8-4.5M12 12v9" /></svg><span>Sản phẩm</span></a>
       </nav>
     </header>
-
     <main class="admin-shell">
       <div class="workspace-heading">
         <div>
           <span class="section-kicker">BINGENZ / ADMIN</span>
-          <h2 id="workspace-title" tabindex="-1">Tổng quan</h2>
-          <p id="workspace-description">
-            Theo dõi doanh thu và những việc cần xử lý.
-          </p>
+          <h2 id="workspace-title" tabindex="-1">Đơn hàng</h2>
+          <p id="workspace-description">Tra cứu đơn và hỗ trợ khách hàng.</p>
         </div>
         <button id="refresh-admin" class="secondary-button" type="button">
           Làm mới dữ liệu
@@ -78,68 +39,21 @@
       <p id="message" class="status-banner" role="status" aria-live="polite">
         Đang tải dữ liệu…
       </p>
-
-      <section
-        data-admin-panel=""
-        id="overview"
-        class="admin-section admin-section-hero"
-        aria-labelledby="overview-title"
-      >
-        <div class="section-heading">
-          <div>
-            <span class="section-kicker">Hôm nay</span>
-            <h2 id="overview-title">Tổng quan vận hành</h2>
-          </div>
-          <a class="secondary-button" href="#orders-section">Xem đơn hàng</a>
-        </div>
-        <div id="metrics" class="metrics"></div>
-        <div class="best-sellers">
-          <strong>Sản phẩm bán chạy</strong>
-          <div id="best">Đang tải…</div>
-        </div>
-        <div class="overview-actions">
-          <a href="#orders-section"
-            ><strong>Tra cứu đơn hàng →</strong
-            ><span>Hỗ trợ khách hàng và quản lý quyền sử dụng</span></a
-          ><a href="#payments-section"
-            ><strong>Kiểm tra giao dịch →</strong
-            ><span>Xử lý thanh toán cần đối soát</span></a
-          ><a href="#products-section"
-            ><strong>Quản lý sản phẩm →</strong
-            ><span>Đổi giá, nội dung và trạng thái bán</span></a
-          >
-        </div>
-      </section>
-
-      <section
-        data-admin-panel=""
-        id="orders-section"
-        class="admin-section"
-        aria-labelledby="orders-title"
-      >
+      <section data-admin-panel="" id="orders-section" class="admin-section" aria-labelledby="orders-title">
         <div class="section-heading">
           <div>
             <span class="section-kicker">Khách hàng</span>
             <h2 id="orders-title">Đơn hàng gần đây</h2>
           </div>
-          <label class="inline-filter"
-            ><span class="sr-only">Lọc trạng thái đơn</span
-            ><select id="order-status-filter">
+          <label class="inline-filter"><span class="sr-only">Lọc trạng thái đơn</span><select id="order-status-filter">
               <option value="all">Tất cả trạng thái</option>
               <option value="paid">Đã thanh toán</option>
               <option value="pending">Chờ thanh toán</option>
               <option value="expired">Hết hạn</option>
-            </select></label
-          >
+            </select></label>
         </div>
         <form id="search" class="search-form">
-          <label
-            ><span>Tìm đơn hàng</span
-            ><input
-              name="q"
-              maxlength="254"
-              placeholder="Gmail, mã đơn, BGZ hoặc giao dịch" /></label
-          ><button type="submit">Tìm kiếm</button>
+          <label><span>Tìm đơn hàng</span><input name="q" maxlength="254" placeholder="Gmail, mã đơn, BGZ hoặc giao dịch"></label><button type="submit">Tìm kiếm</button>
         </form>
         <div class="table-wrap">
           <table data-mobile-cards="">
@@ -156,24 +70,54 @@
             <tbody id="orders"></tbody>
           </table>
         </div>
-      </section>
-
-      <section
-        id="order-detail"
-        class="admin-section detail-section"
-        aria-labelledby="order-detail-title"
-        hidden
-      >
+      <details class="admin-disclosure"><summary>Giao dịch cần đối soát</summary><section id="payments-section" class="admin-section" aria-labelledby="payments-title">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">Tài chính</span>
+            <h2 id="payments-title">Giao dịch cần đối soát</h2>
+          </div>
+        </div>
+        <form id="payment-search" class="search-form">
+          <label><span>Tìm giao dịch</span><input name="q" maxlength="200" placeholder="Mã SePay, tham chiếu, BGZ hoặc Gmail"></label><button>Tìm kiếm</button>
+        </form>
+        <div class="table-wrap">
+          <table data-mobile-cards="">
+            <thead>
+              <tr>
+                <th>Giao dịch</th>
+                <th>Tham chiếu</th>
+                <th>BGZ</th>
+                <th>Số tiền</th>
+                <th>Trạng thái</th>
+                <th>Đơn liên quan</th>
+                <th>Kiểm tra</th>
+              </tr>
+            </thead>
+            <tbody id="payment-review"></tbody>
+          </table>
+        </div>
+        <details class="admin-disclosure">
+          <summary>Đối soát thủ công</summary>
+          <div class="disclosure-body">
+            <p class="warning-copy">
+              Chỉ cấp quyền sau khi đã đối chiếu với sao kê. Giao dịch phải vào
+              đúng tài khoản và đủ tiền; sai mã hoặc dư tiền cần xác nhận riêng.
+            </p>
+            <form id="reconcile-form" class="form-grid">
+              <label>ID giao dịch<input name="payment_id" readonly required></label><label>ID đơn hàng<input name="order_id" required></label><label class="field-wide">Ghi chú đối chiếu<textarea name="note" minlength="10" maxlength="2000" required></textarea></label><label class="check-row field-wide"><input type="checkbox" name="reviewed" required><span>Đã đối chiếu sao kê và xác minh đơn</span></label><label class="check-row"><input type="checkbox" name="accept_overpayment"><span>Chấp nhận số tiền dư</span></label><label class="check-row"><input type="checkbox" name="accept_code_mismatch"><span>Chấp nhận mã BGZ không khớp</span></label>
+              <div class="field-wide">
+                <button class="danger-button">Xác nhận và cấp quyền</button>
+              </div>
+            </form>
+          </div>
+        </details>
+      </section></details><section id="order-detail" class="admin-section detail-section" aria-labelledby="order-detail-title" hidden>
         <div class="section-heading">
           <div>
             <span class="section-kicker">Đang xử lý</span>
             <h2 id="order-detail-title">Chi tiết đơn hàng</h2>
           </div>
-          <button
-            id="close-order-detail"
-            type="button"
-            class="secondary-button"
-          >
+          <button id="close-order-detail" type="button" class="secondary-button">
             Đóng chi tiết
           </button>
         </div>
@@ -209,18 +153,12 @@
             <tbody id="order-payments"></tbody>
           </table>
         </div>
-        <div class="task-grid">
+        <details class="admin-disclosure" id="order-support"><summary>Ghi chú và hỗ trợ khách hàng</summary><div class="task-grid">
           <div class="task-card">
             <h3>Ghi chú hỗ trợ</h3>
             <div id="order-notes" class="note-log"></div>
             <form id="support-note-form">
-              <label
-                >Thêm ghi chú nội bộ<textarea
-                  name="note"
-                  maxlength="2000"
-                  required
-                ></textarea></label
-              ><button>Lưu ghi chú</button>
+              <label>Thêm ghi chú nội bộ<textarea name="note" maxlength="2000" required></textarea></label><button>Lưu ghi chú</button>
             </form>
           </div>
           <div class="task-card">
@@ -233,36 +171,38 @@
               <summary>Cấp lại liên kết hoặc đổi thiết bị</summary>
               <div class="disclosure-body">
                 <form id="reissue-form">
-                  <label
-                    >Cách xác minh và lý do<textarea
-                      name="note"
-                      minlength="10"
-                      maxlength="2000"
-                      required
-                    ></textarea></label
-                  ><label class="check-row"
-                    ><input type="checkbox" name="verified" required /><span
-                      >Đã xác minh khách hàng</span
-                    ></label
-                  ><label class="check-row"
-                    ><input type="checkbox" name="reset_device" /><span
-                      >Đặt lại thiết bị đã gắn</span
-                    ></label
-                  ><button>Cấp lại liên kết</button>
+                  <label>Cách xác minh và lý do<textarea name="note" minlength="10" maxlength="2000" required></textarea></label><label class="check-row"><input type="checkbox" name="verified" required><span>Đã xác minh khách hàng</span></label><label class="check-row"><input type="checkbox" name="reset_device"><span>Đặt lại thiết bị đã gắn</span></label><button>Cấp lại liên kết</button>
                 </form>
               </div>
             </details>
             <div id="reissue-result" class="result-box" hidden>
-              <label
-                >Liên kết mới — chỉ hiển thị lần này<input
-                  id="reissued-link"
-                  readonly /></label
-              ><button type="button" id="copy-reissued">
+              <label>Liên kết mới — chỉ hiển thị lần này<input id="reissued-link" readonly></label><button type="button" id="copy-reissued">
                 Sao chép liên kết
               </button>
             </div>
           </div>
+        </div><section id="entitlement-tools" class="admin-section detail-section" aria-labelledby="entitlement-tools-title" hidden>
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">Hỗ trợ</span>
+            <h2 id="entitlement-tools-title">Điều chỉnh quyền truy cập</h2>
+          </div>
         </div>
+        <p>
+          Chọn quyền trong chi tiết đơn hàng. Mọi thay đổi đều cần lý do và được
+          ghi nhật ký.
+        </p>
+        <form id="entitlement-form" class="form-grid">
+          <label>ID quyền<input name="entitlement_id" readonly required></label><label>Thao tác<select name="action">
+              <option value="extend_activation">Gia hạn kích hoạt</option>
+              <option value="extend_active">Gia hạn phiên đang chạy</option>
+              <option value="reopen">Mở lại quyền quá hạn kích hoạt</option>
+              <option value="revoke">Thu hồi quyền</option>
+            </select></label><label>Số ngày<input name="days" type="number" min="1" max="365" placeholder="Cho gia hạn hoặc mở lại"></label><label>Số giây<input name="seconds" type="number" min="60" max="86400" placeholder="Cho phiên đang chạy"></label><label class="field-wide">Lý do<textarea name="note" minlength="10" maxlength="2000" required></textarea>
+          </label>
+          <div class="field-wide"><button>Áp dụng thay đổi quyền</button></div>
+        </form>
+      </section></details>
         <details class="admin-disclosure">
           <summary>Hoàn tiền thủ công</summary>
           <div class="disclosure-body">
@@ -275,191 +215,18 @@
               <div class="task-grid">
                 <form id="refund-request-form">
                   <h4>Tạo yêu cầu</h4>
-                  <label
-                    >Số tiền yêu cầu hoàn (₫)<input
-                      name="amount_vnd"
-                      type="number"
-                      min="1"
-                      max="100000000"
-                      required /></label
-                  ><label
-                    >Lý do<textarea
-                      name="note"
-                      minlength="10"
-                      maxlength="2000"
-                      required
-                    ></textarea></label
-                  ><button>Ghi nhận yêu cầu</button>
+                  <label>Số tiền yêu cầu hoàn (₫)<input name="amount_vnd" type="number" min="1" max="100000000" required></label><label>Lý do<textarea name="note" minlength="10" maxlength="2000" required></textarea></label><button>Ghi nhận yêu cầu</button>
                 </form>
                 <form id="refund-complete-form">
                   <h4>Xác nhận đã chuyển tiền</h4>
-                  <label
-                    >ID yêu cầu<input
-                      name="refund_id"
-                      readonly
-                      required /></label
-                  ><label
-                    >Ghi chú đối chiếu<textarea
-                      name="note"
-                      minlength="10"
-                      maxlength="2000"
-                      required
-                    ></textarea></label
-                  ><label class="check-row"
-                    ><input
-                      name="manual_transfer_confirmed"
-                      type="checkbox"
-                      required
-                    /><span>Đã chuyển tiền và đối chiếu chứng từ</span></label
-                  ><label class="check-row"
-                    ><input name="revoke_entitlements" type="checkbox" /><span
-                      >Thu hồi quyền truy cập của đơn</span
-                    ></label
-                  ><button class="danger-button">Xác nhận đã hoàn tiền</button>
+                  <label>ID yêu cầu<input name="refund_id" readonly required></label><label>Ghi chú đối chiếu<textarea name="note" minlength="10" maxlength="2000" required></textarea></label><label class="check-row"><input name="manual_transfer_confirmed" type="checkbox" required><span>Đã chuyển tiền và đối chiếu chứng từ</span></label><label class="check-row"><input name="revoke_entitlements" type="checkbox"><span>Thu hồi quyền truy cập của đơn</span></label><button class="danger-button">Xác nhận đã hoàn tiền</button>
                 </form>
               </div>
             </div>
           </div>
         </details>
-      </section>
-
-      <section
-        id="entitlement-tools"
-        class="admin-section detail-section"
-        aria-labelledby="entitlement-tools-title"
-        hidden
-      >
-        <div class="section-heading">
-          <div>
-            <span class="section-kicker">Hỗ trợ</span>
-            <h2 id="entitlement-tools-title">Điều chỉnh quyền truy cập</h2>
-          </div>
-        </div>
-        <p>
-          Chọn quyền trong chi tiết đơn hàng. Mọi thay đổi đều cần lý do và được
-          ghi nhật ký.
-        </p>
-        <form id="entitlement-form" class="form-grid">
-          <label
-            >ID quyền<input name="entitlement_id" readonly required /></label
-          ><label
-            >Thao tác<select name="action">
-              <option value="extend_activation">Gia hạn kích hoạt</option>
-              <option value="extend_active">Gia hạn phiên đang chạy</option>
-              <option value="reopen">Mở lại quyền quá hạn kích hoạt</option>
-              <option value="revoke">Thu hồi quyền</option>
-            </select></label
-          ><label
-            >Số ngày<input
-              name="days"
-              type="number"
-              min="1"
-              max="365"
-              placeholder="Cho gia hạn hoặc mở lại" /></label
-          ><label
-            >Số giây<input
-              name="seconds"
-              type="number"
-              min="60"
-              max="86400"
-              placeholder="Cho phiên đang chạy" /></label
-          ><label class="field-wide"
-            >Lý do<textarea
-              name="note"
-              minlength="10"
-              maxlength="2000"
-              required
-            ></textarea>
-          </label>
-          <div class="field-wide"><button>Áp dụng thay đổi quyền</button></div>
-        </form>
-      </section>
-
-      <section
-        data-admin-panel=""
-        id="payments-section"
-        class="admin-section"
-        aria-labelledby="payments-title"
-      >
-        <div class="section-heading">
-          <div>
-            <span class="section-kicker">Tài chính</span>
-            <h2 id="payments-title">Giao dịch cần đối soát</h2>
-          </div>
-        </div>
-        <form id="payment-search" class="search-form">
-          <label
-            ><span>Tìm giao dịch</span
-            ><input
-              name="q"
-              maxlength="200"
-              placeholder="Mã SePay, tham chiếu, BGZ hoặc Gmail" /></label
-          ><button>Tìm kiếm</button>
-        </form>
-        <div class="table-wrap">
-          <table data-mobile-cards="">
-            <thead>
-              <tr>
-                <th>Giao dịch</th>
-                <th>Tham chiếu</th>
-                <th>BGZ</th>
-                <th>Số tiền</th>
-                <th>Trạng thái</th>
-                <th>Đơn liên quan</th>
-                <th>Kiểm tra</th>
-              </tr>
-            </thead>
-            <tbody id="payment-review"></tbody>
-          </table>
-        </div>
-        <details class="admin-disclosure">
-          <summary>Đối soát thủ công</summary>
-          <div class="disclosure-body">
-            <p class="warning-copy">
-              Chỉ cấp quyền sau khi đã đối chiếu với sao kê. Giao dịch phải vào
-              đúng tài khoản và đủ tiền; sai mã hoặc dư tiền cần xác nhận riêng.
-            </p>
-            <form id="reconcile-form" class="form-grid">
-              <label
-                >ID giao dịch<input
-                  name="payment_id"
-                  readonly
-                  required /></label
-              ><label>ID đơn hàng<input name="order_id" required /></label
-              ><label class="field-wide"
-                >Ghi chú đối chiếu<textarea
-                  name="note"
-                  minlength="10"
-                  maxlength="2000"
-                  required
-                ></textarea></label
-              ><label class="check-row field-wide"
-                ><input type="checkbox" name="reviewed" required /><span
-                  >Đã đối chiếu sao kê và xác minh đơn</span
-                ></label
-              ><label class="check-row"
-                ><input type="checkbox" name="accept_overpayment" /><span
-                  >Chấp nhận số tiền dư</span
-                ></label
-              ><label class="check-row"
-                ><input type="checkbox" name="accept_code_mismatch" /><span
-                  >Chấp nhận mã BGZ không khớp</span
-                ></label
-              >
-              <div class="field-wide">
-                <button class="danger-button">Xác nhận và cấp quyền</button>
-              </div>
-            </form>
-          </div>
-        </details>
-      </section>
-
-      <section
-        data-admin-panel=""
-        id="products-section"
-        class="admin-section"
-        aria-labelledby="products-title"
-      >
+      </section></section>
+      <section data-admin-panel="" id="products-section" class="admin-section" aria-labelledby="products-title">
         <div class="section-heading">
           <div>
             <span class="section-kicker">Kho hàng</span>
@@ -477,136 +244,40 @@
               <h3>Tạo sản phẩm</h3>
               <p>Sản phẩm mới là bản nháp và chưa được mở bán.</p>
               <form id="create-product">
-                <label>Tên<input name="title" maxlength="200" required /></label
-                ><label
-                  >Slug<input
-                    name="slug"
-                    maxlength="120"
-                    pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                    required /></label
-                ><label
-                  >Mô tả<textarea
-                    name="description"
-                    maxlength="4000"
-                  ></textarea></label
-                ><label
-                  >Giá (₫)<input
-                    name="price_vnd"
-                    type="number"
-                    min="1"
-                    max="100000000"
-                    value="9000"
-                    required /></label
-                ><button>Tạo bản nháp</button>
+                <label>Tên<input name="title" maxlength="200" required></label><label>Slug<input name="slug" maxlength="120" pattern="[a-z0-9]+(-[a-z0-9]+)*" required></label><label>Mô tả<textarea name="description" maxlength="4000"></textarea></label><label>Giá (₫)<input name="price_vnd" type="number" min="1" max="100000000" value="9000" required></label><button>Tạo bản nháp</button>
               </form>
             </div>
           </div>
         </details>
         <div class="admin-catalog-tools">
-          <label
-            >Tìm sản phẩm<input
-              id="admin-product-search"
-              type="search"
-              placeholder="Tên hoặc danh mục…" /></label
-          ><label
-            >Trạng thái<select id="admin-product-filter">
+          <label>Tìm sản phẩm<input id="admin-product-search" type="search" placeholder="Tên hoặc danh mục…"></label><label>Trạng thái<select id="admin-product-filter">
               <option value="all">Tất cả</option>
               <option value="active">Đang bán</option>
               <option value="draft">Bản nháp</option>
               <option value="archived">Lưu trữ</option>
-            </select></label
-          >
+            </select></label>
         </div>
-        <div
-          id="admin-product-cards"
-          class="admin-product-cards"
-          aria-label="Danh sách sản phẩm"
-        ></div>
+        <div class="table-wrap"><table data-mobile-cards="" class="product-table"><thead><tr><th>Ảnh</th><th>Sản phẩm</th><th>Giá</th><th>Trạng thái</th><th>Vị trí</th><th>Thao tác</th></tr></thead><tbody id="admin-product-rows"></tbody></table></div><div class="order-controls"><p id="order-draft-status" role="status">Thứ tự đã lưu.</p><button type="button" id="save-order">Lưu thứ tự</button><button type="button" class="secondary-button" id="cancel-order">Hủy</button></div>
         <div class="product-picker">
-          <label
-            >Sản phẩm đang quản lý<select id="product-list"></select
-          ></label>
-          <div
-            id="product-selection-status"
-            class="product-selection-status"
-            aria-live="polite"
-          ></div>
+          <label>Sản phẩm đang quản lý<select id="product-list"></select></label>
+          <div id="product-selection-status" class="product-selection-status" aria-live="polite"></div>
         </div>
         <form id="product-form" class="form-grid">
-          <label>Tên<input name="title" required maxlength="200" /></label
-          ><label class="field-wide"
-            >Mô tả<textarea
-              name="description"
-              maxlength="4000"
-            ></textarea></label
-          ><label>Danh mục<input name="category" maxlength="100" /></label
-          ><label
-            >Giá (₫)<input
-              name="price_vnd"
-              type="number"
-              min="1"
-              max="100000000"
-              required /></label
-          ><label
-            >Thời lượng sử dụng (phút)<input
-              name="duration_minutes"
-              type="number"
-              min="1"
-              max="1440"
-              step="any"
-              required /><input
-              name="duration_seconds"
-              type="hidden"
-              min="60"
-              max="86400"
-              required
-          /></label>
+          <label>Tên<input name="title" required maxlength="200"></label><label class="field-wide">Mô tả<textarea name="description" maxlength="4000"></textarea></label><label>Danh mục<input name="category" maxlength="100"></label><label>Giá (₫)<input name="price_vnd" type="number" min="1" max="100000000" required></label><label>Thời lượng sử dụng (phút)<input name="duration_minutes" type="number" min="1" max="1440" step="any" required><input name="duration_seconds" type="hidden" min="60" max="86400" required></label>
           <div class="field-wide check-group">
-            <label class="check-row"
-              ><input name="active" type="checkbox" /><span
-                >Đang bán</span
-              ></label
-            >
+            <label class="check-row"><input name="active" type="checkbox"><span>Đang bán</span></label>
           </div>
           <details class="admin-disclosure field-wide" id="product-advanced">
             <summary>Tuỳ chọn nâng cao</summary>
             <div class="disclosure-body form-grid">
-              <label
-                >Slug<input
-                  name="slug"
-                  required
-                  maxlength="120"
-                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                /><small>Đường dẫn sản phẩm, ví dụ: quick-sort.</small></label
-              ><label
-                >Hạn kích hoạt (ngày)<input
-                  name="activation_days"
-                  type="number"
-                  min="1"
-                  max="365"
-                  placeholder="Trống = mặc định" /></label
-              ><label
-                >Thứ tự hiển thị<input
-                  name="display_order"
-                  type="number"
-                  min="-100000"
-                  max="100000" /></label
-              ><label class="check-row"
-                ><input name="archived" type="checkbox" /><span
-                  >Lưu trữ</span
-                ></label
-              >
+              <label>Slug<input name="slug" required maxlength="120" pattern="[a-z0-9]+(-[a-z0-9]+)*"><small>Đường dẫn sản phẩm, ví dụ: quick-sort.</small></label><label>Hạn kích hoạt (ngày)<input name="activation_days" type="number" min="1" max="365" placeholder="Trống = mặc định"></label><label class="check-row"><input name="archived" type="checkbox"><span>Lưu trữ</span></label>
             </div>
           </details>
           <div class="field-wide form-actions">
             <button>Lưu sản phẩm</button>
           </div>
         </form>
-        <button
-          type="button"
-          id="preview-version"
-          class="secondary-button preview-product-button"
-        >
+        <button type="button" id="preview-version" class="secondary-button preview-product-button">
           Xem thử phiên bản đang chọn
         </button>
         <details class="admin-disclosure">
@@ -616,22 +287,14 @@
               <div class="task-card">
                 <h3>Phiên bản HTML</h3>
                 <form id="versions-form">
-                  <label
-                    >Phiên bản<select id="versions" required></select></label
-                  ><button>Khôi phục phiên bản đã chọn</button>
+                  <label>Phiên bản<select id="versions" required></select></label><button>Khôi phục phiên bản đã chọn</button>
                 </form>
               </div>
               <div class="task-card">
                 <h3>Thay ảnh sản phẩm</h3>
                 <p>Ảnh WebP tối đa 1 MiB, được lưu trong kho riêng tư.</p>
                 <form id="thumbnail-form">
-                  <label
-                    >Chọn ảnh WebP<input
-                      type="file"
-                      name="image"
-                      accept="image/webp,.webp"
-                      required /></label
-                  ><button>Lưu ảnh</button>
+                  <label>Chọn ảnh WebP<input type="file" name="image" accept="image/webp,.webp" required></label><button>Lưu ảnh</button>
                 </form>
               </div>
               <div class="task-card">
@@ -641,36 +304,13 @@
                   tải lên.
                 </p>
                 <form id="upload-form">
-                  <label
-                    >Gói HTML<input
-                      type="file"
-                      name="package"
-                      accept=".json,application/json"
-                      required /></label
-                  ><button>Tải phiên bản mới</button>
+                  <label>Gói HTML<input type="file" name="package" accept=".json,application/json" required></label><button>Tải phiên bản mới</button>
                 </form>
-              </div>
-              <div class="task-card danger-zone">
-                <h3>Xóa bản nháp trống</h3>
-                <p>
-                  Chỉ xóa được bản nháp chưa có HTML, chưa mở bán và chưa xuất
-                  hiện trong đơn.
-                </p>
-                <button type="button" id="delete-draft" class="danger-button">
-                  Xóa bản nháp đang chọn
-                </button>
               </div>
             </div>
           </div>
         </details>
-      </section>
-
-      <section
-        data-admin-panel=""
-        id="tools-section"
-        class="admin-section"
-        aria-labelledby="tools-title"
-      >
+      <details id="admin-settings" class="admin-disclosure"><summary>Thiết lập và xuất dữ liệu</summary><section id="tools-section" class="admin-section" aria-labelledby="tools-title">
         <div class="section-heading">
           <div>
             <span class="section-kicker">Thiết lập</span>
@@ -682,79 +322,21 @@
             <h3>Cấu hình quyền sử dụng</h3>
             <p>Chỉ áp dụng cho đơn mới; quyền đã mua giữ nguyên thời hạn.</p>
             <form id="settings-form">
-              <label
-                >Số ngày phải bắt đầu sau thanh toán<input
-                  name="activation_days"
-                  type="number"
-                  min="1"
-                  max="365"
-                  required /></label
-              ><button>Lưu mặc định</button>
+              <label>Số ngày phải bắt đầu sau thanh toán<input name="activation_days" type="number" min="1" max="365" required></label><button>Lưu mặc định</button>
             </form>
-            <hr />
+            <hr>
             <h3>Xuất dữ liệu CSV</h3>
             <p>
               Tệp chỉ tải sau khi xác thực và đã được bảo vệ khỏi công thức
               chèn.
             </p>
             <div class="export-links">
-              <a href="/admin/api/export/orders">Đơn hàng</a
-              ><a href="/admin/api/export/payments">Giao dịch</a
-              ><a href="/admin/api/export/products">Sản phẩm</a>
+              <a href="/admin/api/export/orders">Đơn hàng</a><a href="/admin/api/export/payments">Giao dịch</a><a href="/admin/api/export/products">Sản phẩm</a>
             </div>
           </div>
-          <div class="task-card task-card-wide">
-            <h3>Chỉnh sửa hàng loạt</h3>
-            <p>
-              Chọn tối đa 25 sản phẩm. Bản nháp chưa có HTML không thể bật bán.
-            </p>
-            <form id="bulk-form" class="form-grid">
-              <label class="field-wide"
-                >Sản phẩm<select
-                  id="bulk-products"
-                  multiple
-                  size="8"
-                  required
-                ></select
-                ><small
-                  >Giữ Ctrl hoặc Cmd để chọn nhiều trên máy tính.</small
-                ></label
-              ><label
-                >Thuộc tính<select name="field">
-                  <option value="active">Đang bán (0/1)</option>
-                  <option value="price_vnd">Giá (₫)</option>
-                  <option value="duration_seconds">Thời lượng (giây)</option>
-                  <option value="activation_days">
-                    Hạn kích hoạt (ngày hoặc để trống)
-                  </option>
-                  <option value="display_order">Thứ tự</option>
-                  <option value="category">Danh mục</option>
-                </select></label
-              ><label>Giá trị mới<input name="value" maxlength="100" /></label>
-              <div class="field-wide">
-                <button>Áp dụng cho sản phẩm đã chọn</button>
-              </div>
-            </form>
-            <hr />
-            <h4>Nhập nội dung cửa hàng</h4>
-            <p>
-              Tệp JSON gồm slug, danh mục, mô tả và thứ tự. Mỗi sản phẩm được
-              cập nhật và ghi audit riêng.
-            </p>
-            <form id="metadata-import-form">
-              <label
-                >Tệp metadata JSON<input
-                  type="file"
-                  name="metadata"
-                  accept=".json,application/json"
-                  required /></label
-              ><button>Kiểm tra và nhập metadata</button>
-            </form>
-          </div>
         </div>
-      </section>
+      </section></details></section>
     </main>
-
     <dialog id="preview-dialog" aria-label="Xem thử mô phỏng">
       <div class="preview-header">
         <div>
@@ -765,12 +347,8 @@
           Đóng
         </button>
       </div>
-      <iframe
-        id="preview-frame"
-        title="Mô phỏng xem thử"
-        sandbox="allow-scripts"
-      ></iframe>
+      <iframe id="preview-frame" title="Mô phỏng xem thử" sandbox="allow-scripts"></iframe>
     </dialog>
-    <script type="module" src="/admin.mjs?v=20261001-1"></script>
+    <script type="module" src="/admin.mjs?v=20261002-1"></script>
   </body>
 </html>
