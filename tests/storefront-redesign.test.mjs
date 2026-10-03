@@ -16,7 +16,7 @@ const products = prepared.map((p) => ({
   duration_seconds: 900,
   activation_days: 7,
 }));
-const release = "20261002-1";
+const release = "20261003-1";
 
 async function storefront(page) {
   await page.route("**/*", async (route) => {
@@ -178,7 +178,7 @@ test("a returning browser switches every public and admin asset to the new relea
     }
     assert.match(
       await page.locator('script[src*="commerce.mjs"]').getAttribute("src"),
-      /20261002-1/,
+      /20261003-1/,
     );
   } finally {
     await browser.close();

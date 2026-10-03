@@ -218,10 +218,12 @@ async function showOrder(id) {
     }
     $("#order-detail").dataset.order = id;
     $("#order-detail").hidden = false;
+    $("#reissue-form").closest("details").hidden = o.kind === "gemini";
     const summary = $("#order-summary");
     summary.replaceChildren();
     for (const [label, value] of [
       ["Khách hàng", o.gmail],
+      ["Loại đơn", o.kind === "gemini" ? "Gemini Pro · Giao qua Zalo" : "Mô phỏng"],
       ["Mã thanh toán", o.payment_code],
       ["Tổng tiền", money(o.total_vnd)],
       ["Trạng thái", statusLabels[o.status] || o.status],

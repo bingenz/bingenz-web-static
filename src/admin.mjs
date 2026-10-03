@@ -205,7 +205,7 @@ export async function adminRoute(request,env,actor,path){
  if(reissue&&method==='POST'){
   const input=await jsonBody(request,4096);objectShape(input,['note','reset_device','customer_verified']);
   requireValue(input.customer_verified===true&&typeof input.reset_device==='boolean'&&typeof input.note==='string'&&input.note.trim().length>=10&&input.note.length<=2000,400,'verification_note_required');
-  const before=await env.DB.prepare("SELECT id,generation,device_hash FROM orders WHERE id=? AND status='paid'").bind(reissue[1]).first();
+  const before=await env.DB.prepare("SELECT id,generation,device_hash FROM orders WHERE id=? AND status='paid' AND kind='simulation'").bind(reissue[1]).first();
   if(!before)throw new HttpError(404,'paid_order_required');
   const token=randomToken(),now=iso(),id=crypto.randomUUID();
   const result=await env.DB.batch([
@@ -217,7 +217,7 @@ export async function adminRoute(request,env,actor,path){
   return json({access_url:new URL('/access/'+token,request.url).href,device_reset:input.reset_device});
  }
  if(order&&method==='GET'){
-  const o=await env.DB.prepare(`SELECT id,gmail,payment_code,total_vnd,status,created_at,expires_at,paid_at,paid_payment_id,access_issued_at,generation,CASE WHEN device_hash IS NULL THEN 0 ELSE 1 END device_bound FROM orders WHERE id=?`).bind(order[1]).first();
+  const o=await env.DB.prepare(`SELECT kind,gemini_title,gemini_months,id,gmail,payment_code,total_vnd,status,created_at,expires_at,paid_at,paid_payment_id,access_issued_at,generation,CASE WHEN device_hash IS NULL THEN 0 ELSE 1 END device_bound FROM orders WHERE id=?`).bind(order[1]).first();
   if(!o)throw new HttpError(404,'not_found');
   const [items,payments,notes,refunds]=await env.DB.batch([
    stmt(env.DB,`SELECT i.id,i.product_id,i.version_id,i.title,i.price_vnd,i.duration_seconds,i.activation_days,e.id entitlement_id,e.status entitlement_status,e.activation_deadline,e.started_at,e.expires_at FROM order_items i LEFT JOIN entitlements e ON e.order_item_id=i.id WHERE i.order_id=? ORDER BY i.title`,o.id),
@@ -225,6 +225,7 @@ export async function adminRoute(request,env,actor,path){
    stmt(env.DB,`SELECT id,actor,note,created_at FROM support_notes WHERE order_id=? ORDER BY created_at DESC LIMIT 50`,o.id),
    stmt(env.DB,`SELECT id,status,amount_vnd,recorded_at,completed_at,actor,note FROM refunds WHERE order_id=? ORDER BY recorded_at DESC LIMIT 50`,o.id)
   ]);
+  if(o.kind==='gemini')items.results.push({title:o.gemini_title,price_vnd:o.total_vnd,version_id:'Giao qua Zalo',entitlement_status:o.status==='paid'?'Liên hệ Zalo để giao hàng':'Chờ thanh toán'});
   return json({order:o,items:items.results,payments:payments.results,notes:notes.results,refunds:refunds.results});
  }
  const product=path.match(/^\/admin\/api\/products\/([a-z0-9_-]{1,64})$/);

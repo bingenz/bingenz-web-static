@@ -40,7 +40,7 @@ before(async()=>{
  }));
  db=await mf.getD1Database('DB');
  // D1 exec is line-oriented; prepare accepts each complete trigger statement.
- for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql','0004_fix_payment_trigger.sql','0005_restore_payment_window.sql','0006_standardize_product_price.sql']){
+ for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql','0004_fix_payment_trigger.sql','0005_restore_payment_window.sql','0006_standardize_product_price.sql','0007_gemini_orders.sql']){
   const statements=unstable_splitSqlQuery(await readFile('migrations/'+file,'utf8'));
   for(const q of statements)await db.prepare(q).run();
  }
@@ -688,4 +688,47 @@ test('archive preserves paid entitlements and restoring or creating products pla
  assert.equal(created.status,201);assert.equal((await created.json()).product.display_order,p.display_order+1);
  const log=await db.prepare("SELECT metadata FROM admin_audit_logs WHERE action='product.create' AND object_id=(SELECT id FROM products WHERE slug='last-product')").first();
  assert.equal(JSON.parse(log.metadata).after.display_order,p.display_order+1);
+});
+
+test('Gemini plans use server prices, shared QR and signed SePay, with manual fulfillment only',async()=>{
+ const catalog=await (await mf.dispatchFetch(origin+'/api/gemini/plans')).json();
+ assert.deepEqual(catalog.plans.map(p=>[p.months,p.price_vnd]),[[1,79000],[3,219000],[6,399000],[12,995000],[18,1299000]]);
+ for(const plan of catalog.plans){
+  const response=await post('/api/orders',{gmail:plan.id.replace('-','')+'@gmail.com',plan_id:plan.id,turnstile_token:'valid-'+crypto.randomUUID()});
+  assert.equal(response.status,201);const o=await response.json(),cookie=response.headers.get('Set-Cookie').split(';')[0];
+  assert.equal(o.kind,'gemini');assert.equal(o.total_vnd,plan.price_vnd);
+  const get=path=>mf.dispatchFetch(origin+path,{headers:{Cookie:cookie}});
+  assert.equal((await get('/api/orders/'+o.id+'/qr')).status,200);
+  assert.equal((await mf.dispatchFetch(origin+'/api/orders/'+o.id)).status,404);
+  const status=await (await get('/api/orders/'+o.id)).json();assert.equal(status.items[0].months,plan.months);
+  await sendPayment(o,{transferAmount:plan.price_vnd-1},200000+plan.months);
+  assert.equal((await (await get('/api/orders/'+o.id)).json()).status,'pending');
+  await sendPayment(o,{},210000+plan.months);await sendPayment(o,{},210000+plan.months);
+  assert.equal((await (await get('/api/orders/'+o.id)).json()).status,'paid');
+  assert.equal((await get('/api/orders/'+o.id+'/qr')).status,410);
+  assert.equal((await post('/api/orders/'+o.id+'/claim',{},cookie)).status,409);
+  assert.equal((await db.prepare('SELECT count(*) n FROM entitlements WHERE order_id=?').bind(o.id).first()).n,0);
+  const admin=await mf.dispatchFetch(origin+'/admin/api/orders/'+o.id,{headers:{'Cf-Access-Jwt-Assertion':await adminToken()}});
+  const detail=await admin.json();assert.equal(detail.items[0].title,plan.title);assert.equal(detail.payments.filter(p=>p.status==='matched').length,1);
+ }
+ assert.equal((await post('/api/orders',{gmail:'badplan@gmail.com',plan_id:'personal-1',turnstile_token:'valid-'+crypto.randomUUID()})).status,400);
+ assert.equal((await post('/api/orders',{gmail:'mixed@gmail.com',plan_id:'account-1',product_ids:['p'],turnstile_token:'valid-'+crypto.randomUUID()})).status,400);
+ assert.equal((await post('/api/orders',{gmail:'tampered@gmail.com',plan_id:'account-1',total_vnd:1,turnstile_token:'valid-'+crypto.randomUUID()})).status,400);
+});
+
+test('Gemini payment rejects wrong bank, outgoing, overpayment and late transfers; pending order retries retain ownership',async()=>{
+ const response=await post('/api/orders',{gmail:'geminisafety@gmail.com',plan_id:'account-1',turnstile_token:'valid-'+crypto.randomUUID()});
+ const o=await response.json(),cookie=response.headers.get('Set-Cookie').split(';')[0];
+ const again=await post('/api/orders',{gmail:'geminisafety@gmail.com',plan_id:'account-1',turnstile_token:'valid-'+crypto.randomUUID()},cookie);
+ const reused=await again.json();assert.equal(reused.id,o.id);assert.equal(reused.claimable,true);
+ const foreign=await post('/api/orders',{gmail:'geminisafety@gmail.com',plan_id:'account-1',turnstile_token:'valid-'+crypto.randomUUID()});assert.equal((await foreign.json()).claimable,false);
+ const cases=[{accountNumber:'wrong'},{transferType:'out'},{transferAmount:80000},{transactionDate:new Date(Date.now()+8*3600000).toISOString().slice(0,19).replace('T',' ')}];
+ for(let i=0;i<cases.length;i++){
+  await sendPayment(o,cases[i],220000+i);
+  assert.equal((await db.prepare('SELECT status FROM orders WHERE id=?').bind(o.id).first()).status,'pending');
+ }
+ await db.prepare('UPDATE gemini_plans SET title=? WHERE id=?').bind('Changed listing','account-1').run();
+ const status=await (await mf.dispatchFetch(origin+'/api/orders/'+o.id,{headers:{Cookie:cookie}})).json();
+ assert.equal(status.items[0].title,'Gemini Pro · Cấp tài khoản · 1 tháng');
+ await db.prepare('UPDATE gemini_plans SET title=? WHERE id=?').bind('Gemini Pro · Cấp tài khoản · 1 tháng','account-1').run();
 });
