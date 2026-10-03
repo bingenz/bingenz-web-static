@@ -9,7 +9,7 @@ async function sessionHeaders(order,device,env){
  headers.append('Set-Cookie',accessCookie(DEVICE,device));headers.append('Set-Cookie',accessCookie(SESSION,token));return headers;
 }
 export async function claim(request,env,id){
- originGuard(request);const order=await ownedOrder(request,env,id);requireValue(order.status==='paid',409,'payment_pending');
+ originGuard(request);const order=await ownedOrder(request,env,id);requireValue(order.kind!=='gemini',409,'manual_fulfillment');requireValue(order.status==='paid',409,'payment_pending');
  const jar=cookies(request),device=jar[DEVICE]||jar['__Host-bgz-checkout'];
  requireValue(device&&/^[A-Za-z0-9_-]{43}$/.test(device),403,'device_required');
  const deviceHash=await hash(device),token=randomToken();

@@ -1,0 +1,41 @@
+-- Gemini is manually fulfilled via Zalo; no simulation version or entitlement.
+CREATE TABLE gemini_plans (
+ id TEXT PRIMARY KEY, title TEXT NOT NULL, category TEXT NOT NULL CHECK(category IN ('account','personal')),
+ months INTEGER NOT NULL CHECK(months IN (1,3,6,12,18)),
+ price_vnd INTEGER NOT NULL CHECK(typeof(price_vnd)='integer' AND price_vnd>0),
+ active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1))
+);
+INSERT INTO gemini_plans(id,title,category,months,price_vnd) VALUES
+ ('account-1','Gemini Pro · Cấp tài khoản · 1 tháng','account',1,79000),
+ ('account-3','Gemini Pro · Cấp tài khoản · 3 tháng','account',3,219000),
+ ('account-6','Gemini Pro · Cấp tài khoản · 6 tháng','account',6,399000),
+ ('personal-12','Gemini Pro · Nâng chính chủ · 12 tháng','personal',12,995000),
+ ('personal-18','Gemini Pro · Nâng chính chủ · 18 tháng','personal',18,1299000);
+ALTER TABLE orders ADD COLUMN kind TEXT NOT NULL DEFAULT 'simulation' CHECK(kind IN ('simulation','gemini'));
+ALTER TABLE orders ADD COLUMN gemini_plan_id TEXT REFERENCES gemini_plans(id);
+ALTER TABLE orders ADD COLUMN gemini_title TEXT;
+ALTER TABLE orders ADD COLUMN gemini_months INTEGER;
+DROP TRIGGER validate_order;
+CREATE TRIGGER validate_order BEFORE INSERT ON orders WHEN NEW.kind='simulation' BEGIN
+ SELECT (CASE WHEN json_type(NEW.cart_json)!='array' OR json_array_length(NEW.cart_json)<1 OR json_array_length(NEW.cart_json)>200
+ THEN RAISE(ABORT,'invalid_cart') END);
+ SELECT (CASE WHEN (SELECT count(DISTINCT value) FROM json_each(NEW.cart_json))!=json_array_length(NEW.cart_json)
+ THEN RAISE(ABORT,'duplicate_product') END);
+ SELECT (CASE WHEN (SELECT count(*) FROM products WHERE id IN (SELECT value FROM json_each(NEW.cart_json)) AND active=1 AND archived=0 AND current_version_id IS NOT NULL)!=json_array_length(NEW.cart_json)
+ THEN RAISE(ABORT,'inactive_product') END);
+ SELECT (CASE WHEN NEW.total_vnd!=(SELECT sum(price_vnd) FROM products WHERE id IN (SELECT value FROM json_each(NEW.cart_json))) THEN RAISE(ABORT,'invalid_total') END);
+ SELECT (CASE WHEN (SELECT count(*) FROM orders WHERE gmail_key=NEW.gmail_key AND status='pending' AND expires_at>NEW.created_at)>=3 THEN RAISE(ABORT,'pending_limit') END);
+END;
+
+CREATE TRIGGER validate_gemini_order BEFORE INSERT ON orders WHEN NEW.kind='gemini' BEGIN
+ SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM gemini_plans WHERE id=NEW.gemini_plan_id AND active=1 AND price_vnd=NEW.total_vnd AND title=NEW.gemini_title AND months=NEW.gemini_months) THEN RAISE(ABORT,'inactive_product') END;
+ SELECT CASE WHEN NEW.cart_json!=json_array('gemini:'||NEW.gemini_plan_id) THEN RAISE(ABORT,'invalid_cart') END;
+ SELECT CASE WHEN (SELECT count(*) FROM orders WHERE gmail_key=NEW.gmail_key AND status='pending' AND expires_at>NEW.created_at)>=3 THEN RAISE(ABORT,'pending_limit') END;
+END;
+-- Scope snapshots explicitly: Gemini must never grant simulation access.
+DROP TRIGGER snapshot_order;
+CREATE TRIGGER snapshot_order AFTER INSERT ON orders WHEN NEW.kind='simulation' BEGIN
+ INSERT INTO order_items(id,order_id,product_id,version_id,title,price_vnd,duration_seconds,activation_days)
+ SELECT lower(hex(randomblob(16))),NEW.id,id,current_version_id,title,price_vnd,duration_seconds,coalesce(activation_days,CAST((SELECT value FROM settings WHERE key='activation_days') AS INTEGER))
+ FROM products WHERE id IN (SELECT value FROM json_each(NEW.cart_json));
+END;

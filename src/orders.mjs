@@ -11,7 +11,7 @@ async function turnstile(token,request,env){
  requireValue(res.ok,503,'turnstile_unavailable');const result=await res.json();
  requireValue(result.success===true&&result.action==='checkout'&&result.hostname===new URL(request.url).hostname,400,'turnstile_failed');
 }
-function view(o){return {id:o.id,payment_code:o.payment_code,total_vnd:o.total_vnd,status:o.status==='pending'&&o.expires_at<=iso()?'expired':o.status,expires_at:o.expires_at,server_now:iso()};}
+function view(o){return {kind:o.kind,id:o.id,payment_code:o.payment_code,total_vnd:o.total_vnd,status:o.status==='pending'&&o.expires_at<=iso()?'expired':o.status,expires_at:o.expires_at,server_now:iso()};}
 function paymentDestination(env){
  const bank_code=typeof env.BANK_CODE==='string'?env.BANK_CODE.trim():'';
  const account_number=typeof env.BANK_ACCOUNT_NUMBER==='string'?env.BANK_ACCOUNT_NUMBER.trim():'';
@@ -25,9 +25,14 @@ export async function ownedOrder(request,env,id){
  requireValue(o,404,'order_unavailable');return o;
 }
 export async function createOrder(request,env){
- originGuard(request);const b=await jsonBody(request);objectShape(b,['gmail','product_ids','turnstile_token']);
+ originGuard(request);const b=await jsonBody(request);objectShape(b,['gmail','product_ids','plan_id','turnstile_token']);
+ const isGemini=b.plan_id!==undefined;
+ requireValue(!isGemini||b.product_ids===undefined);
+ const plan=isGemini&&typeof b.plan_id==='string'?await first(env.DB,'SELECT * FROM gemini_plans WHERE id=? AND active=1',b.plan_id):null;
+ requireValue(!isGemini||plan,400,'product_unavailable');
+ if(isGemini)b.product_ids=['gemini:'+plan.id];
  const email=gmail(b.gmail);requireValue(Array.isArray(b.product_ids)&&b.product_ids.length>0&&b.product_ids.length<=200);
- requireValue(b.product_ids.every(x=>typeof x==='string'&&/^[a-zA-Z0-9_-]{1,100}$/.test(x)));
+ requireValue(isGemini||b.product_ids.every(x=>typeof x==='string'&&/^[a-zA-Z0-9_-]{1,100}$/.test(x)));
  requireValue(new Set(b.product_ids).size===b.product_ids.length,400,'duplicate_product');
  const now=iso(),since=addSeconds(now,-600),ids=[...b.product_ids].sort(),cartKey=await hash(JSON.stringify(ids));
  requireValue(env.ABUSE_HASH_KEY,503,'configuration_required');
@@ -38,15 +43,16 @@ export async function createOrder(request,env){
   requireValue(result,429,'checkout_rate_limit');
  }
  await turnstile(b.turnstile_token,request,env);
+ if(isGemini)paymentDestination(env);
  await env.DB.batch([stmt(env.DB,`UPDATE orders SET status='expired' WHERE status='pending' AND expires_at<=?`,now),stmt(env.DB,'DELETE FROM checkout_attempts WHERE created_at<?',addSeconds(now,-86400))]);
  let o=await first(env.DB,`SELECT * FROM orders WHERE gmail_key=? AND cart_key=? AND status='pending'`,email.canonical,cartKey);
  const existingCookie=cookies(request)[CHECKOUT];
  if(o){const owned=existingCookie&&await hash(existingCookie)===o.checkout_hash;return json({...view(o),reused:true,claimable:!!owned},200);}
- const products=await all(env.DB,`SELECT price_vnd FROM products WHERE id IN (SELECT value FROM json_each(?)) AND active=1 AND archived=0 AND current_version_id IS NOT NULL`,JSON.stringify(ids));
+ const products=isGemini?[plan]:await all(env.DB,`SELECT price_vnd FROM products WHERE id IN (SELECT value FROM json_each(?)) AND active=1 AND archived=0 AND current_version_id IS NOT NULL`,JSON.stringify(ids));
  requireValue(products.length===ids.length,400,'product_unavailable');
  const secret=existingCookie&&/^[A-Za-z0-9_-]{43}$/.test(existingCookie)?existingCookie:randomToken();
  const id=crypto.randomUUID(),total=products.reduce((s,p)=>s+p.price_vnd,0);
- try{await run(env.DB,`INSERT INTO orders(id,gmail,gmail_key,cart_key,cart_json,checkout_hash,payment_code,total_vnd,created_at,expires_at) VALUES (?,?,?,?,?,?,?,?,?,?)`,id,email.address,email.canonical,cartKey,JSON.stringify(ids),await hash(secret),paymentCode(),total,now,addSeconds(now,900));}
+ try{await run(env.DB,`INSERT INTO orders(id,gmail,gmail_key,cart_key,cart_json,checkout_hash,payment_code,total_vnd,created_at,expires_at,kind,gemini_plan_id,gemini_title,gemini_months) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,id,email.address,email.canonical,cartKey,JSON.stringify(ids),await hash(secret),paymentCode(),total,now,addSeconds(now,900),isGemini?'gemini':'simulation',plan?.id||null,plan?.title||null,plan?.months||null);}
  catch(e){
   o=await first(env.DB,`SELECT * FROM orders WHERE gmail_key=? AND cart_key=? AND status='pending'`,email.canonical,cartKey);
   if(o)return json({...view(o),reused:true,claimable:await hash(secret)===o.checkout_hash});
@@ -59,6 +65,7 @@ export async function createOrder(request,env){
 export async function orderStatus(request,env,id){
  const order=await ownedOrder(request,env,id);
  const items=await all(env.DB,'SELECT title,price_vnd,duration_seconds FROM order_items WHERE order_id=? ORDER BY title',order.id);
+ if(order.kind==='gemini')items.push({title:order.gemini_title,price_vnd:order.total_vnd,months:order.gemini_months});
  const result={...view(order),items};
  if(result.status==='pending')result.payment_destination=paymentDestination(env);
  return json(result);

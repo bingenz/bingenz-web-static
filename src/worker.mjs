@@ -25,6 +25,7 @@ async function route(request,env) {
   }
   throw new HttpError(404,'not_found');
  }
+ if(path==='/api/gemini/plans'&&method==='GET')return json({plans:(await env.DB.prepare('SELECT id,title,category,months,price_vnd FROM gemini_plans WHERE active=1 ORDER BY months').all()).results,turnstile_site_key:env.TURNSTILE_SITE_KEY||null});
  if(path==='/api/catalog'&&method==='GET')return json({products:await catalog(env),turnstile_site_key:env.TURNSTILE_SITE_KEY||null});
  const thumbnail=path.match(/^\/api\/thumbnails\/([a-z0-9_-]{1,64})\/([a-f0-9]{64})\.webp$/);
  if(thumbnail&&method==='GET'){
