@@ -28,9 +28,9 @@ CREATE TRIGGER validate_order BEFORE INSERT ON orders WHEN NEW.kind='simulation'
 END;
 
 CREATE TRIGGER validate_gemini_order BEFORE INSERT ON orders WHEN NEW.kind='gemini' BEGIN
- SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM gemini_plans WHERE id=NEW.gemini_plan_id AND active=1 AND price_vnd=NEW.total_vnd AND title=NEW.gemini_title AND months=NEW.gemini_months) THEN RAISE(ABORT,'inactive_product') END;
- SELECT CASE WHEN NEW.cart_json!=json_array('gemini:'||NEW.gemini_plan_id) THEN RAISE(ABORT,'invalid_cart') END;
- SELECT CASE WHEN (SELECT count(*) FROM orders WHERE gmail_key=NEW.gmail_key AND status='pending' AND expires_at>NEW.created_at)>=3 THEN RAISE(ABORT,'pending_limit') END;
+ SELECT (CASE WHEN NOT EXISTS(SELECT 1 FROM gemini_plans WHERE id=NEW.gemini_plan_id AND active=1 AND price_vnd=NEW.total_vnd AND title=NEW.gemini_title AND months=NEW.gemini_months) THEN RAISE(ABORT,'inactive_product') END);
+ SELECT (CASE WHEN NEW.cart_json!=json_array('gemini:'||NEW.gemini_plan_id) THEN RAISE(ABORT,'invalid_cart') END);
+ SELECT (CASE WHEN (SELECT count(*) FROM orders WHERE gmail_key=NEW.gmail_key AND status='pending' AND expires_at>NEW.created_at)>=3 THEN RAISE(ABORT,'pending_limit') END);
 END;
 -- Scope snapshots explicitly: Gemini must never grant simulation access.
 DROP TRIGGER snapshot_order;
