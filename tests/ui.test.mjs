@@ -47,10 +47,10 @@ test('home uses one mobile cart entry and keeps action SVGs bounded', async () =
     readFile('public/commerce.mjs', 'utf8')
   ]);
   assert.doesNotMatch(commerceScript, /home-section-cart/);
-  assert.match(html, /Biến ý tưởng thành/);
+  assert.match(html, /Yêu thích và/);
   assert.match(styles, /\.action-arrow[^}]*width:18px!important[^}]*height:18px!important/);
   assert.match(commerceStyles, /\.floating-cart\s*\{/);
-  assert.match(html, /styles\.css\?v=20261003-1/);
+  assert.match(html, /styles\.css\?v=20261003-2/);
 });
 
 test('mobile hero and game CTAs stay compact and GitHub follows the dark theme', async () => {

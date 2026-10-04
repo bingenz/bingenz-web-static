@@ -23,10 +23,6 @@ const errors = {
  service_unavailable:'Chưa kết nối được hệ thống. Vui lòng thử lại hoặc liên hệ Zalo.'
 };
 let generation = 0, pollTimer, clockTimer, widget, trigger;
-let lastOrder;
-try { lastOrder = localStorage.getItem('bgz-gemini-order'); } catch {}
-const validId = id => /^[a-f0-9-]{36}$/.test(id || '');
-$('#gemini-resume').hidden = !validId(lastOrder);
 async function api(path, body) {
  const response = await fetch(path, {method:body ? 'POST' : 'GET', credentials:'same-origin', cache:'no-store', signal:AbortSignal.timeout(15000), ...(body ? {headers:{'Content-Type':'application/json'},body:JSON.stringify(body)} : {})});
  const data = await response.json();
@@ -85,6 +81,8 @@ function loadTurnstile() {
 async function checkout(planId, opener) {
  const run=openDialog(opener);content.textContent='Đang chuẩn bị thanh toán…';
  try {
+  const pending=await api('/api/gemini/pending?plan_id='+encodeURIComponent(planId));if(run!==generation)return;
+  if(pending.order){await showOrder(pending.order.id,run);return;}
   const data=await api('/api/gemini/plans');if(run!==generation)return;
   const plan=data.plans.find(p=>p.id===planId);
   if(!plan)throw new Error(errors.product_unavailable);
@@ -96,8 +94,6 @@ async function checkout(planId, opener) {
    e.preventDefault();if(!token||busy)return;busy=true;button.disabled=true;button.textContent='Đang tạo đơn…';notice('');
    try {
     const order=await api('/api/orders',{gmail:$('#gemini-email').value,plan_id:plan.id,turnstile_token:token});
-    // Persist non-secret order ID even if the customer closed the dialog during the request.
-    if(order.claimable){lastOrder=order.id;try{localStorage.setItem('bgz-gemini-order',lastOrder);}catch{}$('#gemini-resume').hidden=false;}
     if(run!==generation)return;
     if(!order.claimable)throw new Error('Gmail này có đơn đang chờ ở trình duyệt khác. Hãy mở lại trình duyệt đã tạo đơn hoặc liên hệ Zalo.');
     clearWork();await showOrder(order.id,run);
@@ -153,7 +149,3 @@ async function showOrder(id,run) {
  };
  if(!['paid','cancelled','refunded'].includes(current.status))pollTimer=setTimeout(poll,4000);
 }
-$('#gemini-resume').addEventListener('click',async e=>{
- const run=openDialog(e.currentTarget);content.textContent='Đang tra cứu đơn…';
- try{await showOrder(lastOrder,run);}catch(error){if(run===generation){content.textContent='Chưa thể mở đơn.';notice(error.message);}}
-});

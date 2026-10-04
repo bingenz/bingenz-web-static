@@ -24,13 +24,28 @@ export async function ownedOrder(request,env,id){
  const o=await first(env.DB,'SELECT * FROM orders WHERE id=? AND checkout_hash=?',id,await hash(secret));
  requireValue(o,404,'order_unavailable');return o;
 }
+async function findPendingGemini(request,env,planId){
+ const secret=cookies(request)[CHECKOUT];
+ if(!secret||!/^[A-Za-z0-9_-]{43}$/.test(secret))return null;
+ return first(env.DB,`SELECT * FROM orders WHERE checkout_hash=? AND kind='gemini' AND gemini_plan_id=? AND status='pending' AND expires_at>? ORDER BY created_at DESC,id DESC LIMIT 1`,await hash(secret),planId,iso());
+}
+export async function pendingGeminiOrder(request,env){
+ const planId=new URL(request.url).searchParams.get('plan_id');
+ requireValue(typeof planId==='string'&&/^[a-z0-9-]{1,64}$/.test(planId),400,'invalid_plan');
+ const order=await findPendingGemini(request,env,planId);
+ return json({order:order?view(order):null});
+}
 export async function createOrder(request,env){
  originGuard(request);const b=await jsonBody(request);objectShape(b,['gmail','product_ids','plan_id','turnstile_token']);
  const isGemini=b.plan_id!==undefined;
  requireValue(!isGemini||b.product_ids===undefined);
  const plan=isGemini&&typeof b.plan_id==='string'?await first(env.DB,'SELECT * FROM gemini_plans WHERE id=? AND active=1',b.plan_id):null;
  requireValue(!isGemini||plan,400,'product_unavailable');
- if(isGemini)b.product_ids=['gemini:'+plan.id];
+ if(isGemini){
+  const pending=await findPendingGemini(request,env,plan.id);
+  if(pending)return json({...view(pending),reused:true,claimable:true});
+  b.product_ids=['gemini:'+plan.id];
+ }
  const email=gmail(b.gmail);requireValue(Array.isArray(b.product_ids)&&b.product_ids.length>0&&b.product_ids.length<=200);
  requireValue(isGemini||b.product_ids.every(x=>typeof x==='string'&&/^[a-zA-Z0-9_-]{1,100}$/.test(x)));
  requireValue(new Set(b.product_ids).size===b.product_ids.length,400,'duplicate_product');
