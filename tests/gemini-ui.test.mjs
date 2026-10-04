@@ -51,6 +51,14 @@ test('Gemini responsive cards, supplied icons, selectors, checkout, paid support
    await page.locator('#gemini-email').fill('customer@gmail.com');await page.getByRole('button',{name:'Tạo mã QR thanh toán'}).click();
    await page.locator('.gemini-qr').waitFor();assert.equal(f.submitted().plan_id,'personal-18');
    assert.equal(await page.locator('#gemini-selected-price').textContent(),'1.299.000đ');
+   await page.route('**/api/orders/'+id+'/qr',route=>route.fulfill({status:502,json:{error:'qr_unavailable'}}),{times:1});
+   await page.getByRole('button',{name:'Tải mã QR',exact:true}).click();
+   await page.waitForFunction(()=>document.querySelector('#gemini-dialog-notice').textContent.includes('Chưa tải được mã QR'));
+   const downloading=page.waitForEvent('download');await page.getByRole('button',{name:'Tải mã QR',exact:true}).click();
+   const downloaded=await downloading;assert.equal(downloaded.suggestedFilename(),'Bingenz-Gemini-BGZ23456789ABCD.svg');
+   assert.equal(await downloaded.failure(),null);assert.match(await readFile(await downloaded.path(),'utf8'),/<svg/);
+   assert.equal(f.creates(),1);
+
    assert.equal(await page.locator('#gemini-dialog').evaluate(el=>el.scrollWidth<=el.clientWidth),true);
    await page.locator('#gemini-dialog').screenshot({path:`test-results/gemini/checkout-${width}.png`});
    await page.keyboard.press('Escape');await page.reload();
@@ -115,5 +123,19 @@ test('hero copy and gradient glyphs remain inside their paint bounds at desktop 
    }
    await page.close();
   }
+ }finally{await browser.close();}
+});
+
+test('public prices fail closed without stale defaults and recover through Retry',async()=>{
+ const browser=await chromium.launch();try{
+  const page=await browser.newPage();await fixture(page);
+  await page.route('**/api/gemini/plans',route=>route.fulfill({status:503,json:{error:'service_unavailable'}}),{times:1});
+  await page.goto('http://localhost/');await page.locator('#gemini-price-retry').waitFor({state:'visible'});
+  assert.equal(await page.locator('[data-gemini-buy]:disabled').count(),2);
+  assert.deepEqual(await page.locator('[data-gemini-price]').allTextContents(),['—','—']);
+  await page.locator('input[value="account-3"]').locator('..').click();assert.equal(await page.locator('[data-gemini-buy]:disabled').count(),2);
+  await page.locator('#gemini-price-retry').click();await page.waitForFunction(()=>!document.querySelector('[data-gemini-buy]').disabled);
+  assert.equal(await page.locator('[data-gemini-category="account"] [data-gemini-price]').textContent(),'219.000đ');
+  assert.equal(await page.locator('#gemini-price-retry').isVisible(),false);
  }finally{await browser.close();}
 });

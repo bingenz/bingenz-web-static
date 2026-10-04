@@ -830,3 +830,12 @@ body:not([data-admin-view="orders-section"]) #entitlement-tools {
 @media (max-width: 760px) {
   .admin-nav { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
+
+/* Gemini prices share the Products workspace, with one atomic save. */
+.gemini-price-editor{padding:22px;margin:22px 0 28px;border:1px solid var(--line);border-radius:16px;background:var(--panel-2)}
+.gemini-price-editor h3{margin:0 0 8px;font-size:19px}.gemini-price-editor .section-heading{margin-bottom:18px}
+#gemini-price-controls{border:0;padding:0;margin:0;min-width:0}
+.gemini-price-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:14px;margin-bottom:18px}
+.gemini-price-fields label{min-width:0}.gemini-price-fields input{width:100%;min-width:0}.gemini-price-fields small{color:var(--muted);font-weight:400}
+.gemini-price-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}.gemini-price-footer p{margin:0;color:var(--muted);font-size:13px}
+@media(max-width:600px){.gemini-price-editor{padding:16px}.gemini-price-fields{grid-template-columns:1fr}.gemini-price-footer{align-items:flex-start;flex-direction:column}}

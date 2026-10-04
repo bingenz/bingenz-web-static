@@ -759,3 +759,80 @@ test('pending Gemini lookup is cookie-owned, plan-specific, read-only, and never
  assert.equal((await (await lookup('account-6')).json()).order,null);
  assert.equal((await lookup('bad%20plan')).status,400);
 });
+
+test('admin changes Gemini prices atomically with audit, conflict detection, validation and immutable existing orders',async()=>{
+ const url=origin+'/admin/api/gemini-prices',headers={'Cf-Access-Jwt-Assertion':await adminToken()};
+ const get=()=>mf.dispatchFetch(url,{headers});
+ const patch=(body,extra={})=>mf.dispatchFetch(url,{method:'PATCH',headers:{...headers,Origin:origin,'Content-Type':'application/json',...extra},body:JSON.stringify(body)});
+ assert.equal((await mf.dispatchFetch(url)).status,403);
+ const before=await (await get()).json();assert.equal(before.plans.length,5);
+ const prices=before.plans.map(p=>({id:p.id,price_vnd:p.price_vnd+1000}));
+ assert.equal((await patch({prices,snapshot:before.snapshot},{Origin:'https://evil.test'})).status,403);
+ for(const bad of [0,-100,1.5,100000001,'85000',null]){
+  assert.equal((await patch({prices:prices.map((p,i)=>i? p:{...p,price_vnd:bad}),snapshot:before.snapshot})).status,400);
+ }
+ assert.equal((await patch({prices:prices.slice(1),snapshot:before.snapshot})).status,400);
+ assert.equal((await patch({prices:[...prices.slice(1),prices[1]],snapshot:before.snapshot})).status,400);
+ assert.equal((await patch({prices:prices.map(p=>({...p,active:0})),snapshot:before.snapshot})).status,400);
+ const checkoutGemini=async(email,cookie='')=>{
+  const r=await post('/api/orders',{gmail:email,plan_id:'account-1',turnstile_token:'valid-'+crypto.randomUUID()},cookie);assert.equal(r.status,201);return {order:await r.json(),cookie:r.headers.get('Set-Cookie').split(';')[0]};
+ };
+ const existing=await checkoutGemini('oldgeminiprice@gmail.com');
+ const saved=await patch({prices,snapshot:before.snapshot});assert.equal(saved.status,200);const after=await saved.json();
+ assert.equal(after.plans.find(p=>p.id==='account-1').price_vnd,80000);
+ const audit=await db.prepare("SELECT actor,metadata FROM admin_audit_logs WHERE action='gemini.prices.update' ORDER BY created_at DESC LIMIT 1").first();
+ assert.equal(audit.actor,'lengocthuan09@gmail.com');assert.equal(JSON.parse(audit.metadata).before.find(p=>p.id==='account-1').price_vnd,79000);assert.equal(JSON.parse(audit.metadata).after.find(p=>p.id==='account-1').price_vnd,80000);
+ assert.equal((await patch({prices:before.plans.map(p=>({id:p.id,price_vnd:p.price_vnd})),snapshot:before.snapshot})).status,409);
+ assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='gemini.prices.update'").first()).n,1);
+ const publicPlans=await (await mf.dispatchFetch(origin+'/api/gemini/plans')).json();assert.equal(publicPlans.plans.find(p=>p.id==='account-1').price_vnd,80000);
+ const fresh=await checkoutGemini('newgeminiprice@gmail.com');assert.equal(fresh.order.total_vnd,80000);
+ const oldStatus=await (await mf.dispatchFetch(origin+'/api/orders/'+existing.order.id,{headers:{Cookie:existing.cookie}})).json();assert.equal(oldStatus.total_vnd,79000);
+ const reused=await post('/api/orders',{plan_id:'account-1'},existing.cookie);assert.equal((await reused.json()).total_vnd,79000);
+ await sendPayment(existing.order,{},440001);assert.equal((await db.prepare('SELECT status FROM orders WHERE id=?').bind(existing.order.id).first()).status,'paid');
+ const races=await Promise.all([patch({prices:prices.map(p=>({...p,price_vnd:p.price_vnd+2000})),snapshot:after.snapshot}),patch({prices:prices.map(p=>({...p,price_vnd:p.price_vnd+3000})),snapshot:after.snapshot})]);
+ assert.deepEqual(races.map(r=>r.status).sort(),[200,409]);
+ const latest=await (await get()).json();assert.equal(new Set(latest.plans.map(p=>p.price_vnd-before.plans.find(x=>x.id===p.id).price_vnd)).size,1);
+ assert.equal((await patch({prices:before.plans.map(p=>({id:p.id,price_vnd:p.price_vnd})),snapshot:latest.snapshot})).status,200);
+});
+
+test('admin price editor saves all five plans on desktop/mobile and public cards use the saved values',async()=>{
+ const browser=await chromium.launch();await mkdir('test-results/admin-gemini-prices',{recursive:true});
+ const original=(await db.prepare('SELECT id,price_vnd FROM gemini_plans ORDER BY months').all()).results;
+ try{
+  for(const width of [1440,390]){
+   const page=await browser.newPage({extraHTTPHeaders:{'Cf-Access-Jwt-Assertion':await adminToken()},viewport:{width,height:950}}),errors=[];
+   page.on('pageerror',error=>errors.push(error.message));
+   const local=(await mf.ready).origin;
+   await page.goto(local+'/admin#products-section');await page.locator('[data-gemini-plan="account-1"]').waitFor();
+   await page.waitForFunction(()=>!document.querySelector('#gemini-price-controls').disabled);
+   assert.equal(await page.locator('[data-gemini-plan]').count(),5);
+   await page.locator('[data-gemini-plan="account-1"]').fill('89000');
+   await page.locator('[data-gemini-plan="personal-18"]').fill('1999000');
+   await page.locator('#gemini-price-form button').click();await page.waitForFunction(()=>document.querySelector('#gemini-price-status').textContent.startsWith('Đã lưu giá Gemini.'));
+   assert.equal((await db.prepare("SELECT price_vnd FROM gemini_plans WHERE id='account-1'").first()).price_vnd,89000);
+   await page.reload();await page.waitForFunction(()=>document.querySelector('[data-gemini-plan="account-1"]')?.value==='89000');
+   await page.locator('.gemini-price-editor').screenshot({path:`test-results/admin-gemini-prices/editor-${width}.png`});
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);assert.deepEqual(errors,[]);
+   // Render the actual public files; serve the live local Worker API for plans.
+   const publicPage=await browser.newPage({viewport:{width,height:950}});
+   await publicPage.route('**/*',async route=>{
+    const path=new URL(route.request().url()).pathname;
+    if(path==='/api/gemini/plans'){const response=await mf.dispatchFetch(origin+path);return route.fulfill({json:await response.json()});}
+    if(path==='/api/catalog')return route.fulfill({json:{products:[]}});
+    if(new URL(route.request().url()).hostname!=='localhost')return route.fulfill({status:204,body:''});
+    try{const file=path==='/'?'index.html':path.slice(1);return route.fulfill({body:await readFile('public/'+file),contentType:file.endsWith('.css')?'text/css':/\.m?js$/.test(file)?'text/javascript':file.endsWith('.svg')?'image/svg+xml':'text/html'});}catch{return route.fulfill({status:404,body:''});}
+   });
+   await publicPage.goto('http://localhost/');await publicPage.waitForFunction(()=>document.querySelector('[data-gemini-category="account"] [data-gemini-price]').textContent==='89.000đ');
+   await publicPage.locator('input[value="personal-18"]').locator('..').click();
+   assert.equal(await publicPage.locator('[data-gemini-category="personal"] [data-gemini-price]').textContent(),'1.999.000đ');
+   assert.equal(await publicPage.locator('[data-gemini-saving]').isVisible(),false);
+   await publicPage.close();
+   for(const plan of original)await page.locator('[data-gemini-plan="'+plan.id+'"]').fill(String(plan.price_vnd));
+   await page.locator('#gemini-price-form button').click();await page.waitForFunction(()=>document.querySelector('#gemini-price-status').textContent.startsWith('Đã lưu giá Gemini.'));
+   await page.close();
+  }
+ }finally{
+  await db.batch(original.map(p=>db.prepare('UPDATE gemini_plans SET price_vnd=? WHERE id=?').bind(p.price_vnd,p.id)));
+  await browser.close();
+ }
+});

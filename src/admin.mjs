@@ -1,5 +1,6 @@
 import { HttpError, json, jsonBody, objectShape, requireValue, iso, hash, randomToken } from './security.mjs';
 import { stmt } from './db.mjs';
+import { geminiPrices,updateGeminiPrices } from './gemini-admin.mjs';
 import { orderSnapshotSql, reorderProducts } from './product-order.mjs';
 
 const editable=['slug','title','description','category','price_vnd','duration_seconds','activation_days','active','archived','display_order'];
@@ -43,6 +44,8 @@ function csvExport(env,name){
 
 export async function adminRoute(request,env,actor,path){
  const method=request.method,url=new URL(request.url);
+ if(path==='/admin/api/gemini-prices'&&method==='GET')return json(await geminiPrices(env));
+ if(path==='/admin/api/gemini-prices'&&method==='PATCH')return updateGeminiPrices(request,env,actor);
  if(path==='/admin/api/settings'&&method==='GET'){
   const row=await env.DB.prepare("SELECT value FROM settings WHERE key='activation_days'").first();
   requireValue(row,503,'configuration_required');

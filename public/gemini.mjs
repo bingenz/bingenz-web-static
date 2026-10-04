@@ -1,12 +1,6 @@
 const $ = (s, root = document) => root.querySelector(s);
 const money = n => new Intl.NumberFormat('vi-VN').format(n) + 'đ';
-const plans = new Map([
- ['account-1', {id:'account-1', months:1, price_vnd:79000, title:'Gemini Pro · Cấp tài khoản · 1 tháng'}],
- ['account-3', {id:'account-3', months:3, price_vnd:219000, title:'Gemini Pro · Cấp tài khoản · 3 tháng'}],
- ['account-6', {id:'account-6', months:6, price_vnd:399000, title:'Gemini Pro · Cấp tài khoản · 6 tháng'}],
- ['personal-12', {id:'personal-12', months:12, price_vnd:995000, title:'Gemini Pro · Nâng chính chủ · 12 tháng'}],
- ['personal-18', {id:'personal-18', months:18, price_vnd:1299000, title:'Gemini Pro · Nâng chính chủ · 18 tháng'}]
-]);
+const plans = new Map();
 const dialog = $('#gemini-dialog'), content = $('#gemini-dialog-content');
 const errors = {
  gmail_required:'Vui lòng nhập địa chỉ @gmail.com hợp lệ.',
@@ -55,15 +49,37 @@ async function copy(value, button) {
  } catch { (dialog.open ? $('#gemini-dialog-notice') : $('#gemini-notice')).textContent='Không thể sao chép tự động. Bạn có thể chọn và sao chép: '+value; }
 }
 document.addEventListener('click', e => { const button=e.target.closest('[data-gemini-copy]'); if(button)copy(button.dataset.geminiCopy,button); });
-for (const card of document.querySelectorAll('[data-gemini-category]')) {
- card.addEventListener('change', () => {
-  const plan=plans.get($('input:checked',card).value);
-  $('[data-gemini-price]',card).textContent=money(plan.price_vnd);
-  $('[data-gemini-term]',card).textContent='/ '+plan.months+' tháng';
-  $('[data-gemini-monthly]',card).textContent=(plan.price_vnd%plan.months?'≈ ':'')+money(Math.round(plan.price_vnd/plan.months))+' / tháng';
- });
+function paintPlanCard(card){
+ const plan=plans.get($('input:checked',card)?.value);
+ $('[data-gemini-price]',card).textContent=plan?money(plan.price_vnd):'—';
+ $('[data-gemini-term]',card).textContent=plan?'/ '+plan.months+' tháng':'';
+ $('[data-gemini-monthly]',card).textContent=plan?(plan.price_vnd%plan.months?'≈ ':'')+money(Math.round(plan.price_vnd/plan.months))+' / tháng':'Gói này tạm chưa có sẵn.';
+ $('[data-gemini-buy]',card).disabled=!plan;
+}
+function applyPlans(data){
+ if(!Array.isArray(data.plans)||data.plans.some(p=>!Number.isSafeInteger(p.price_vnd)||p.price_vnd<1||!Number.isInteger(p.months)||p.months<1))throw new Error('Không tải được bảng giá. Vui lòng thử lại.');
+ plans.clear();for(const plan of data.plans)plans.set(plan.id,plan);
+ for(const card of document.querySelectorAll('[data-gemini-category]')){
+  for(const input of card.querySelectorAll('input[type=radio]'))input.disabled=!plans.has(input.value);
+  paintPlanCard(card);
+ }
+ const p12=plans.get('personal-12'),p18=plans.get('personal-18');
+ $('[data-gemini-saving]').hidden=!(p12&&p18&&p18.price_vnd*p12.months<p12.price_vnd*p18.months);
+}
+async function refreshPlans(){
+ $('#gemini-price-retry').hidden=true;
+ try{applyPlans(await api('/api/gemini/plans'));$('#gemini-notice').textContent='';}
+ catch(error){
+  $('#gemini-notice').textContent='Chưa tải được giá Gemini. Vui lòng thử lại hoặc liên hệ Zalo.';$('#gemini-price-retry').hidden=false;
+  for(const card of document.querySelectorAll('[data-gemini-category]')){$('[data-gemini-buy]',card).disabled=true;$('[data-gemini-monthly]',card).textContent='Chưa tải được giá.';}
+ }
+}
+for(const card of document.querySelectorAll('[data-gemini-category]')){
+ card.addEventListener('change',()=>paintPlanCard(card));
  $('[data-gemini-buy]',card).addEventListener('click',e=>checkout($('input:checked',card).value,e.currentTarget));
 }
+$('#gemini-price-retry').addEventListener('click',refreshPlans);
+refreshPlans();
 let turnstileLoading;
 function loadTurnstile() {
  if(window.turnstile)return Promise.resolve();
@@ -83,7 +99,7 @@ async function checkout(planId, opener) {
  try {
   const pending=await api('/api/gemini/pending?plan_id='+encodeURIComponent(planId));if(run!==generation)return;
   if(pending.order){await showOrder(pending.order.id,run);return;}
-  const data=await api('/api/gemini/plans');if(run!==generation)return;
+  const data=await api('/api/gemini/plans');if(run!==generation)return;applyPlans(data);
   const plan=data.plans.find(p=>p.id===planId);
   if(!plan)throw new Error(errors.product_unavailable);
   if(!data.turnstile_site_key)throw new Error(errors.configuration_required);
@@ -128,9 +144,23 @@ async function showOrder(id,run) {
   const body=$('#gemini-payment-body');body.replaceChildren();
   if(status==='pending'){
    const qr=document.createElement('img');qr.className='gemini-qr';qr.alt='QR thanh toán '+current.payment_code;qr.src='/api/orders/'+id+'/qr';
-   qr.addEventListener('error',()=>{qr.hidden=true;notice('Chưa tải được QR. Bạn có thể chuyển khoản theo thông tin bên dưới hoặc tải lại QR.');});body.append(qr);
-   const retry=document.createElement('button');retry.type='button';retry.textContent='Tải lại QR';retry.addEventListener('click',()=>{qr.hidden=false;qr.src='/api/orders/'+id+'/qr?t='+Date.now();notice('');});
-   const actions=document.createElement('div');actions.className='gemini-payment-actions';actions.append(retry);body.append(actions);
+   qr.addEventListener('error',()=>{qr.hidden=true;notice('Chưa tải được QR. Bạn có thể chuyển khoản theo thông tin bên dưới hoặc bấm Tải mã QR để thử tải xuống.');});body.append(qr);
+   const download=document.createElement('button');download.type='button';download.textContent='Tải mã QR';
+   download.addEventListener('click',async()=>{
+    download.disabled=true;download.textContent='Đang tải…';notice('');
+    try{
+     const response=await fetch('/api/orders/'+id+'/qr',{credentials:'same-origin',cache:'no-store'});
+     if(!response.ok||!response.headers.get('content-type')?.startsWith('image/'))throw new Error('qr_unavailable');
+     const blob=await response.blob();if(!blob.size)throw new Error('qr_unavailable');
+     if(run!==generation||current.status!=='pending'||Date.parse(current.expires_at)<=Date.now()+offset)return;
+     const url=URL.createObjectURL(blob),link=document.createElement('a');
+     const extension=({'image/png':'png','image/jpeg':'jpg','image/svg+xml':'svg','image/webp':'webp'})[blob.type.split(';')[0]]||'png';
+     link.href=url;link.download='Bingenz-Gemini-'+current.payment_code+'.'+extension;document.body.append(link);link.click();link.remove();
+     setTimeout(()=>URL.revokeObjectURL(url),60000);
+    }catch{if(run===generation)notice('Chưa tải được mã QR. Vui lòng bấm Tải mã QR để thử lại hoặc liên hệ Zalo hỗ trợ.');}
+    finally{download.disabled=false;download.textContent='Tải mã QR';}
+   });
+   const actions=document.createElement('div');actions.className='gemini-payment-actions';actions.append(download);body.append(actions);
    const bank=current.payment_destination;
    body.append(row('Ngân hàng',bank.bank_code),row('Chủ tài khoản',bank.account_name),row('Số tài khoản',bank.account_number,true),row('Số tiền (VNĐ)',String(current.total_vnd),true));
    const help=document.createElement('p');help.className='gemini-help';help.textContent='Chuyển đúng số tiền và giữ nguyên nội dung. Hệ thống tự xác nhận thanh toán; sau đó bạn liên hệ Zalo để nhận tài khoản / nâng cấp.';body.append(help);
