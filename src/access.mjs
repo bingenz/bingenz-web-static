@@ -42,8 +42,8 @@ export function entitlementState(e,now=iso()){
  return e.activation_deadline>now?'not_started':'activation_expired';
 }
 export async function accessList(request,env){
- const order=await customer(request,env),items=await all(env.DB,`SELECT e.id,e.status,e.activation_deadline,e.started_at,e.expires_at,i.title,i.duration_seconds,i.product_id,p.thumbnail,p.slug FROM entitlements e JOIN order_items i ON i.id=e.order_item_id JOIN products p ON p.id=i.product_id WHERE e.order_id=?`,order.id);
- return json({order_code:order.payment_code,server_now:iso(),items:items.map(e=>({...e,status:entitlementState(e)}))});
+ const order=await customer(request,env),items=await all(env.DB,`SELECT e.id,e.status,e.activation_deadline,e.started_at,e.expires_at,i.title,i.duration_seconds,i.product_id,p.thumbnail,p.slug,p.description FROM entitlements e JOIN order_items i ON i.id=e.order_item_id JOIN products p ON p.id=i.product_id WHERE e.order_id=?`,order.id);
+ return json({order_code:order.payment_code,access_generation:order.generation,server_now:iso(),items:items.map(e=>({...e,status:entitlementState(e)}))});
 }
 export async function start(request,env,id){
  originGuard(request);const order=await customer(request,env),now=iso();
