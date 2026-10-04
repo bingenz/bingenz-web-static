@@ -1,5 +1,5 @@
 import { HttpError,json,adminIdentity,originGuard } from './security.mjs';
-import { catalog,createOrder,orderStatus,qr } from './orders.mjs';
+import { catalog,createOrder,orderStatus,qr,pendingGeminiOrder } from './orders.mjs';
 import { webhook } from './payments.mjs';
 import { claim,exchange,accessList,start,playPermit,runtime,customer } from './access.mjs';
 import { adminRoute } from './admin.mjs';
@@ -27,7 +27,8 @@ async function route(request,env) {
   }
   throw new HttpError(404,'not_found');
  }
- if(path==='/api/gemini/plans'||path==='/api/orders'||path.startsWith('/api/orders/'))await ensureGeminiSchema(env.DB);
+ if(path==='/api/gemini/plans'||path==='/api/gemini/pending'||path==='/api/orders'||path.startsWith('/api/orders/'))await ensureGeminiSchema(env.DB);
+ if(path==='/api/gemini/pending'&&method==='GET')return pendingGeminiOrder(request,env);
  if(path==='/api/gemini/plans'&&method==='GET')return json({plans:(await env.DB.prepare('SELECT id,title,category,months,price_vnd FROM gemini_plans WHERE active=1 ORDER BY months').all()).results,turnstile_site_key:env.TURNSTILE_SITE_KEY||null});
  if(path==='/api/catalog'&&method==='GET')return json({products:await catalog(env),turnstile_site_key:env.TURNSTILE_SITE_KEY||null});
  const thumbnail=path.match(/^\/api\/thumbnails\/([a-z0-9_-]{1,64})\/([a-f0-9]{64})\.webp$/);

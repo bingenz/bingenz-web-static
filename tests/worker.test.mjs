@@ -732,3 +732,30 @@ test('Gemini payment rejects wrong bank, outgoing, overpayment and late transfer
  assert.equal(status.items[0].title,'Gemini Pro · Cấp tài khoản · 1 tháng');
  await db.prepare('UPDATE gemini_plans SET title=? WHERE id=?').bind('Gemini Pro · Cấp tài khoản · 1 tháng','account-1').run();
 });
+
+test('pending Gemini lookup is cookie-owned, plan-specific, read-only, and never reuses settled or expired orders',async()=>{
+ const make=async(plan,cookie='')=>{
+  const r=await post('/api/orders',{gmail:'pendinglookup@gmail.com',plan_id:plan,turnstile_token:'valid-'+crypto.randomUUID()},cookie);
+  assert.equal(r.status,201);return {o:await r.json(),cookie:r.headers.get('Set-Cookie').split(';')[0]};
+ };
+ const a=await make('account-3'),b=await make('account-6',a.cookie);
+ const lookup=async(plan,cookie=a.cookie)=>{
+  const r=await mf.dispatchFetch(origin+'/api/gemini/pending?plan_id='+plan,{headers:{Cookie:cookie}});assert.equal(r.headers.get('Cache-Control'),'private, no-store');return r;
+ };
+ assert.equal((await (await lookup('account-3')).json()).order.id,a.o.id);
+ assert.equal((await (await lookup('account-6')).json()).order.id,b.o.id);
+ assert.equal((await (await lookup('personal-12')).json()).order,null);
+ assert.equal((await (await lookup('account-3','')).json()).order,null);
+ assert.equal((await (await lookup('account-3','__Host-bgz-checkout='+'x'.repeat(43))).json()).order,null);
+ const attempts=(await db.prepare('SELECT count(*) n FROM checkout_attempts').first()).n;
+ await Promise.all(Array.from({length:8},()=>lookup('account-3')));
+ const reused=await post('/api/orders',{plan_id:'account-3'},a.cookie);
+ assert.equal(reused.status,200);assert.equal((await reused.json()).id,a.o.id);
+ assert.equal((await db.prepare('SELECT count(*) n FROM checkout_attempts').first()).n,attempts);
+ assert.equal((await db.prepare("SELECT count(*) n FROM orders WHERE gmail='pendinglookup@gmail.com'").first()).n,2);
+ await sendPayment(a.o,{},330001);
+ assert.equal((await (await lookup('account-3')).json()).order,null);
+ await db.prepare("UPDATE orders SET created_at='2020-01-01T00:00:00.000Z',expires_at='2020-01-01T00:15:00.000Z' WHERE id=?").bind(b.o.id).run();
+ assert.equal((await (await lookup('account-6')).json()).order,null);
+ assert.equal((await lookup('bad%20plan')).status,400);
+});

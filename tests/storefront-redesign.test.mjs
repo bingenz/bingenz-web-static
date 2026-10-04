@@ -16,7 +16,7 @@ const products = prepared.map((p) => ({
   duration_seconds: 900,
   activation_days: 7,
 }));
-const release = "20261003-1";
+const release = "20261003-2";
 
 async function storefront(page) {
   await page.route("**/*", async (route) => {
@@ -143,7 +143,7 @@ test("a returning browser switches every public and admin asset to the new relea
     await storefront(page);
     const old = (await readFile("public/index.html", "utf8")).replaceAll(
       release,
-      "20261001-1",
+      "20261003-1",
     );
     await page.route(
       "http://localhost/",
@@ -156,7 +156,7 @@ test("a returning browser switches every public and admin asset to the new relea
       await page
         .locator('script[src*="commerce.mjs"]')
         .getAttribute("src")
-        .then((src) => src.includes("20261001-1")),
+        .then((src) => src.includes("20261003-1")),
     );
     await page.reload();
     await page.locator("[data-add]").first().waitFor();
@@ -167,10 +167,10 @@ test("a returning browser switches every public and admin asset to the new relea
       "admin.html",
     ]) {
       const html = await readFile("public/" + file, "utf8");
-      assert.doesNotMatch(html, /20261001-1/);
+      assert.doesNotMatch(html, /20261003-1/);
       const refs = [
         ...html.matchAll(
-          /(?:src|href)="\/?(?:styles\.css|commerce\.css|app\.js|commerce\.mjs|admin\.css|admin\.mjs)\?v=([^"]+)"/g,
+          /(?:src|href)="\/?(?:styles\.css|commerce\.css|app\.js|commerce\.mjs|admin\.css|admin\.mjs|gemini\.css|gemini\.mjs)\?v=([^"]+)"/g,
         ),
       ];
       assert.ok(refs.length > 0);
@@ -178,7 +178,7 @@ test("a returning browser switches every public and admin asset to the new relea
     }
     assert.match(
       await page.locator('script[src*="commerce.mjs"]').getAttribute("src"),
-      /20261003-1/,
+      /20261003-2/,
     );
   } finally {
     await browser.close();
