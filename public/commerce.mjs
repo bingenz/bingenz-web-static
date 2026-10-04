@@ -112,7 +112,7 @@ async function copy(value, button) {
     button.innerHTML = icon('check');
     button.classList.add('is-copied');
     button.setAttribute('aria-label', 'Đã sao chép');
-    announce('Đã sao chép thông tin chuyển khoản.');
+    announce(button.id === 'copy-access' ? 'Đã sao chép liên kết truy cập.' : 'Đã sao chép thông tin chuyển khoản.');
     setTimeout(() => {
       if (!button.isConnected) return;
       button.innerHTML = original;
@@ -458,26 +458,56 @@ function recovery() {
   $('#commerce-content').innerHTML = `<section class="recovery-state"><div class="state-icon" aria-hidden="true">${icon('warning')}</div><h1>Không thể mở liên kết truy cập</h1><p>Liên kết có thể đã hết hiệu lực, bị thay thế hoặc đang được mở trên thiết bị khác. BinGenZ không tạo tài khoản hay tự động gửi lại liên kết.</p><p>Nếu đã thanh toán, hãy cung cấp mã BGZ hoặc thông tin giao dịch cho bộ phận hỗ trợ; không gửi mật khẩu hay mã xác thực.</p><div class="shop-actions"><a class="shop-button gold" href="/#contact">Liên hệ hỗ trợ</a><a class="shop-button" href="/#store">Xem sản phẩm</a></div></section>`;
 }
 
+let accessClocks = [];
+
+function accessLink(link, orderCode, generation = 0) {
+  const key = `bgz-access-link:${orderCode}:${generation}`;
+  try {
+    const value = link || sessionStorage.getItem(key);
+    if (!value) return null;
+    const url = new URL(value);
+    if (url.origin !== location.origin || !/^\/access\/[A-Za-z0-9_-]{43}$/.test(url.pathname)) return null;
+    sessionStorage.setItem(key, url.href);
+    return url.href;
+  } catch {
+    return link || null;
+  }
+}
+
 async function paidAccess(link) {
+  accessClocks.forEach(stop => stop());
+  accessClocks = [];
   const data = await api('/api/access');
+  const savedLink = accessLink(link, data.order_code, data.access_generation);
   document.title = 'Mô phỏng của bạn • BinGenZ';
   const content = $('#commerce-content');
   content.classList.remove('payment-content');
-  content.innerHTML = `${purchaseSteps(3)}<section class="access-hero"><span class="commerce-kicker">Đơn ${esc(data.order_code)}</span><h1>Mô phỏng của bạn</h1><p class="intro">Bắt đầu từng mô phỏng khi bạn sẵn sàng. Đồng hồ không tạm dừng sau khi đã bắt đầu.</p></section>
-    ${link ? `<div class="license-link"><strong>Lưu liên kết truy cập này</strong><p>Không có tài khoản đăng nhập. Liên kết chỉ dùng trên thiết bị đã gắn với đơn hàng.</p><p>${esc(link)}</p><button id="copy-access" type="button">Sao chép liên kết</button></div>` : '<p class="shop-note">Giữ liên kết truy cập đã được cấp. Nếu mất liên kết hoặc cần đổi thiết bị, hãy liên hệ BinGenZ và cung cấp mã đơn.</p>'}
-    <div class="access-grid"></div>`;
-  if (link) $('#copy-access').onclick = event => copy(link, event.currentTarget);
-  const labels = { not_started: 'Chưa bắt đầu', active: 'Đang chạy', expired: 'Đã hết hạn', activation_expired: 'Quá hạn kích hoạt', revoked: 'Đã thu hồi' };
-  $('.access-grid').innerHTML = data.items.map(item => `<article class="product-card">
-    <img src="${esc(item.thumbnail)}" alt="${esc(item.title)}">
-    <div class="product-body"><h3>${esc(item.title)}</h3><span class="access-state">${labels[item.status]}</span><p class="product-meta">${Math.round(item.duration_seconds / 60)} phút sử dụng riêng</p>
-    ${item.status === 'not_started' ? `<p class="product-meta">Bắt đầu trước ${dateTime(item.activation_deadline)}</p><button class="gold" data-start="${item.id}">Bắt đầu</button>` : item.status === 'active' ? `<p class="commerce-clock" id="clock-${item.id}"></p><a class="shop-button gold" href="/play/${item.id}">Mở mô phỏng</a>` : `<a class="shop-button" href="/#store">Mua lại</a>`}</div>
-  </article>`).join('');
+  content.classList.add('access-content');
+  content.innerHTML = `${purchaseSteps(3)}
+    <header class="access-hero"><span class="access-confirmed">${icon('check')} Đã thanh toán</span><h1>Trải nghiệm của bạn</h1><p class="intro">Bắt đầu khi bạn sẵn sàng. Thời gian chỉ tính từ lúc bắt đầu.</p></header>
+    ${savedLink ? `<section class="license-link" aria-labelledby="access-link-heading"><div class="access-link-heading"><div><h2 id="access-link-heading">Liên kết truy cập của bạn</h2><p>Lưu liên kết này để quay lại sử dụng.</p></div>${icon('check')}</div><div class="access-link-actions"><label class="sr-only" for="access-link-value">Liên kết truy cập</label><input id="access-link-value" type="text" readonly value="${esc(savedLink)}" spellcheck="false"><button id="copy-access" class="gold" type="button">${icon('copy')}<span>Sao chép liên kết</span></button></div><p class="access-device-note">Dùng trên trình duyệt và thiết bị đã mua hàng.</p></section>` : `<div class="access-return-note"><span>Dùng liên kết đã lưu để quay lại. Cần lấy lại liên kết? <a href="/#contact">Liên hệ hỗ trợ</a>.</span></div>`}
+    <section aria-labelledby="access-products-heading"><div class="access-products-heading"><h2 id="access-products-heading">Mô phỏng của bạn</h2><span>${data.items.length} sản phẩm</span></div><div class="access-grid"></div></section>
+    <footer class="access-support"><span>Đơn <strong>${esc(data.order_code)}</strong></span><a href="/#contact">Liên hệ hỗ trợ</a></footer>`;
+  if (savedLink) {
+    $('#copy-access').onclick = event => copy(savedLink, event.currentTarget);
+    $('#access-link-value').onclick = event => event.currentTarget.select();
+  }
+  const labels = { not_started: 'Sẵn sàng', active: 'Đang trải nghiệm', expired: 'Đã hết thời gian', activation_expired: 'Quá hạn bắt đầu', revoked: 'Đã thu hồi' };
+  $('.access-grid').innerHTML = data.items.map(item => {
+    const minutes = Math.round(item.duration_seconds / 60);
+    const available = item.status === 'not_started' || item.status === 'active';
+    return `<article class="product-card access-product ${available ? '' : 'access-product-ended'}">
+      <div class="access-preview-screen">${item.thumbnail ? `<img src="${esc(item.thumbnail)}" alt="Ảnh xem trước ${esc(item.title)}" width="800" height="600" decoding="async">` : `<div class="preview-placeholder">${icon('empty')}<span>${esc(item.title)}</span></div>`}<span class="preview-image-label">Ảnh xem trước</span><span class="access-state access-state-${esc(item.status)}">${available ? icon('check') : icon('lock')}${labels[item.status] || 'Không khả dụng'}</span></div>
+      <div class="product-body"><h3>${esc(item.title)}</h3>${item.description ? `<p class="access-description">${esc(item.description)}</p>` : ''}
+      ${item.status === 'not_started' ? `<p class="access-duration"><strong>${minutes} phút</strong> trải nghiệm</p><p class="access-deadline">Bắt đầu trước ${dateTime(item.activation_deadline)}</p><button class="gold access-start" data-start="${esc(item.id)}" type="button"><span>Bắt đầu trải nghiệm</span>${icon('arrowRight')}</button><p class="access-timing-note">Chưa tính giờ · Chỉ bắt đầu khi bạn xác nhận</p>` : item.status === 'active' ? `<div class="access-active-clock"><span>Thời gian còn lại</span><strong class="commerce-clock" id="clock-${esc(item.id)}" aria-live="off"></strong></div><a class="shop-button gold" href="/play/${esc(item.id)}">Tiếp tục trải nghiệm ${icon('arrowRight')}</a><p class="access-timing-note">Đồng hồ tiếp tục chạy khi bạn đóng trang.</p>` : `<p class="access-ended-note">${item.status === 'activation_expired' ? 'Đã qua thời hạn bắt đầu sản phẩm này.' : item.status === 'revoked' ? 'Liên hệ hỗ trợ nếu bạn cần kiểm tra quyền truy cập.' : 'Thời lượng của mô phỏng này đã kết thúc.'}</p><a class="shop-button" href="/#store">Xem sản phẩm</a>`}</div>
+    </article>`;
+  }).join('');
   for (const item of data.items) {
-    if (item.status === 'active') timer($(`#clock-${item.id}`), item.expires_at, data.server_now, () => paidAccess().catch(error => showError(content, error)));
+    if (item.status === 'active') accessClocks.push(timer($(`#clock-${item.id}`), item.expires_at, data.server_now, () => paidAccess().catch(error => showError(content, error))));
     const start = $(`[data-start="${item.id}"]`);
     if (start) start.onclick = () => {
-      const modal = createDialog('Bắt đầu ngay?', `<p><strong>${esc(item.title)}</strong></p><p>Bạn có ${Math.round(item.duration_seconds / 60)} phút kể từ khi xác nhận. Không thể tạm dừng; đóng tab hoặc tải lại trang không đặt lại đồng hồ.</p><div class="shop-actions"><button id="cancel-start" type="button">Để sau</button><button class="gold" id="confirm-start" type="button">Xác nhận bắt đầu</button></div>`);
+      const minutes = Math.round(item.duration_seconds / 60);
+      const modal = createDialog(`Bắt đầu ${minutes} phút trải nghiệm?`, `<p><strong>${esc(item.title)}</strong></p><p>Đồng hồ chạy ngay khi bạn xác nhận. Không thể tạm dừng khi đóng trang.</p><div class="shop-actions"><button id="cancel-start" type="button">Để sau</button><button class="gold" id="confirm-start" type="button">Bắt đầu ${minutes} phút</button></div>`);
       $('#cancel-start', modal).onclick = () => modal.close();
       $('#confirm-start', modal).onclick = async event => {
         event.currentTarget.disabled = true;

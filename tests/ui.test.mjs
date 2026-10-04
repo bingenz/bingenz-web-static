@@ -50,7 +50,7 @@ test('home uses one mobile cart entry and keeps action SVGs bounded', async () =
   assert.match(html, /Yêu thích và/);
   assert.match(styles, /\.action-arrow[^}]*width:18px!important[^}]*height:18px!important/);
   assert.match(commerceStyles, /\.floating-cart\s*\{/);
-  assert.match(html, /styles\.css\?v=20261004-2/);
+  assert.match(html, /styles\.css\?v=20261004-3/);
 });
 
 test('mobile hero and game CTAs stay compact and GitHub follows the dark theme', async () => {
