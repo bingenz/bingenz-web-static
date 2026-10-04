@@ -254,7 +254,7 @@ test('pending reuse retains checkout ownership and server price/expiration',asyn
  assert.equal(second.body.id,first.body.id);assert.equal(second.body.claimable,true);
  const other=await checkout('buyer.name@gmail.com');assert.equal(other.body.id,first.body.id);assert.equal(other.body.claimable,false);
  assert.equal((await mf.dispatchFetch(origin+'/api/orders/'+first.body.id)).status,404);
- const own=await mf.dispatchFetch(origin+'/api/orders/'+first.body.id,{headers:{Cookie:first.cookie}});assert.equal(own.status,200);const ownedBody=await own.json();assert.equal(ownedBody.items.length,1);assert.equal(ownedBody.items[0].title,'p');assert.deepEqual(ownedBody.payment_destination,{bank_code:'TPBank',account_number:'test-destination',account_name:'BIN GEN Z TEST'});assert.ok(!JSON.stringify(ownedBody).includes('gmail'));
+ const own=await mf.dispatchFetch(origin+'/api/orders/'+first.body.id,{headers:{Cookie:first.cookie}});assert.equal(own.status,200);const ownedBody=await own.json();assert.equal(ownedBody.items.length,1);assert.equal(ownedBody.items[0].title,'p');assert.equal(ownedBody.items[0].duration_seconds,900);assert.equal(ownedBody.items[0].activation_days,7);assert.ok('thumbnail' in ownedBody.items[0]);assert.ok('description' in ownedBody.items[0]);assert.ok(!JSON.stringify(ownedBody).includes('version_id'));assert.ok(!JSON.stringify(ownedBody).includes('r2_key'));assert.deepEqual(ownedBody.payment_destination,{bank_code:'TPBank',account_number:'test-destination',account_name:'BIN GEN Z TEST'});assert.ok(!JSON.stringify(ownedBody).includes('gmail'));
 });
 test('simultaneous identical checkouts create only one pending order',async()=>{
  const email='concurrentcheckout@gmail.com';
@@ -557,8 +557,12 @@ test('browser unpaid checkout shows QR/countdown then polls into paid access',as
   await page.context().addCookies([{name,value,domain:new URL(local).hostname,path:'/',secure:true,httpOnly:true,sameSite:'Strict'}]);
   await page.goto(local+'/checkout/'+o.body.id);
   await page.locator('#payment-state').waitFor();
-  assert.equal(await page.locator('.payment-qr-card h2').innerText(),'Quét QR để thanh toán');
-  assert.ok((await page.locator('.payment-qr-card').boundingBox()).y < (await page.locator('.payment-detail-card').boundingBox()).y);
+  assert.equal(await page.locator('.payment-qr-card h1').innerText(),'Quét mã thanh toán');
+  assert.ok((await page.locator('.payment-qr-card').boundingBox()).y < (await page.locator('.payment-preview').boundingBox()).y);
+  assert.equal(await page.locator('.preview-start').isDisabled(),true);
+  assert.equal(await page.locator('iframe').count(),0);
+  assert.equal(await page.locator('.payment-manual').getAttribute('open'),null);
+  await page.locator('.payment-manual summary').click();
   assert.equal(await page.locator('.payment-detail-row').count(),5);
   assert.match(await page.locator('.payment-code').innerText(),/^BGZ[A-Z0-9]{12}$/);
   assert.equal(await page.locator('.payment-account').innerText(),'test-destination');

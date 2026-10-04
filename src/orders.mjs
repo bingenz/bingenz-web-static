@@ -79,7 +79,7 @@ export async function createOrder(request,env){
 }
 export async function orderStatus(request,env,id){
  const order=await ownedOrder(request,env,id);
- const items=await all(env.DB,'SELECT title,price_vnd,duration_seconds FROM order_items WHERE order_id=? ORDER BY title',order.id);
+ const items=await all(env.DB,'SELECT i.title,i.price_vnd,i.duration_seconds,i.activation_days,p.thumbnail,p.description FROM order_items i JOIN products p ON p.id=i.product_id WHERE i.order_id=? ORDER BY i.title',order.id);
  if(order.kind==='gemini')items.push({title:order.gemini_title,price_vnd:order.total_vnd,months:order.gemini_months});
  const result={...view(order),items};
  if(result.status==='pending')result.payment_destination=paymentDestination(env);

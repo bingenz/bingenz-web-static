@@ -17,6 +17,7 @@ const iconPaths = {
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
   trash: '<path d="M4 7h16M9 7V4h6v3m3 0-1 14H7L6 7"/><path d="M10 11v6m4-6v6"/>',
   warning: '<path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 9v5m0 3h.01"/>',
+  lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/>',
   empty: '<path d="M6 8h12l1 12H5L6 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/>'
 };
 const icon = (name, className = '') => `<svg class="ui-icon${className ? ` ${className}` : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconPaths[name] || ''}</svg>`;
@@ -411,15 +412,15 @@ async function renderCheckout() {
       <section class="commerce-panel checkout-entry-panel">
         <span class="shop-kicker">Thanh toán an toàn</span>
         <h1>Chỉ còn một bước nhỏ.</h1>
-        <p class="checkout-entry-intro">Nhập Gmail để tra cứu đơn và hỗ trợ khi cần. Liên kết sử dụng sẽ xuất hiện ngay tại đây sau thanh toán.</p>
+        <p class="checkout-entry-intro">Nhập Gmail để tiếp tục thanh toán.</p>
         <form class="checkout-form" id="checkout-form">
           <label for="buyer-gmail">Địa chỉ Gmail</label>
           <input id="buyer-gmail" name="gmail" type="email" inputmode="email" autocomplete="email" maxlength="254" placeholder="ban@gmail.com" pattern="[^@\\s]+@gmail\\.com" required>
-          <p class="field-help">BinGenZ chỉ dùng Gmail để tra cứu đơn khi bạn cần hỗ trợ. Website không tạo tài khoản và không yêu cầu mật khẩu.</p>
+          <p class="field-help">Dùng để tra cứu đơn và hỗ trợ khi cần.</p>
           <div id="checkout-challenge"></div>
           <button class="primary-action" type="submit" disabled><span>Tạo mã QR thanh toán</span>${icon('arrowRight')}</button>
         </form>
-        <p class="checkout-note">Mã QR có hiệu lực 15 phút. Quyền truy cập được cấp tự động sau khi ngân hàng xác nhận.</p>
+        <p class="checkout-note">QR có hiệu lực 15 phút · Mở khóa tự động sau thanh toán.</p>
       </section>
       <aside class="commerce-panel checkout-review" aria-label="Kiểm tra giỏ hàng"><span class="shop-kicker">Bạn đã chọn</span><h2>${items.length} mô phỏng</h2><div class="checkout-review-items">${items.map(item => `<div class="checkout-review-line"><img src="${esc(item.thumbnail)}" alt="" width="64" height="48"><div><strong>${esc(item.title)}</strong><small>${Math.round(item.duration_seconds / 60)} phút · bắt đầu trong ${item.activation_days || 7} ngày</small></div><span>${money(item.price_vnd)}</span></div>`).join('')}</div><div class="cart-total"><span>Tổng thanh toán</span><strong>${money(cartTotal())}</strong></div><button type="button" id="checkout-edit-cart" class="text-button">Chỉnh sửa giỏ hàng</button></aside>
   </section>`;
@@ -461,6 +462,7 @@ async function paidAccess(link) {
   const data = await api('/api/access');
   document.title = 'Mô phỏng của bạn • BinGenZ';
   const content = $('#commerce-content');
+  content.classList.remove('payment-content');
   content.innerHTML = `${purchaseSteps(3)}<section class="access-hero"><span class="commerce-kicker">Đơn ${esc(data.order_code)}</span><h1>Mô phỏng của bạn</h1><p class="intro">Bắt đầu từng mô phỏng khi bạn sẵn sàng. Đồng hồ không tạm dừng sau khi đã bắt đầu.</p></section>
     ${link ? `<div class="license-link"><strong>Lưu liên kết truy cập này</strong><p>Không có tài khoản đăng nhập. Liên kết chỉ dùng trên thiết bị đã gắn với đơn hàng.</p><p>${esc(link)}</p><button id="copy-access" type="button">Sao chép liên kết</button></div>` : '<p class="shop-note">Giữ liên kết truy cập đã được cấp. Nếu mất liên kết hoặc cần đổi thiết bị, hãy liên hệ BinGenZ và cung cấp mã đơn.</p>'}
     <div class="access-grid"></div>`;
@@ -491,13 +493,31 @@ async function paidAccess(link) {
   }
 }
 
-function paymentOrderSummary(order) {
-  if (!order.items?.length) return '';
-  return `<div class="payment-order-summary"><h3>Đơn hàng (${order.items.length} mô phỏng)</h3><div class="payment-order-list">${order.items.map(item => `<div class="payment-order-line"><strong>${esc(item.title)}</strong><span>${money(item.price_vnd)}</span></div>`).join('')}</div></div>`;
+function paymentPreview(order) {
+  const items = order.items || [];
+  if (!items.length) return '';
+  return `<aside class="commerce-panel payment-preview" aria-labelledby="preview-heading">
+    <header class="preview-heading"><span class="payment-eyebrow">Sau khi thanh toán</span><span class="preview-count">${items.length} mô phỏng</span></header>
+    <h2 id="preview-heading">Trải nghiệm đang chờ bạn</h2>
+    ${items.length > 1 ? `<div class="preview-picker" role="group" aria-label="Chọn sản phẩm xem trước">${items.map((item, index) => `<button class="preview-choice" type="button" data-preview="${index}" aria-pressed="${index === 0}">${esc(item.title)}</button>`).join('')}</div>` : ''}
+    ${items.map((item, index) => `<article class="preview-product" data-preview-panel="${index}" ${index ? 'hidden' : ''}>
+      <div class="preview-screen">
+        ${item.thumbnail ? `<img src="${esc(item.thumbnail)}" alt="Ảnh xem trước ${esc(item.title)}" width="800" height="600" decoding="async">` : `<div class="preview-placeholder">${icon('lock')}<span>${esc(item.title)}</span></div>`}
+        <span class="preview-image-label">Ảnh xem trước</span>
+        <span class="preview-lock">${icon('lock')} Chưa mở khóa</span>
+      </div>
+      <div class="preview-product-heading"><h3>${esc(item.title)}</h3><span>${money(item.price_vnd)}</span></div>
+      ${item.description ? `<p class="preview-description">${esc(item.description)}</p>` : ''}
+      <p class="preview-runtime">${Math.round(item.duration_seconds / 60)} phút sử dụng · kích hoạt trong ${item.activation_days || 7} ngày</p>
+    </article>`).join('')}
+    <button class="preview-start" type="button" disabled>${icon('lock')} Bắt đầu mô phỏng</button>
+    <p class="preview-unlock-note">Mở khóa sau thanh toán. Thời gian chỉ tính khi bạn bắt đầu.</p>
+  </aside>`;
 }
 
 async function payment(id) {
   const content = $('#commerce-content');
+  content.classList.remove('payment-content');
   const order = await api(`/api/orders/${id}`);
   if (order.status === 'paid') {
     content.innerHTML = `<section class="success-state"><div class="state-icon" aria-hidden="true">${icon('check')}</div><h1>Thanh toán thành công</h1><p>Ngân hàng đã xác nhận giao dịch. BinGenZ đang chuẩn bị quyền truy cập cho bạn…</p></section>`;
@@ -515,30 +535,43 @@ async function payment(id) {
   }
   document.title = 'Quét QR thanh toán • BinGenZ';
   const destination = order.payment_destination;
-  content.innerHTML = `${purchaseSteps(2)}<header class="payment-header"><span class="commerce-kicker">Thanh toán qua SePay</span><h1>Quét mã. Bắt đầu khám phá.</h1><p class="intro">Chuyển đúng số tiền và nội dung. Trang sẽ tự cập nhật khi ngân hàng xác nhận.</p></header>
+  content.classList.add('payment-content');
+  content.innerHTML = `${purchaseSteps(2)}
     <div class="payment-layout">
-      <section class="commerce-panel payment-qr-card">
-        <div class="payment-card-heading"><div><span class="payment-eyebrow">Thanh toán ngân hàng</span><h2>Quét QR để thanh toán</h2></div><div class="payment-timer"><span>Còn lại</span><strong class="commerce-clock" id="pay-clock"></strong></div></div>
+      <section class="commerce-panel payment-qr-card" aria-labelledby="payment-heading">
+        <div class="payment-card-heading"><div><span class="payment-eyebrow">Thanh toán an toàn · SePay</span><h1 id="payment-heading">Quét mã thanh toán</h1></div><div class="payment-timer"><span>Còn lại</span><strong class="commerce-clock" id="pay-clock" aria-live="off"></strong></div></div>
+        <div class="payment-total"><strong>${money(order.total_vnd)}</strong><span>${order.items?.length || 0} mô phỏng</span></div>
         <div class="payment-qr-wrap"><img class="payment-qr" src="/api/orders/${id}/qr" alt="QR chuyển khoản đúng số tiền và mã đơn"></div>
-        <p class="payment-qr-help">Mở ứng dụng ngân hàng và quét mã. Số tiền cùng nội dung chuyển khoản đã được điền sẵn.</p>
-        <a class="shop-button qr-download-action" href="/api/orders/${id}/qr" download="bingenz-${esc(order.payment_code)}-qr">${icon('download')}<span>Tải mã QR</span></a>
-        <ol class="payment-instructions"><li>Quét mã bằng ứng dụng ngân hàng.</li><li>Kiểm tra đúng số tiền rồi xác nhận.</li><li>Giữ trang mở và không chuyển khoản lần hai.</li></ol>
-        <p id="payment-state" role="status">Đang kết nối với hệ thống thanh toán…</p>
+        <p class="payment-qr-help">Quét bằng app ngân hàng hoặc lưu QR để thanh toán.</p>
+        <a class="shop-button qr-download-action" href="/api/orders/${id}/qr" download="bingenz-${esc(order.payment_code)}-qr">${icon('download')}<span>Lưu mã QR</span></a>
+        <p id="payment-state" role="status">Đang kết nối thanh toán…</p>
+        <p class="payment-wait-note">Tự động mở khóa khi xác nhận. Không chuyển khoản lần hai.</p>
+        <details class="payment-manual">
+          <summary>Thông tin chuyển khoản ${icon('arrowRight')}</summary>
+          <div class="payment-detail-list">
+            <div class="payment-detail-row"><span class="payment-field-label">Ngân hàng</span><strong class="payment-field-value">${esc(destination.bank_code)}</strong></div>
+            <div class="payment-detail-row"><span class="payment-field-label">Số tài khoản</span><strong class="payment-field-value payment-account">${esc(destination.account_number)}</strong><button class="copy-button icon-action" id="copy-account" type="button" aria-label="Sao chép số tài khoản">${icon('copy')}</button></div>
+            <div class="payment-detail-row"><span class="payment-field-label">Người nhận</span><strong class="payment-field-value payment-recipient">${esc(destination.account_name)}</strong><button class="copy-button icon-action" id="copy-recipient" type="button" aria-label="Sao chép tên người nhận">${icon('copy')}</button></div>
+            <div class="payment-detail-row payment-detail-emphasis"><span class="payment-field-label">Số tiền</span><strong class="payment-field-value">${money(order.total_vnd)}</strong><button class="copy-button icon-action" id="copy-amount" type="button" aria-label="Sao chép số tiền">${icon('copy')}</button></div>
+            <div class="payment-detail-row payment-detail-emphasis"><span class="payment-field-label">Nội dung</span><strong class="payment-field-value payment-code">${esc(order.payment_code)}</strong><button class="copy-button icon-action" id="copy-code" type="button" aria-label="Sao chép nội dung chuyển khoản">${icon('copy')}</button></div>
+          </div>
+        </details>
+        <footer class="payment-support"><span>Đơn <strong>${esc(order.payment_code)}</strong></span><a href="/#contact">Cần hỗ trợ?</a></footer>
       </section>
-      <section class="commerce-panel payment-detail-card">
-        <div class="payment-detail-heading"><div><h2>Thông tin chuyển khoản</h2><p>Dùng khi bạn cần nhập thủ công.</p></div></div>
-        <div class="payment-detail-list">
-          <div class="payment-detail-row"><span class="payment-field-label">Ngân hàng</span><strong class="payment-field-value">${esc(destination.bank_code)}</strong></div>
-          <div class="payment-detail-row"><span class="payment-field-label">Số tài khoản</span><strong class="payment-field-value payment-account">${esc(destination.account_number)}</strong><button class="copy-button icon-action" id="copy-account" type="button" aria-label="Sao chép số tài khoản">${icon('copy')}</button></div>
-          <div class="payment-detail-row"><span class="payment-field-label">Tên người nhận</span><strong class="payment-field-value payment-recipient">${esc(destination.account_name)}</strong><button class="copy-button icon-action" id="copy-recipient" type="button" aria-label="Sao chép tên người nhận">${icon('copy')}</button></div>
-          <div class="payment-detail-row payment-detail-emphasis"><span class="payment-field-label">Số tiền</span><strong class="payment-field-value">${money(order.total_vnd)}</strong><button class="copy-button icon-action" id="copy-amount" type="button" aria-label="Sao chép số tiền">${icon('copy')}</button></div>
-          <div class="payment-detail-row payment-detail-emphasis"><span class="payment-field-label">Nội dung</span><strong class="payment-field-value payment-code">${esc(order.payment_code)}</strong><button class="copy-button icon-action" id="copy-code" type="button" aria-label="Sao chép nội dung chuyển khoản">${icon('copy')}</button></div>
-        </div>
-        ${paymentOrderSummary(order)}
-        <p class="checkout-note">Cần trợ giúp? <a href="/#contact">Liên hệ BinGenZ</a> và cung cấp mã ${esc(order.payment_code)}.</p>
-        <a class="text-button payment-back" href="/#store">${icon('arrowLeft')} Quay lại cửa hàng</a><p class="field-help">Đơn này vẫn chờ đến khi hết hạn. Quay lại giỏ không hủy giao dịch đã chuyển.</p>
-      </section>
+      ${paymentPreview(order)}
     </div>`;
+  for (const button of $$('[data-preview]', content)) {
+    button.onclick = () => {
+      for (const choice of $$('[data-preview]', content)) choice.setAttribute('aria-pressed', String(choice === button));
+      for (const panel of $$('[data-preview-panel]', content)) panel.hidden = panel.dataset.previewPanel !== button.dataset.preview;
+    };
+  }
+  $('.payment-qr').onerror = () => {
+    $('.payment-qr-wrap').hidden = true;
+    $('.qr-download-action').hidden = true;
+    $('.payment-qr-help').textContent = 'Không tải được QR. Bạn có thể chuyển khoản theo thông tin bên dưới.';
+    $('.payment-manual').open = true;
+  };
   $('#copy-account').onclick = event => copy(destination.account_number, event.currentTarget);
   $('#copy-recipient').onclick = event => copy(destination.account_name, event.currentTarget);
   $('#copy-code').onclick = event => copy(order.payment_code, event.currentTarget);
