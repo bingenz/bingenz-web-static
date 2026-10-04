@@ -48,6 +48,7 @@ test("admin navigation, product search/filter, minute conversion and dirty selec
               best_sellers: [{ title: "Quick Sort", sold: 85 }],
             };
           else if (path === "products") json = { products, snapshot:JSON.stringify(products.filter(p=>!p.archived).map(p=>({id:p.id,display_order:p.display_order}))) };
+          else if (path === "gemini-prices") json = {plans:[],snapshot:"[]"};
           else if (path === "orders") json = { orders: [] };
           else if (path === "payments") json = { payments: [] };
           else if (path === "settings") json = { activation_days: 7 };

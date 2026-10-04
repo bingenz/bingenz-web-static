@@ -16,13 +16,14 @@ const products = prepared.map((p) => ({
   duration_seconds: 900,
   activation_days: 7,
 }));
-const release = "20261003-2";
+const release = "20261004-1";
 
 async function storefront(page) {
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     if (url.hostname !== "localhost")
       return route.fulfill({ status: 204, body: "" });
+    if (url.pathname === "/api/gemini/plans")return route.fulfill({json:{plans:[['account-1',1,79000],['account-3',3,219000],['account-6',6,399000],['personal-12',12,995000],['personal-18',18,1299000]].map(([id,months,price_vnd])=>({id,months,price_vnd})),turnstile_site_key:'fixture'}});
     if (url.pathname === "/api/catalog")
       return route.fulfill({
         json: { products, turnstile_site_key: "local-fixture" },
@@ -143,7 +144,7 @@ test("a returning browser switches every public and admin asset to the new relea
     await storefront(page);
     const old = (await readFile("public/index.html", "utf8")).replaceAll(
       release,
-      "20261003-1",
+      "20261003-2",
     );
     await page.route(
       "http://localhost/",
@@ -156,7 +157,7 @@ test("a returning browser switches every public and admin asset to the new relea
       await page
         .locator('script[src*="commerce.mjs"]')
         .getAttribute("src")
-        .then((src) => src.includes("20261003-1")),
+        .then((src) => src.includes("20261003-2")),
     );
     await page.reload();
     await page.locator("[data-add]").first().waitFor();
@@ -167,7 +168,7 @@ test("a returning browser switches every public and admin asset to the new relea
       "admin.html",
     ]) {
       const html = await readFile("public/" + file, "utf8");
-      assert.doesNotMatch(html, /20261003-1/);
+      assert.doesNotMatch(html, /20261003-2/);
       const refs = [
         ...html.matchAll(
           /(?:src|href)="\/?(?:styles\.css|commerce\.css|app\.js|commerce\.mjs|admin\.css|admin\.mjs|gemini\.css|gemini\.mjs)\?v=([^"]+)"/g,
@@ -178,7 +179,7 @@ test("a returning browser switches every public and admin asset to the new relea
     }
     assert.match(
       await page.locator('script[src*="commerce.mjs"]').getAttribute("src"),
-      /20261003-2/,
+      /20261004-1/,
     );
   } finally {
     await browser.close();

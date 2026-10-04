@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content">
     <meta name="theme-color" content="#f5f6f8">
     <title>BinGenZ · Quản trị</title>
-    <link rel="stylesheet" href="/admin.css?v=20261003-2">
+    <link rel="stylesheet" href="/admin.css?v=20261004-1">
   </head>
   <body>
     <header class="admin-header">
@@ -237,6 +237,13 @@
             + Thêm sản phẩm
           </button>
         </div>
+        <section class="gemini-price-editor" aria-labelledby="gemini-prices-title">
+          <div class="section-heading"><div><span class="section-kicker">Gemini Pro</span><h3 id="gemini-prices-title">Giá Gemini & Antigravity</h3><p>Giá tổng cho từng gói, tính bằng VNĐ. Đơn đã tạo giữ nguyên giá lúc mua.</p></div></div>
+          <form id="gemini-price-form">
+            <fieldset id="gemini-price-controls" disabled><legend class="sr-only">Bảng giá Gemini</legend><div class="gemini-price-fields" id="gemini-price-fields"></div><button type="submit">Lưu giá Gemini</button></fieldset>
+          </form>
+          <div class="gemini-price-footer"><p id="gemini-price-status" role="status">Đang tải giá…</p><button id="reload-gemini-prices" type="button" class="secondary-button">Tải lại giá</button></div>
+        </section>
         <details class="admin-disclosure" id="create-product-panel">
           <summary>Thêm sản phẩm mới</summary>
           <div class="disclosure-body">
@@ -349,6 +356,6 @@
       </div>
       <iframe id="preview-frame" title="Mô phỏng xem thử" sandbox="allow-scripts"></iframe>
     </dialog>
-    <script type="module" src="/admin.mjs?v=20261003-2"></script>
+    <script type="module" src="/admin.mjs?v=20261004-1"></script>
   </body>
 </html>

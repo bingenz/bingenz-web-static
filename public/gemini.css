@@ -33,3 +33,8 @@
 @keyframes gemini-glow{50%{box-shadow:0 0 35px rgba(194,156,239,.3)}}@keyframes gemini-shine{0%,65%{transform:translateX(-140%) skewX(-20deg)}90%,100%{transform:translateX(140%) skewX(-20deg)}}
 @media(max-width:700px){.gemini-cards{grid-template-columns:1fr;max-width:480px;gap:22px}.gemini-card{padding:25px}.gemini-card-top{margin-bottom:25px}.gemini-support{max-width:480px;flex-wrap:wrap;padding:17px}.gemini-support>div{gap:5px;flex-direction:column;align-items:flex-start}.gemini-intro{min-height:0}.gemini-section{padding-top:44px}.gemini-dialog{padding:20px}.gemini-price strong{font-size:37px}.gemini-tag{max-width:155px}}
 @media(prefers-reduced-motion:reduce){.gemini-premium::before,.gemini-premium .gemini-buy::after{animation:none}.gemini-buy{transition:none}}
+
+.gemini-price-retry{display:block;margin:12px auto 0;padding:9px 16px;border:1px solid var(--line);border-radius:9px;background:var(--surface2);color:var(--text);font:inherit;cursor:pointer}.gemini-price-retry[hidden],[data-gemini-saving][hidden]{display:none}.gemini-options input:disabled+span{opacity:.5;cursor:not-allowed}
+
+.gemini-dialog-support{padding:16px;border:1px solid #75c99a;border-radius:12px;background:#eaf8ef;color:#146c3b;font-weight:600}.gemini-dialog-support a{color:#116333;text-decoration:underline;text-underline-offset:3px}.gemini-dialog-support button,.gemini-dialog .gemini-zalo-link{background:#168147;color:#fff;border-color:#168147}.gemini-dialog-support button:hover,.gemini-dialog .gemini-zalo-link:hover{background:#116333}.gemini-payment-actions button:disabled{opacity:.65;cursor:wait}
+[data-theme="dark"] .gemini-dialog-support{background:#102d20;border-color:#2c8753;color:#a5edbd}[data-theme="dark"] .gemini-dialog-support a{color:#a5edbd}
