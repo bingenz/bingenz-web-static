@@ -7,7 +7,12 @@ workers_dev = false
 [assets]
 directory = "./public"
 binding = "ASSETS"
-run_worker_first = true
+run_worker_first = [
+  "/*", "!/", "!/index", "!/index.html",
+  "!/styles.css", "!/app.js", "!/gemini.css", "!/gemini.mjs",
+  "!/admin.css", "!/admin.mjs", "!/commerce.css", "!/commerce.mjs",
+  "!/icons/*", "!/img/*", "!/product-thumbnails/*"
+]
 
 [[d1_databases]]
 binding = "DB"

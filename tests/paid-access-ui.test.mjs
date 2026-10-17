@@ -36,6 +36,7 @@ test('paid access shows saved link, previews and independent Start across mobile
       await page.locator('#copy-access').click();
       assert.equal(await page.evaluate(() => navigator.clipboard.readText()), `http://localhost/access/${token}`);
       await page.waitForFunction(() => document.querySelector('#shop-announcement').textContent.includes('liên kết truy cập'));
+      await page.locator('#shop-announcement').waitFor({ state: 'visible' });
       assert.match(await page.locator('#shop-announcement').innerText(), /liên kết truy cập/);
       await page.locator('[data-start]').click();
       assert.match(await page.locator('dialog').innerText(), /Bắt đầu 15 phút/);
