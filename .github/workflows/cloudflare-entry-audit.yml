@@ -1,7 +1,17 @@
-name: Audit Cloudflare entry challenges
+name: Manage Cloudflare entry challenges
 
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Audit, exempt public browsing from the identified challenge, or roll back that exception
+        type: choice
+        required: true
+        default: audit
+        options:
+          - audit
+          - apply
+          - rollback
 
 permissions:
   contents: read
@@ -16,3 +26,9 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: python3 scripts/audit-cloudflare-entry.py
+      - name: Adjust only the identified public-entry challenge rule
+        if: inputs.operation == 'apply' || inputs.operation == 'rollback'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          OPERATION: ${{ inputs.operation }}
+        run: python3 scripts/configure-cloudflare-entry.py "$OPERATION"

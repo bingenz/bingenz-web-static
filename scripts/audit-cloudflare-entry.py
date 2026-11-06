@@ -10,13 +10,14 @@ BASE = "https://api.cloudflare.com/client/v4"
 DOMAIN = "bingenz.com"
 
 
-def api(path, body=None):
+def api(path, body=None, method=None):
     token = os.environ.get("CLOUDFLARE_API_TOKEN")
     if not token:
         raise RuntimeError("Missing repository Actions secret CLOUDFLARE_API_TOKEN")
     request = urllib.request.Request(
         BASE + path,
         data=json.dumps(body).encode() if body is not None else None,
+        method=method,
         headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"},
     )
     try:
@@ -59,13 +60,21 @@ def audit(call=api):
     pages = call(prefix + "/pagerules?status=active&per_page=100")
     report["page_security_rules"] = [{"id": rule.get("id"), "status": rule.get("status"), "security_levels": [action.get("value") for action in rule.get("actions", []) if action.get("id") == "security_level"]} for rule in pages.get("result", []) if any(action.get("id") == "security_level" for action in rule.get("actions", []))] if pages.get("success") else {"available": False, "http_status": pages.get("http_status")}
     since = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    query = "query($zone: String!, $since: Time!) { viewer { zones(filter:{zoneTag:$zone}) { firewallEventsAdaptive(limit:1000, filter:{datetime_geq:$since}, orderBy:[datetime_DESC]) { action source ruleId } } } }"
+    query = "query($zone: String!, $since: Time!) { viewer { zones(filter:{zoneTag:$zone}) { firewallEventsAdaptive(limit:1000, filter:{datetime_geq:$since}, orderBy:[datetime_DESC]) { action source ruleId clientRequestPath } } } }"
     events = call("/graphql", {"query": query, "variables": {"zone": zone["id"], "since": since}})
     viewer = (events.get("data") or {}).get("viewer") or {}
     groups = viewer.get("zones") or []
     if groups:
-        counts = collections.Counter((event.get("action"), event.get("source"), event.get("ruleId")) for event in groups[0].get("firewallEventsAdaptive", []))
-        report["recent_events"] = [{"action": action, "source": source, "rule_id": rule, "count": count} for (action, source, rule), count in counts.items()]
+        def category(path):
+            if path in ("/", "/index", "/index.html"):
+                return "homepage"
+            if path in ("/api/catalog", "/api/ai/plans", "/api/gemini/plans"):
+                return "public_catalog"
+            if path.startswith(("/icons/", "/img/", "/product-thumbnails/", "/api/thumbnails/")) or path in ("/styles.css", "/app.js", "/gemini.css", "/gemini.mjs", "/commerce.css", "/commerce.mjs"):
+                return "public_asset"
+            return "other"
+        counts = collections.Counter((event.get("action"), event.get("source"), event.get("ruleId"), category(event.get("clientRequestPath") or "")) for event in groups[0].get("firewallEventsAdaptive", []))
+        report["recent_events"] = [{"action": action, "source": source, "rule_id": rule, "route_category": route, "count": count} for (action, source, rule, route), count in counts.items()]
     else:
         report["recent_events"] = {"available": False}
     return report
