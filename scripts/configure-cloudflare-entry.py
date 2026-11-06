@@ -46,21 +46,42 @@ def configure(operation, call=api):
     target = targets[0]
     original = target["expression"]
     applied = original.startswith("(") and original.endswith(")" + SUFFIX)
-    if operation == "apply" and applied:
-        return {"operation": operation, "changed": False, "reason": "public-entry exception already present"}
     if operation == "rollback" and not applied:
         raise RuntimeError("This rule has no recognized public-entry exception to roll back")
-    updated = "(" + original + ")" + SUFFIX if operation == "apply" else original[:-len(SUFFIX)][1:-1]
+    desired_target = dict(target)
+    if applied:
+        base_expression = original[:-len(SUFFIX)][1:-1]
+        version = int(before["version"])
+        historical = None
+        for previous_version in range(version - 1, max(0, version - 20), -1):
+            snapshot = require_result(call(prefix + "/rulesets/" + before["id"] + "/versions/" + str(previous_version)))
+            match = next((rule for rule in snapshot["rules"] if rule["id"] == RULE_ID and rule.get("expression") == base_expression), None)
+            if match:
+                historical = match
+                break
+        if historical is None:
+            raise RuntimeError("Cannot verify the original rule metadata from version history")
+        # The first API update omitted description; restore it from the immutable
+        # original version. Refuse unrelated business-field changes.
+        keys = (set(target) | set(historical)) - {"expression", "description", "version", "last_updated"}
+        if any(target.get(key) != historical.get(key) for key in keys):
+            raise RuntimeError("Rule fields changed since the original version; refusing to overwrite them")
+        desired_target["description"] = historical.get("description", "")
+        if operation == "apply" and target.get("description", "") == desired_target["description"]:
+            return {"operation": operation, "changed": False, "reason": "public-entry exception and original metadata verified"}
+    updated = (original if applied else "(" + original + ")" + SUFFIX) if operation == "apply" else original[:-len(SUFFIX)][1:-1]
     if not updated or len(updated) > 4096:
         raise RuntimeError("Resulting rule expression is empty or too long")
     # Check for an intervening dashboard edit, then patch only this rule.
     current = require_result(call(entrypoint))
     if current != before:
         raise RuntimeError("Rules changed during inspection; rerun after reviewing the change")
-    require_result(call(prefix + "/rulesets/" + before["id"] + "/rules/" + RULE_ID,
-                        {"action": target["action"], "expression": updated}, method="PATCH"))
+    writable = ("action", "description", "enabled", "ref", "action_parameters", "logging", "ratelimit", "exposed_credential_check")
+    body = {key: desired_target[key] for key in writable if key in desired_target}
+    body["expression"] = updated
+    require_result(call(prefix + "/rulesets/" + before["id"] + "/rules/" + RULE_ID, body, method="PATCH"))
     after = require_result(call(entrypoint))
-    expected = [dict(rule, expression=updated) if rule["id"] == RULE_ID else rule for rule in before["rules"]]
+    expected = [dict(rule, **body) if rule["id"] == RULE_ID else rule for rule in before["rules"]]
     if business_rules(after["rules"]) != business_rules(expected):
         raise RuntimeError("Post-change verification differs from the intended single-rule edit; inspect before further changes")
     return {"operation": operation, "changed": True, "domain": DOMAIN, "rule_id": RULE_ID,
