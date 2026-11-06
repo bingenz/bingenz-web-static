@@ -40,7 +40,7 @@ before(async()=>{
  }));
  db=await mf.getD1Database('DB');
  // D1 exec is line-oriented; prepare accepts each complete trigger statement.
- for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql','0004_fix_payment_trigger.sql','0005_restore_payment_window.sql','0006_standardize_product_price.sql','0007_gemini_orders.sql']){
+ for(const file of ['0001_commerce.sql','0002_import_state.sql','0003_payment_second_precision.sql','0004_fix_payment_trigger.sql','0005_restore_payment_window.sql','0006_standardize_product_price.sql','0007_gemini_orders.sql','0008_ai_products.sql']){
   const statements=unstable_splitSqlQuery(await readFile('migrations/'+file,'utf8'));
   for(const q of statements)await db.prepare(q).run();
  }
@@ -804,7 +804,7 @@ test('admin changes Gemini prices atomically with audit, conflict detection, val
  assert.equal((await patch({prices:before.plans.map(p=>({id:p.id,price_vnd:p.price_vnd})),snapshot:latest.snapshot})).status,200);
 });
 
-test('admin price editor saves all five plans on desktop/mobile and public cards use the saved values',async()=>{
+test('admin price editor saves all six AI plans on desktop/mobile and public cards use the saved values',async()=>{
  const browser=await chromium.launch();await mkdir('test-results/admin-gemini-prices',{recursive:true});
  const original=(await db.prepare('SELECT id,price_vnd FROM gemini_plans ORDER BY months').all()).results;
  try{
@@ -814,10 +814,10 @@ test('admin price editor saves all five plans on desktop/mobile and public cards
    const local=(await mf.ready).origin;
    await page.goto(local+'/admin#products-section');await page.locator('[data-gemini-plan="account-1"]').waitFor();
    await page.waitForFunction(()=>!document.querySelector('#gemini-price-controls').disabled);
-   assert.equal(await page.locator('[data-gemini-plan]').count(),5);
+   assert.equal(await page.locator('[data-gemini-plan]').count(),6);
    await page.locator('[data-gemini-plan="account-1"]').fill('89000');
    await page.locator('[data-gemini-plan="personal-18"]').fill('1999000');
-   await page.locator('#gemini-price-form button').click();await page.waitForFunction(()=>document.querySelector('#gemini-price-status').textContent.startsWith('Đã lưu giá Gemini.'));
+   await page.locator('#gemini-price-form button').click();await page.waitForFunction(()=>document.querySelector('#gemini-price-status').textContent.startsWith('Đã lưu giá AI.'));
    assert.equal((await db.prepare("SELECT price_vnd FROM gemini_plans WHERE id='account-1'").first()).price_vnd,89000);
    await page.reload();await page.waitForFunction(()=>document.querySelector('[data-gemini-plan="account-1"]')?.value==='89000');
    await page.locator('.gemini-price-editor').screenshot({path:`test-results/admin-gemini-prices/editor-${width}.png`});
@@ -826,7 +826,7 @@ test('admin price editor saves all five plans on desktop/mobile and public cards
    const publicPage=await browser.newPage({viewport:{width,height:950}});
    await publicPage.route('**/*',async route=>{
     const path=new URL(route.request().url()).pathname;
-    if(path==='/api/gemini/plans'){const response=await mf.dispatchFetch(origin+path);return route.fulfill({json:await response.json()});}
+    if(path==='/api/ai/plans'){const response=await mf.dispatchFetch(origin+path);return route.fulfill({json:await response.json()});}
     if(path==='/api/catalog')return route.fulfill({json:{products:[]}});
     if(new URL(route.request().url()).hostname!=='localhost')return route.fulfill({status:204,body:''});
     try{const file=path==='/'?'index.html':path.slice(1);return route.fulfill({body:await readFile('public/'+file),contentType:file.endsWith('.css')?'text/css':/\.m?js$/.test(file)?'text/javascript':file.endsWith('.svg')?'image/svg+xml':'text/html'});}catch{return route.fulfill({status:404,body:''});}
@@ -834,14 +834,56 @@ test('admin price editor saves all five plans on desktop/mobile and public cards
    await publicPage.goto('http://localhost/');await publicPage.waitForFunction(()=>document.querySelector('[data-gemini-category="account"] [data-gemini-price]').textContent==='89.000đ');
    await publicPage.locator('input[value="personal-18"]').locator('..').click();
    assert.equal(await publicPage.locator('[data-gemini-category="personal"] [data-gemini-price]').textContent(),'1.999.000đ');
-   assert.equal(await publicPage.locator('[data-gemini-saving]').isVisible(),false);
+   assert.equal(await publicPage.locator('[data-gemini-saving]').count(),0);
    await publicPage.close();
    for(const plan of original)await page.locator('[data-gemini-plan="'+plan.id+'"]').fill(String(plan.price_vnd));
-   await page.locator('#gemini-price-form button').click();await page.waitForFunction(()=>document.querySelector('#gemini-price-status').textContent.startsWith('Đã lưu giá Gemini.'));
+   await page.locator('#gemini-price-form button').click();await page.waitForFunction(()=>document.querySelector('#gemini-price-status').textContent.startsWith('Đã lưu giá AI.'));
    await page.close();
   }
  }finally{
   await db.batch(original.map(p=>db.prepare('UPDATE gemini_plans SET price_vnd=? WHERE id=?').bind(p.price_vnd,p.id)));
   await browser.close();
+ }
+});
+
+test('ChatGPT Plus uses server price snapshots, isolated pending lookup, QR, duplicate payment protection and manual delivery',async()=>{
+ const ai=await (await mf.dispatchFetch(origin+'/api/ai/plans')).json();
+ const plan=ai.plans.find(p=>p.id==='chatgpt-plus-1');
+ assert.equal(plan.price_vnd,390000);assert.equal(plan.months,1);assert.equal(plan.product_family,'chatgpt');
+ assert.equal((await (await mf.dispatchFetch(origin+'/api/gemini/plans')).json()).plans.length,5);
+ const response=await post('/api/orders',{gmail:'chatgptcustomer@gmail.com',plan_id:plan.id,turnstile_token:'valid-'+crypto.randomUUID()});
+ assert.equal(response.status,201);
+ const order=await response.json(),cookie=response.headers.get('Set-Cookie').split(';')[0];
+ const get=path=>mf.dispatchFetch(origin+path,{headers:{Cookie:cookie}});
+ assert.equal(order.product_family,'chatgpt');assert.equal(order.total_vnd,390000);
+ assert.equal((await (await get('/api/ai/pending?plan_id='+plan.id)).json()).order.id,order.id);
+ assert.equal((await (await get('/api/gemini/pending?plan_id='+plan.id)).json()).order,null);
+ assert.equal((await (await get('/api/ai/pending?plan_id=account-1')).json()).order,null);
+ assert.equal((await (await mf.dispatchFetch(origin+'/api/ai/pending?plan_id='+plan.id)).json()).order,null);
+ const reused=await post('/api/orders',{plan_id:plan.id},cookie);assert.equal((await reused.json()).id,order.id);
+ assert.equal((await get('/api/orders/'+order.id+'/qr')).status,200);
+ const headers={'Cf-Access-Jwt-Assertion':await adminToken()},url=origin+'/admin/api/ai-prices';
+ const before=await (await mf.dispatchFetch(url,{headers})).json();assert.equal(before.plans.length,6);
+ const prices=before.plans.map(p=>({id:p.id,price_vnd:p.id===plan.id?400000:p.price_vnd}));
+ const patch=body=>mf.dispatchFetch(url,{method:'PATCH',headers:{...headers,Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(body)});
+ try{
+  assert.equal((await patch({prices,snapshot:before.snapshot})).status,200);
+  assert.equal((await patch({prices,snapshot:before.snapshot})).status,409);
+  assert.equal((await db.prepare("SELECT count(*) n FROM admin_audit_logs WHERE action='ai.prices.update' AND metadata LIKE '%400000%'").first()).n>=1,true);
+  const status=await (await get('/api/orders/'+order.id)).json();assert.equal(status.total_vnd,390000);assert.equal(status.items[0].title,plan.title);
+  const fresh=await post('/api/orders',{gmail:'newchatgptcustomer@gmail.com',plan_id:plan.id,turnstile_token:'valid-'+crypto.randomUUID()});
+  assert.equal(fresh.status,201);assert.equal((await fresh.json()).total_vnd,400000);
+  await sendPayment(order,{transferAmount:390001},550001);assert.equal((await (await get('/api/orders/'+order.id)).json()).status,'pending');
+  await sendPayment(order,{},550002);await sendPayment(order,{},550002);
+  assert.equal((await (await get('/api/orders/'+order.id)).json()).status,'paid');
+  assert.equal((await get('/api/orders/'+order.id+'/qr')).status,410);
+  assert.equal((await post('/api/orders/'+order.id+'/claim',{},cookie)).status,409);
+  assert.equal((await db.prepare('SELECT count(*) n FROM entitlements WHERE order_id=?').bind(order.id).first()).n,0);
+  const detail=await (await mf.dispatchFetch(origin+'/admin/api/orders/'+order.id,{headers})).json();
+  assert.equal(detail.order.product_family,'chatgpt');assert.equal(detail.items[0].title,plan.title);assert.equal(detail.payments.filter(p=>p.status==='matched').length,1);
+  await assert.rejects(db.prepare(`INSERT INTO orders(id,gmail,gmail_key,cart_key,cart_json,checkout_hash,payment_code,total_vnd,created_at,expires_at,kind,gemini_plan_id,gemini_title,gemini_months,product_family)
+   VALUES ('wrongfamily','family@gmail.com','family','familycart','["gemini:chatgpt-plus-1"]','hash','BGZ23456789ABCE',400000,'2026-01-01','2026-01-02','gemini','chatgpt-plus-1',?,1,'gemini')`).bind(plan.title).run(),/inactive_product/);
+ }finally{
+  await db.prepare("UPDATE gemini_plans SET price_vnd=390000 WHERE id='chatgpt-plus-1'").run();
  }
 });

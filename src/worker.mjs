@@ -3,7 +3,7 @@ import { catalog,createOrder,orderStatus,qr,pendingGeminiOrder } from './orders.
 import { webhook } from './payments.mjs';
 import { claim,exchange,accessList,start,playPermit,runtime,customer } from './access.mjs';
 import { adminRoute } from './admin.mjs';
-import { ensureGeminiSchema } from './gemini-schema.mjs';
+import { ensureAiSchema } from './ai-schema.mjs';
 
 async function route(request,env) {
  const url=new URL(request.url),path=url.pathname,method=request.method;
@@ -18,7 +18,7 @@ async function route(request,env) {
  };
  if(path==='/admin'||path.startsWith('/admin/')) {
   const actor=await adminIdentity(request,env);
-  await ensureGeminiSchema(env.DB);
+  await ensureAiSchema(env.DB);
   if(!['GET','HEAD'].includes(method))originGuard(request);
   if(path.startsWith('/admin/api/'))return adminRoute(request,env,actor,path);
   if(path==='/admin'&&method==='GET'){
@@ -27,9 +27,9 @@ async function route(request,env) {
   }
   throw new HttpError(404,'not_found');
  }
- if(path==='/api/gemini/plans'||path==='/api/gemini/pending'||path==='/api/orders'||path.startsWith('/api/orders/'))await ensureGeminiSchema(env.DB);
- if(path==='/api/gemini/pending'&&method==='GET')return pendingGeminiOrder(request,env);
- if(path==='/api/gemini/plans'&&method==='GET')return json({plans:(await env.DB.prepare('SELECT id,title,category,months,price_vnd FROM gemini_plans WHERE active=1 ORDER BY months').all()).results,turnstile_site_key:env.TURNSTILE_SITE_KEY||null});
+ if(path==='/api/ai/plans'||path==='/api/ai/pending'||path==='/api/gemini/plans'||path==='/api/gemini/pending'||path==='/api/orders'||path.startsWith('/api/orders/'))await ensureAiSchema(env.DB);
+ if((path==='/api/gemini/pending'||path==='/api/ai/pending')&&method==='GET')return pendingGeminiOrder(request,env,path==='/api/ai/pending');
+ if((path==='/api/gemini/plans'||path==='/api/ai/plans')&&method==='GET')return json({plans:(await env.DB.prepare(`SELECT id,title,category,months,price_vnd,product_family FROM gemini_plans WHERE active=1 ${path==='/api/gemini/plans'?"AND product_family='gemini'":''} ORDER BY months,id`).all()).results,turnstile_site_key:env.TURNSTILE_SITE_KEY||null});
  if(path==='/api/catalog'&&method==='GET')return json({products:await catalog(env),turnstile_site_key:env.TURNSTILE_SITE_KEY||null});
  const thumbnail=path.match(/^\/api\/thumbnails\/([a-z0-9_-]{1,64})\/([a-f0-9]{64})\.webp$/);
  if(thumbnail&&method==='GET'){

@@ -1,6 +1,9 @@
 const $ = (s, root = document) => root.querySelector(s);
 const money = n => new Intl.NumberFormat('vi-VN').format(n) + 'đ';
 const plans = new Map();
+const selectedPlanId=card=>card.dataset.planId||$('input:checked',card)?.value;
+const productName=product=>product.product_family==='chatgpt'?'ChatGPT Plus':'Gemini Pro';
+function paintProduct(product){$('#ai-dialog-product').textContent='BINGENZ · '+productName(product);}
 const dialog = $('#gemini-dialog'), content = $('#gemini-dialog-content');
 const errors = {
  gmail_required:'Vui lòng nhập địa chỉ @gmail.com hợp lệ.',
@@ -50,10 +53,9 @@ async function copy(value, button) {
 }
 document.addEventListener('click', e => { const button=e.target.closest('[data-gemini-copy]'); if(button)copy(button.dataset.geminiCopy,button); });
 function paintPlanCard(card){
- const plan=plans.get($('input:checked',card)?.value);
+ const plan=plans.get(selectedPlanId(card));
  $('[data-gemini-price]',card).textContent=plan?money(plan.price_vnd):'—';
  $('[data-gemini-term]',card).textContent=plan?'/ '+plan.months+' tháng':'';
- $('[data-gemini-monthly]',card).textContent=plan?(plan.price_vnd%plan.months?'≈ ':'')+money(Math.round(plan.price_vnd/plan.months))+' / tháng':'Gói này tạm chưa có sẵn.';
  $('[data-gemini-buy]',card).disabled=!plan;
 }
 function applyPlans(data){
@@ -63,20 +65,18 @@ function applyPlans(data){
   for(const input of card.querySelectorAll('input[type=radio]'))input.disabled=!plans.has(input.value);
   paintPlanCard(card);
  }
- const p12=plans.get('personal-12'),p18=plans.get('personal-18');
- $('[data-gemini-saving]').hidden=!(p12&&p18&&p18.price_vnd*p12.months<p12.price_vnd*p18.months);
 }
 async function refreshPlans(){
  $('#gemini-price-retry').hidden=true;
- try{applyPlans(await api('/api/gemini/plans'));$('#gemini-notice').textContent='';}
+ try{applyPlans(await api('/api/ai/plans'));$('#gemini-notice').textContent='';}
  catch(error){
-  $('#gemini-notice').textContent='Chưa tải được giá Gemini. Vui lòng thử lại hoặc liên hệ Zalo.';$('#gemini-price-retry').hidden=false;
-  for(const card of document.querySelectorAll('[data-gemini-category]')){$('[data-gemini-buy]',card).disabled=true;$('[data-gemini-monthly]',card).textContent='Chưa tải được giá.';}
+  $('#gemini-notice').textContent='Chưa tải được giá sản phẩm AI. Vui lòng thử lại hoặc liên hệ Zalo.';$('#gemini-price-retry').hidden=false;
+  for(const card of document.querySelectorAll('[data-gemini-category]')){$('[data-gemini-buy]',card).disabled=true;}
  }
 }
 for(const card of document.querySelectorAll('[data-gemini-category]')){
  card.addEventListener('change',()=>paintPlanCard(card));
- $('[data-gemini-buy]',card).addEventListener('click',e=>checkout($('input:checked',card).value,e.currentTarget));
+ $('[data-gemini-buy]',card).addEventListener('click',e=>checkout(selectedPlanId(card),e.currentTarget));
 }
 $('#gemini-price-retry').addEventListener('click',refreshPlans);
 refreshPlans();
@@ -95,15 +95,17 @@ function loadTurnstile() {
  return turnstileLoading;
 }
 async function checkout(planId, opener) {
- const run=openDialog(opener);content.textContent='Đang chuẩn bị thanh toán…';
+ const run=openDialog(opener);paintProduct(plans.get(planId)||{});content.textContent='Đang chuẩn bị thanh toán…';
  try {
-  const pending=await api('/api/gemini/pending?plan_id='+encodeURIComponent(planId));if(run!==generation)return;
+  const pending=await api('/api/ai/pending?plan_id='+encodeURIComponent(planId));if(run!==generation)return;
   if(pending.order){await showOrder(pending.order.id,run);return;}
-  const data=await api('/api/gemini/plans');if(run!==generation)return;applyPlans(data);
+  const data=await api('/api/ai/plans');if(run!==generation)return;applyPlans(data);
   const plan=data.plans.find(p=>p.id===planId);
   if(!plan)throw new Error(errors.product_unavailable);
+  paintProduct(plan);
   if(!data.turnstile_site_key)throw new Error(errors.configuration_required);
   content.innerHTML='<div class="gemini-checkout-summary"><p id="gemini-selected-title"></p><strong id="gemini-selected-price"></strong></div><form class="gemini-form"><label for="gemini-email">Gmail liên hệ / nâng cấp</label><input id="gemini-email" name="gmail" type="email" autocomplete="email" maxlength="254" placeholder="ban@gmail.com" required><p class="gemini-help">Dùng Gmail này để tra cứu đơn. Sau thanh toán, liên hệ Zalo kèm mã đơn để nhận tài khoản hoặc được hỗ trợ nâng chính chủ. Không nhập mật khẩu tại đây.</p><div class="gemini-verification" id="gemini-verification"></div><button class="gemini-buy" type="submit" disabled>Tạo mã QR thanh toán</button></form>';
+  if(plan.product_family==='chatgpt'){$('label[for=gemini-email]',content).textContent='Gmail liên hệ';$('.gemini-help',content).textContent='Dùng Gmail này để tra cứu đơn. Sau thanh toán, liên hệ Zalo kèm mã đơn để nhận tài khoản ChatGPT Plus. Không nhập mật khẩu tại đây.';}
   $('#gemini-selected-title').textContent=plan.title;$('#gemini-selected-price').textContent=money(plan.price_vnd);
   const form=$('form',content),button=$('button[type=submit]',form);let token='',busy=false;
   form.addEventListener('submit',async e=>{
@@ -128,6 +130,7 @@ function row(label,value,copyable=false) {
 async function showOrder(id,run) {
  const order=await api('/api/orders/'+id);if(run!==generation)return;
  if(order.kind!=='gemini')throw new Error(errors.order_unavailable);
+ paintProduct(order);
  content.innerHTML='<div class="gemini-checkout-summary"><p id="gemini-selected-title"></p><strong id="gemini-selected-price"></strong></div><p class="gemini-payment-state" id="gemini-payment-state" role="status"></p><div id="gemini-payment-body"></div><div class="gemini-payment-details" id="gemini-order-code"></div>';
  $('#gemini-selected-title').textContent=order.items[0].title;$('#gemini-selected-price').textContent=money(order.total_vnd);
  $('#gemini-order-code').append(row('Mã đơn / nội dung chuyển khoản',order.payment_code,true));
@@ -155,7 +158,7 @@ async function showOrder(id,run) {
      if(run!==generation||current.status!=='pending'||Date.parse(current.expires_at)<=Date.now()+offset)return;
      const url=URL.createObjectURL(blob),link=document.createElement('a');
      const extension=({'image/png':'png','image/jpeg':'jpg','image/svg+xml':'svg','image/webp':'webp'})[blob.type.split(';')[0]]||'png';
-     link.href=url;link.download='Bingenz-Gemini-'+current.payment_code+'.'+extension;document.body.append(link);link.click();link.remove();
+     link.href=url;link.download='Bingenz-'+(current.product_family==='chatgpt'?'ChatGPT-Plus':'Gemini')+'-'+current.payment_code+'.'+extension;document.body.append(link);link.click();link.remove();
      setTimeout(()=>URL.revokeObjectURL(url),60000);
     }catch{if(run===generation)notice('Chưa tải được mã QR. Vui lòng bấm Tải mã QR để thử lại hoặc liên hệ Zalo hỗ trợ.');}
     finally{download.disabled=false;download.textContent='Tải mã QR';}
@@ -163,11 +166,11 @@ async function showOrder(id,run) {
    const actions=document.createElement('div');actions.className='gemini-payment-actions';actions.append(download);body.append(actions);
    const bank=current.payment_destination;
    body.append(row('Ngân hàng',bank.bank_code),row('Chủ tài khoản',bank.account_name),row('Số tài khoản',bank.account_number,true),row('Số tiền (VNĐ)',String(current.total_vnd),true));
-   const help=document.createElement('p');help.className='gemini-help';help.textContent='Chuyển đúng số tiền và giữ nguyên nội dung. Hệ thống tự xác nhận thanh toán; sau đó bạn liên hệ Zalo để nhận tài khoản / nâng cấp.';body.append(help);
+   const help=document.createElement('p');help.className='gemini-help';help.textContent=current.product_family==='chatgpt'?'Chuyển đúng số tiền và giữ nguyên nội dung. Hệ thống tự xác nhận thanh toán; sau đó bạn liên hệ Zalo để nhận tài khoản ChatGPT Plus.':'Chuyển đúng số tiền và giữ nguyên nội dung. Hệ thống tự xác nhận thanh toán; sau đó bạn liên hệ Zalo để nhận tài khoản / nâng cấp.';body.append(help);
   }else{
    const help=document.createElement('p');help.className='gemini-help';
-   help.textContent=status==='paid'?'Gửi mã đơn bên dưới qua Zalo để nhận tài khoản hoặc được hỗ trợ nâng chính chủ. Bảo hành toàn bộ thời gian sử dụng.':status==='expired'?'Không chuyển khoản vào QR cũ. Nếu đã thanh toán, hãy giữ mã đơn và liên hệ Zalo để kiểm tra.':'Gửi mã đơn qua Zalo để được hỗ trợ.';
-   const link=document.createElement('a');link.href='https://zalo.me/0898908101';link.target='_blank';link.rel='noopener';link.className='gemini-buy gemini-zalo-link';link.textContent=status==='paid'?'Liên hệ Zalo để nhận / nâng cấp':'Liên hệ Zalo hỗ trợ';body.append(help,link);
+   help.textContent=status==='paid'?(current.product_family==='chatgpt'?'Gửi mã đơn bên dưới qua Zalo để nhận tài khoản ChatGPT Plus.':'Gửi mã đơn bên dưới qua Zalo để nhận tài khoản hoặc được hỗ trợ nâng chính chủ. Bảo hành toàn bộ thời gian sử dụng.'):status==='expired'?'Không chuyển khoản vào QR cũ. Nếu đã thanh toán, hãy giữ mã đơn và liên hệ Zalo để kiểm tra.':'Gửi mã đơn qua Zalo để được hỗ trợ.';
+   const link=document.createElement('a');link.href='https://zalo.me/0898908101';link.target='_blank';link.rel='noopener';link.className='gemini-buy gemini-zalo-link';link.textContent=status==='paid'?(current.product_family==='chatgpt'?'Liên hệ Zalo để nhận tài khoản':'Liên hệ Zalo để nhận / nâng cấp'):'Liên hệ Zalo hỗ trợ';body.append(help,link);
   }
  };
  update();clockTimer=setInterval(update,1000);

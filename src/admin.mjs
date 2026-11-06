@@ -44,6 +44,8 @@ function csvExport(env,name){
 
 export async function adminRoute(request,env,actor,path){
  const method=request.method,url=new URL(request.url);
+ if(path==='/admin/api/ai-prices'&&method==='GET')return json(await geminiPrices(env,true));
+ if(path==='/admin/api/ai-prices'&&method==='PATCH')return updateGeminiPrices(request,env,actor,true);
  if(path==='/admin/api/gemini-prices'&&method==='GET')return json(await geminiPrices(env));
  if(path==='/admin/api/gemini-prices'&&method==='PATCH')return updateGeminiPrices(request,env,actor);
  if(path==='/admin/api/settings'&&method==='GET'){
@@ -220,7 +222,7 @@ export async function adminRoute(request,env,actor,path){
   return json({access_url:new URL('/access/'+token,request.url).href,device_reset:input.reset_device});
  }
  if(order&&method==='GET'){
-  const o=await env.DB.prepare(`SELECT kind,gemini_title,gemini_months,id,gmail,payment_code,total_vnd,status,created_at,expires_at,paid_at,paid_payment_id,access_issued_at,generation,CASE WHEN device_hash IS NULL THEN 0 ELSE 1 END device_bound FROM orders WHERE id=?`).bind(order[1]).first();
+  const o=await env.DB.prepare(`SELECT kind,product_family,gemini_title,gemini_months,id,gmail,payment_code,total_vnd,status,created_at,expires_at,paid_at,paid_payment_id,access_issued_at,generation,CASE WHEN device_hash IS NULL THEN 0 ELSE 1 END device_bound FROM orders WHERE id=?`).bind(order[1]).first();
   if(!o)throw new HttpError(404,'not_found');
   const [items,payments,notes,refunds]=await env.DB.batch([
    stmt(env.DB,`SELECT i.id,i.product_id,i.version_id,i.title,i.price_vnd,i.duration_seconds,i.activation_days,e.id entitlement_id,e.status entitlement_status,e.activation_deadline,e.started_at,e.expires_at FROM order_items i LEFT JOIN entitlements e ON e.order_item_id=i.id WHERE i.order_id=? ORDER BY i.title`,o.id),

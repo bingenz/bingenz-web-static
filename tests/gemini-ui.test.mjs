@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile,mkdir} from 'node:fs/promises';
 import {chromium} from 'playwright';
 const plans=[['account-1',1,79000],['account-3',3,219000],['account-6',6,399000],['personal-12',12,995000],['personal-18',18,1299000]].map(([id,months,price_vnd])=>({id,months,price_vnd,title:'Gemini Pro · '+(id.startsWith('account')?'Cấp tài khoản':'Nâng chính chủ')+' · '+months+' tháng'}));
+plans.push({id:'chatgpt-plus-1',months:1,price_vnd:390000,product_family:'chatgpt',title:'ChatGPT Plus · Cấp tài khoản riêng · 1 tháng'});
 const id='11111111-1111-1111-1111-111111111111';
 async function fixture(page){
  let order,status='pending',submitted,creates=0;
@@ -11,12 +12,12 @@ async function fixture(page){
   const request=route.request(),url=new URL(request.url()),path=url.pathname;
   if(url.hostname!=='localhost')return route.fulfill({status:204,body:''});
   if(path==='/api/catalog')return route.fulfill({json:{products:[]}});
-  if(path==='/api/gemini/plans')return route.fulfill({json:{plans,turnstile_site_key:'fixture'}});
-  if(path==='/api/gemini/pending')return route.fulfill({json:{order:order&&status==='pending'&&submitted.plan_id===url.searchParams.get('plan_id')?{id:order.id}:null}});
+  if(path==='/api/ai/plans')return route.fulfill({json:{plans,turnstile_site_key:'fixture'}});
+  if(path==='/api/ai/pending')return route.fulfill({json:{order:order&&status==='pending'&&submitted.plan_id===url.searchParams.get('plan_id')?{id:order.id}:null}});
   if(path==='/api/orders'&&request.method()==='POST'){
    creates++;
    submitted=request.postDataJSON();const plan=plans.find(p=>p.id===submitted.plan_id);
-   order={id,kind:'gemini',payment_code:'BGZ23456789ABCD',total_vnd:plan.price_vnd,claimable:true,expires_at:new Date(Date.now()+900000).toISOString(),items:[plan]};
+   order={id,kind:'gemini',product_family:plan.product_family||'gemini',payment_code:'BGZ23456789ABCD',total_vnd:plan.price_vnd,claimable:true,expires_at:new Date(Date.now()+900000).toISOString(),items:[plan]};
    return route.fulfill({status:201,json:order});
   }
   if(path==='/api/orders/'+id)return route.fulfill({json:{...order,status,server_now:new Date().toISOString(),...(status==='pending'?{payment_destination:{bank_code:'TPBank',account_name:'LOCAL TEST',account_number:'0000000000'}}:{})}});
@@ -45,7 +46,7 @@ test('Gemini responsive cards, supplied icons, selectors, checkout, paid support
     await page.locator('#gemini-pro').screenshot({path:`test-results/gemini/cards-${width}-${theme}.png`,style:".topbar,.bottom-bar{visibility:hidden!important}"});
    }
    const account=page.locator('[data-gemini-category="account"]'),premium=page.locator('[data-gemini-category="personal"]');
-   for(const plan of plans){const card=plan.id.startsWith('account')?account:premium;await card.locator('label').filter({has:page.locator('input[value="'+plan.id+'"]')}).click();assert.equal(await card.locator('[data-gemini-price]').textContent(),new Intl.NumberFormat('vi-VN').format(plan.price_vnd)+'đ');}
+   for(const plan of plans.filter(p=>p.product_family!=='chatgpt')){const card=plan.id.startsWith('account')?account:premium;await card.locator('label').filter({has:page.locator('input[value="'+plan.id+'"]')}).click();assert.equal(await card.locator('[data-gemini-price]').textContent(),new Intl.NumberFormat('vi-VN').format(plan.price_vnd)+'đ');}
    await page.locator('.gemini-support [data-gemini-copy]').click();assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),'0898908101');
    await premium.locator('[data-gemini-buy]').click();
    await page.locator('#gemini-email').fill('customer@gmail.com');await page.getByRole('button',{name:'Tạo mã QR thanh toán'}).click();
@@ -80,24 +81,24 @@ test('Expired Gemini order removes QR and reduced-motion disables premium effect
  const browser=await chromium.launch();try{
   const page=await browser.newPage({viewport:{width:360,height:800},reducedMotion:'reduce'});const f=await fixture(page);await page.goto('http://localhost/');
   assert.equal(await page.locator('.gemini-premium').evaluate(el=>getComputedStyle(el,'::before').animationName),'none');
-  await page.locator('[data-gemini-buy]').first().click();await page.locator('#gemini-email').fill('expired@gmail.com');await page.getByRole('button',{name:'Tạo mã QR thanh toán'}).click();await page.locator('.gemini-qr').waitFor();
+  await page.locator('[data-gemini-category=account] [data-gemini-buy]').click();await page.locator('#gemini-email').fill('expired@gmail.com');await page.getByRole('button',{name:'Tạo mã QR thanh toán'}).click();await page.locator('.gemini-qr').waitFor();
   f.expired();await page.waitForFunction(()=>document.querySelector('#gemini-payment-state').textContent.includes('hết thời gian'),{},{timeout:12000});assert.equal(await page.locator('.gemini-qr').count(),0);
-  await page.keyboard.press('Escape');await page.locator('[data-gemini-buy]').first().click();await page.locator('#gemini-email').waitFor();assert.equal(f.creates(),1);
+  await page.keyboard.press('Escape');await page.locator('[data-gemini-category=account] [data-gemini-buy]').click();await page.locator('#gemini-email').waitFor();assert.equal(f.creates(),1);
  }finally{await browser.close();}
 });
 
 test('buy reopens only the selected pending plan, and a lookup failure never creates a replacement',async()=>{
  const browser=await chromium.launch();try{
   const page=await browser.newPage();const f=await fixture(page);await page.goto('http://localhost/');
-  await page.locator('input[value="account-3"]').locator('..').click();await page.locator('[data-gemini-buy]').first().click();
+  await page.locator('input[value="account-3"]').locator('..').click();await page.locator('[data-gemini-category=account] [data-gemini-buy]').click();
   await page.locator('#gemini-email').fill('three@gmail.com');await page.getByRole('button',{name:'Tạo mã QR thanh toán'}).click();await page.locator('.gemini-qr').waitFor();
   const qr=await page.locator('.gemini-qr').getAttribute('src');
-  await page.keyboard.press('Escape');await page.locator('input[value="account-6"]').locator('..').click();await page.locator('[data-gemini-buy]').first().click();await page.locator('#gemini-email').waitFor();
+  await page.keyboard.press('Escape');await page.locator('input[value="account-6"]').locator('..').click();await page.locator('[data-gemini-category=account] [data-gemini-buy]').click();await page.locator('#gemini-email').waitFor();
   assert.equal(await page.locator('#gemini-selected-price').textContent(),'399.000đ');assert.equal(f.creates(),1);
-  await page.keyboard.press('Escape');await page.locator('input[value="account-3"]').locator('..').click();await page.locator('[data-gemini-buy]').first().click();await page.locator('.gemini-qr').waitFor();
+  await page.keyboard.press('Escape');await page.locator('input[value="account-3"]').locator('..').click();await page.locator('[data-gemini-category=account] [data-gemini-buy]').click();await page.locator('.gemini-qr').waitFor();
   assert.equal(await page.locator('.gemini-qr').getAttribute('src'),qr);assert.equal(f.creates(),1);
-  await page.keyboard.press('Escape');await page.route('**/api/gemini/pending?**',route=>route.fulfill({status:503,json:{error:'service_unavailable'}}));
-  await page.locator('[data-gemini-buy]').first().click();await page.waitForFunction(()=>document.querySelector('#gemini-dialog-notice').textContent.length>0);
+  await page.keyboard.press('Escape');await page.route('**/api/ai/pending?**',route=>route.fulfill({status:503,json:{error:'service_unavailable'}}));
+  await page.locator('[data-gemini-category=account] [data-gemini-buy]').click();await page.waitForFunction(()=>document.querySelector('#gemini-dialog-notice').textContent.length>0);
   assert.equal(await page.locator('#gemini-email').count(),0);assert.equal(f.creates(),1);
  }finally{await browser.close();}
 });
@@ -129,11 +130,11 @@ test('hero copy and gradient glyphs remain inside their paint bounds at desktop 
 test('public prices fail closed without stale defaults and recover through Retry',async()=>{
  const browser=await chromium.launch();try{
   const page=await browser.newPage();await fixture(page);
-  await page.route('**/api/gemini/plans',route=>route.fulfill({status:503,json:{error:'service_unavailable'}}),{times:1});
+  await page.route('**/api/ai/plans',route=>route.fulfill({status:503,json:{error:'service_unavailable'}}),{times:1});
   await page.goto('http://localhost/');await page.locator('#gemini-price-retry').waitFor({state:'visible'});
-  assert.equal(await page.locator('[data-gemini-buy]:disabled').count(),2);
-  assert.deepEqual(await page.locator('[data-gemini-price]').allTextContents(),['—','—']);
-  await page.locator('input[value="account-3"]').locator('..').click();assert.equal(await page.locator('[data-gemini-buy]:disabled').count(),2);
+  assert.equal(await page.locator('[data-gemini-buy]:disabled').count(),3);
+  assert.deepEqual(await page.locator('[data-gemini-price]').allTextContents(),['—','—','—']);
+  await page.locator('input[value="account-3"]').locator('..').click();assert.equal(await page.locator('[data-gemini-buy]:disabled').count(),3);
   await page.locator('#gemini-price-retry').click();await page.waitForFunction(()=>!document.querySelector('[data-gemini-buy]').disabled);
   assert.equal(await page.locator('[data-gemini-category="account"] [data-gemini-price]').textContent(),'219.000đ');
   assert.equal(await page.locator('#gemini-price-retry').isVisible(),false);

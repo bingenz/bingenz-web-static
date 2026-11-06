@@ -226,7 +226,7 @@ async function showOrder(id) {
     summary.replaceChildren();
     for (const [label, value] of [
       ["Khách hàng", o.gmail],
-      ["Loại đơn", o.kind === "gemini" ? "Gemini Pro · Giao qua Zalo" : "Mô phỏng"],
+      ["Loại đơn", o.kind === "gemini" ? (o.product_family === "chatgpt" ? "ChatGPT Plus · Giao qua Zalo" : "Gemini Pro · Giao qua Zalo") : "Mô phỏng"],
       ["Mã thanh toán", o.payment_code],
       ["Tổng tiền", money(o.total_vnd)],
       ["Trạng thái", statusLabels[o.status] || o.status],
@@ -536,7 +536,7 @@ function renderGeminiPrices(data){
   const fields=$("#gemini-price-fields");fields.replaceChildren();
   for(const plan of data.plans){
     const label=document.createElement("label"),title=document.createElement("span"),input=document.createElement("input"),hint=document.createElement("small");
-    title.textContent=(plan.category==="personal"?"Nâng chính chủ":"Cấp tài khoản")+" · "+plan.months+" tháng";
+    title.textContent=(plan.product_family==="chatgpt"?"ChatGPT Plus":"Gemini Pro")+" · "+(plan.category==="personal"?"Nâng chính chủ":"Cấp tài khoản")+" · "+plan.months+" tháng";
     input.type="number";input.min="1";input.max="100000000";input.step="1";input.inputMode="numeric";input.required=true;input.name=plan.id;input.value=String(plan.price_vnd);input.dataset.geminiPlan=plan.id;
     hint.textContent=money(plan.price_vnd);input.addEventListener("input",()=>hint.textContent=input.validity.valid?money(Number(input.value)):"Nhập giá nguyên dương (VNĐ)");
     label.append(title,input,hint);fields.append(label);
@@ -545,7 +545,7 @@ function renderGeminiPrices(data){
 }
 async function refreshGeminiPrices(){
   $("#gemini-price-controls").disabled=true;$("#reload-gemini-prices").disabled=true;
-  try{renderGeminiPrices(await api("gemini-prices"));}
+  try{renderGeminiPrices(await api("ai-prices"));}
   catch(error){$("#gemini-price-status").textContent=error.message;throw error;}
   finally{$("#gemini-price-controls").disabled=!geminiPriceSnapshot;$("#reload-gemini-prices").disabled=false;}
 }
@@ -555,8 +555,8 @@ $("#gemini-price-form").addEventListener("submit",async event=>{
   const prices=[...document.querySelectorAll("[data-gemini-plan]")].map(input=>({id:input.dataset.geminiPlan,price_vnd:Number(input.value)}));
   geminiPriceSaving=true;$("#gemini-price-controls").disabled=true;$("#reload-gemini-prices").disabled=true;$("#gemini-price-status").textContent="Đang lưu giá…";
   try{
-    const data=await api("gemini-prices",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({prices,snapshot:geminiPriceSnapshot})});
-    renderGeminiPrices(data);$("#gemini-price-status").textContent="Đã lưu giá Gemini. Trang chủ và đơn mới sử dụng giá mới.";say("Đã lưu giá Gemini và ghi nhật ký.");
+    const data=await api("ai-prices",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({prices,snapshot:geminiPriceSnapshot})});
+    renderGeminiPrices(data);$("#gemini-price-status").textContent="Đã lưu giá AI. Trang chủ và đơn mới sử dụng giá mới.";say("Đã lưu giá AI và ghi nhật ký.");
   }catch(error){$("#gemini-price-status").textContent=error.message;say(error.message);}
   finally{geminiPriceSaving=false;$("#gemini-price-controls").disabled=false;$("#reload-gemini-prices").disabled=false;}
 });
@@ -954,7 +954,7 @@ $("#close-order-detail").addEventListener("click", () => {
 });
 $("#refresh-admin").addEventListener("click", async (event) => {
   const button = event.currentTarget;
-  if(geminiPriceSaving){say("Đang lưu giá Gemini. Vui lòng chờ hoàn tất.");return;}
+  if(geminiPriceSaving){say("Đang lưu giá AI. Vui lòng chờ hoàn tất.");return;}
   if (
     (productDirty || orderDirty() || geminiPriceDirty) &&
     !confirm("Làm mới sẽ bỏ thay đổi sản phẩm chưa lưu. Tiếp tục?")

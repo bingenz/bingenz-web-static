@@ -1,0 +1,9 @@
+{
+  "name": "0008_ai_products.sql",
+  "statements": [
+    "ALTER TABLE gemini_plans ADD COLUMN product_family TEXT NOT NULL DEFAULT 'gemini' CHECK(product_family IN ('gemini','chatgpt'))",
+    "ALTER TABLE orders ADD COLUMN product_family TEXT NOT NULL DEFAULT 'gemini' CHECK(product_family IN ('gemini','chatgpt'))",
+    "INSERT INTO gemini_plans(id,title,category,months,price_vnd,product_family)\nVALUES ('chatgpt-plus-1','ChatGPT Plus · Cấp tài khoản riêng · 1 tháng','account',1,390000,'chatgpt')",
+    "CREATE TRIGGER validate_ai_family BEFORE INSERT ON orders WHEN NEW.kind='gemini' BEGIN\n SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM gemini_plans WHERE id=NEW.gemini_plan_id AND product_family=NEW.product_family)\n THEN RAISE(ABORT,'inactive_product') END;\nEND"
+  ]
+}
