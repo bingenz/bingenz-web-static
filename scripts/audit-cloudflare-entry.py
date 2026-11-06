@@ -2,6 +2,7 @@
 import collections
 import datetime
 import json
+import hashlib
 import os
 import urllib.error
 import urllib.request
@@ -55,6 +56,22 @@ def audit(call=api):
     )} if bot.get("success") else {"available": False, "http_status": bot.get("http_status")}
     for phase in ("http_request_firewall_custom", "http_request_firewall_managed", "http_ratelimit", "http_config_settings"):
         report["rules"][phase] = rules_summary(call(prefix + "/rulesets/phases/" + phase + "/entrypoint"))
+    current = call(prefix + "/rulesets/phases/http_request_firewall_custom/entrypoint")
+    if current.get("success"):
+        ruleset = current["result"]
+        report["custom_rule_verification"] = [{"id": rule.get("id"), "expression_sha256": hashlib.sha256(rule.get("expression", "").encode()).hexdigest(), "public_entry_exception": 'and not (http.host in {"bingenz.com" "www.bingenz.com"} and http.request.method in {"GET" "HEAD"}' in rule.get("expression", "")} for rule in ruleset.get("rules", [])]
+        version = ruleset.get("version", "")
+        if version.isdigit() and int(version) > 1:
+            previous = call(prefix + "/rulesets/" + ruleset["id"] + "/versions/" + str(int(version) - 1))
+            if previous.get("success"):
+                old = {rule["id"]: rule for rule in previous["result"].get("rules", [])}
+                changes = []
+                for rule in ruleset.get("rules", []):
+                    before = old.get(rule["id"], {})
+                    fields = [key for key in sorted(set(rule) | set(before)) if rule.get(key) != before.get(key)]
+                    if fields:
+                        changes.append({"id": rule["id"], "changed_fields": fields})
+                report["previous_version_changes"] = changes
     legacy = call(prefix + "/firewall/rules?per_page=100")
     report["legacy_rules"] = [{"id": rule.get("id"), "action": rule.get("action"), "paused": rule.get("paused", False)} for rule in legacy.get("result", [])] if legacy.get("success") else {"available": False, "http_status": legacy.get("http_status")}
     pages = call(prefix + "/pagerules?status=active&per_page=100")
